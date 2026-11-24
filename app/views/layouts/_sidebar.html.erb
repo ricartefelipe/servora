@@ -25,6 +25,13 @@
         Nova ordem de serviço
       <% end %>
     <% end %>
+    <button type="button" data-action="command-palette#open" aria-haspopup="dialog" aria-controls="busca-rapida"
+            aria-keyshortcuts="Control+K Meta+K"
+            class="group flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-ink-700 transition-colors hover:bg-ink-950/[0.04] hover:text-ink-950">
+      <span class="grid size-[18px] place-items-center text-ink-500 group-hover:text-ink-700" aria-hidden="true"><%= icon(:search, size: 16) %></span>
+      <span class="flex-1 text-left">Buscar…</span>
+      <kbd class="sv-kbd" aria-hidden="true" data-command-palette-target="shortcut">Ctrl K</kbd>
+    </button>
   </div>
 
   <nav class="flex-1 space-y-5 overflow-y-auto px-3 pb-6" aria-label="Seções">

@@ -1,0 +1,52 @@
+<%# Quick search results on the noir surface.
+    listbox: true inside the command palette, where focus stays in the input
+    and rows are ARIA options driven by aria-activedescendant; false on the
+    regular page, where rows are plain links in lists.
+    Elements marked data-search-message are read by the palette's live region. %>
+<% if !QuickSearchQuery.searchable?(term) %>
+  <p class="px-4 py-6 text-[13px] text-white/70" data-search-message>
+    Digite ao menos <%= QuickSearchQuery::MIN_LENGTH %> caracteres. Busque pelo número, título, nome, documento, e-mail ou número de série.
+  </p>
+<% elsif groups.empty? %>
+  <div class="px-4 py-8 text-center" data-search-message>
+    <p class="text-[14px] font-medium text-white">Nenhum resultado para “<%= term %>”.</p>
+    <p class="mt-1 text-[13px] text-white/60">Confira a grafia ou tente o número da OS, o documento do cliente ou o número de série.</p>
+  </div>
+<% end %>
+
+<% if listbox || groups.any? %>
+  <%= tag.div(id: ("command-palette-listbox" if listbox), role: ("listbox" if listbox),
+        aria: { label: ("Resultados da busca" if listbox) }, hidden: groups.empty?,
+        class: class_names("py-1.5", "max-h-[min(60vh,28rem)] overflow-y-auto overscroll-contain" => listbox)) do %>
+    <% groups.each do |group| %>
+      <% label_id = "busca-grupo-#{group.key.to_s.dasherize}" %>
+      <% rows = group.records.map do |record|
+           case group.key
+           when :work_orders
+             { record:, path: work_order_path(record), code: record.number, label: record.title,
+               detail: [record.customer.display_name, record.status_label] }
+           when :customers
+             { record:, path: customer_path(record), code: (format_document(record.document) if record.document),
+               label: record.display_name, detail: [(record.name if record.name != record.display_name), record.email] }
+           when :equipment
+             { record:, path: equipment_path(record), code: record.serial_number || record.asset_tag, label: record.title,
+               detail: [("Patrimônio #{record.asset_tag}" if record.serial_number && record.asset_tag), record.customer.display_name] }
+           when :quotes
+             { record:, path: quote_path(record), code: record.number, label: record.title,
+               detail: [record.customer.display_name, record.status_label] }
+           end
+         end %>
+      <% if listbox %>
+        <div role="group" aria-labelledby="<%= label_id %>">
+          <div role="presentation" id="<%= label_id %>" class="px-4 pb-1 pt-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-white/50"><%= group.label %></div>
+          <% rows.each do |row| %><%= render "searches/option", **row, listbox: true %><% end %>
+        </div>
+      <% else %>
+        <h2 id="<%= label_id %>" class="px-4 pb-1 pt-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-white/50"><%= group.label %></h2>
+        <ul role="list" aria-labelledby="<%= label_id %>">
+          <% rows.each do |row| %><li><%= render "searches/option", **row, listbox: false %></li><% end %>
+        </ul>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

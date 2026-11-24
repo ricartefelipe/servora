@@ -23,6 +23,11 @@ RSpec.describe Audit::Redactor do
     expect(result["note"].length).to eq(described_class::MAX_STRING + 1)
   end
 
+  it "keeps the marker that records a replaced credential, which holds no secret" do
+    expect(described_class.redact("api_key" => "[ALTERADA]", "token" => "abc"))
+      .to eq("api_key" => "[ALTERADA]", "token" => "[FILTRADO]")
+  end
+
   it "serializes decimals without float conversion" do
     expect(described_class.redact("amount" => BigDecimal("10.10"))).to eq("amount" => "10.1")
   end

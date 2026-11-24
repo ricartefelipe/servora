@@ -4,25 +4,34 @@
 <%= form_with url: audit_events_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
   <div>
     <%= f.label :acao, "Ação", class: "sv-label" %>
-    <%= f.select :acao, options_for_select(@actions, params[:acao]), { include_blank: "Todas" }, class: "sv-input min-w-56" %>
+    <%= f.select :acao, audit_action_options(@actions, params[:acao]), { include_blank: "Todas" }, class: "sv-input min-w-72" %>
   </div>
   <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
 <% end %>
 
-<section class="sv-card overflow-hidden">
+<section class="sv-card overflow-hidden" aria-label="Eventos de auditoria">
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhum evento encontrado", description: "As ações registradas aparecerão aqui.", icon_name: :audit) %>
   <% else %>
+    <% references = audit_references(@pagination.records) %>
     <div class="relative overflow-x-auto">
       <table class="sv-table">
-        <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col">Detalhes</th></tr></thead>
+        <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col" class="max-md:hidden">Detalhes</th></tr></thead>
         <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |event| %>
-            <tr>
-              <td class="sv-num whitespace-nowrap font-mono text-xs text-ink-600"><%= l(event.created_at, format: :short) %></td>
-              <td class="font-medium text-ink-950"><%= event.actor_label || "Sistema" %></td>
-              <td><code class="rounded-md bg-ink-50 px-1.5 py-0.5 font-mono text-xs text-ink-700 ring-1 ring-inset ring-ink-200"><%= event.action %></code></td>
-              <td class="max-w-md truncate text-xs text-ink-500" title="<%= event.changeset.to_json %>"><%= event.changeset.map { |k, v| "#{k}: #{v}" }.join(" · ").truncate(140) %></td>
+            <% details = audit_changeset(event, references) %>
+            <tr class="align-top">
+              <td class="sv-num whitespace-nowrap font-mono text-xs text-ink-600 align-top">
+                <time datetime="<%= event.created_at.iso8601 %>"><%= l(event.created_at, format: :short) %></time>
+              </td>
+              <td class="font-medium text-ink-950 align-top"><%= event.actor_label || "Sistema" %></td>
+              <td class="align-top md:min-w-56">
+                <span class="block text-[13px] font-medium text-ink-950"><%= audit_action_label(event.action) %></span>
+                <span class="mt-0.5 block font-mono text-[11px] text-ink-500"><span class="sr-only">Código da ação: </span><%= event.action %></span>
+                <%# On phones the changes follow the action instead of a fourth column. %>
+                <div class="mt-2 text-xs md:hidden"><%= details %></div>
+              </td>
+              <td class="min-w-72 max-w-xl text-xs align-top max-md:hidden"><%= details %></td>
             </tr>
           <% end %>
         </tbody>

@@ -1,0 +1,5 @@
+# Reviewed false positives (fingerprint per finding). Each entry is a fixture
+# value in a spec, not a credential.
+# spec/requests/audit_events_spec.rb: placeholder digest used to assert that
+# digests are never displayed on the audit page.
+78d19d3e376aea6a6fd457719ac655ff270f2cf5:spec/requests/audit_events_spec.rb:generic-api-key:45
