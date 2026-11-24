@@ -38,6 +38,10 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - PDFs da proposta comercial (versão enviada) e do relatório de execução (cada versão), gerados a partir dos
   dados congelados.
 
+- Portal do cliente ampliado: abertura de chamados (ordem em análise com notificação à equipe), acompanhamento
+  das ordens e visitas, equipamentos com histórico, relatórios e propostas em PDF e cobranças com link de
+  pagamento; navegação adaptada ao celular.
+
 ### Corrigido
 
 - CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),

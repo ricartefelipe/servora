@@ -42,6 +42,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | SLA | Calendário com expediente, feriados e fuso; relógios com pausa, retomada e reabertura; alertas sem duplicidade (inclusive concorrentes); configuração e painel | `spec/unit/sla/business_calendar_spec.rb`, `spec/services/sla_spec.rb`, `spec/services/sla_concurrency_spec.rb`, `spec/requests/sla_settings_spec.rb` |
 | Anexos | Upload validado por assinatura, limites, download autorizado com cabeçalhos privados, blobs isolados por RLS | `spec/unit/files/signature_spec.rb`, `spec/requests/evidences_spec.rb` |
 | PDFs | Proposta comercial da versão enviada e relatório de execução por versão | `spec/requests/documents_spec.rb` |
+| Portal ampliado | Chamados com triagem e notificação, ordens, visitas, equipamentos e histórico, PDFs, cobranças; isolamento por cliente; uso no celular | `spec/requests/portal_service_spec.rb`, `spec/system/portal_requests_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente

@@ -380,7 +380,13 @@ apontamento − despesas. Faturado, recebido e margem são exibidos separadament
 - Tokens nunca ficam no banco ou em argumentos de jobs: apenas digests; o token em claro é gerado no envio.
 - Funções `SECURITY DEFINER` resolvem somente o `organization_id` a partir do digest; sessão e contato são
   carregados sob RLS e revalidados a cada requisição (contato ativo com portal habilitado, cliente ativo).
-- O contato vê apenas registros do próprio cliente, apenas versões enviadas (nunca rascunhos ou custos).
+- Toda consulta do portal parte de `customer_scope` (cliente do contato) além do RLS.
+- Funções: propostas (decisão e PDF da versão), **chamados** (o contato abre um pedido que vira ordem de serviço
+  com origem portal, em análise, e a equipe é notificada pela outbox; limite de 5 por hora), acompanhamento das
+  ordens e das visitas, relatórios de execução em PDF, equipamentos com histórico e cobranças com o link de
+  pagamento da cobrança ativa (sem custos, observações internas ou preços de itens adicionais).
+- A autoria da ordem é garantida no banco: membro da equipe **ou** contato do mesmo cliente (chave composta).
+- Nenhuma alteração de estado ocorre em GET.
 
 ## Consistência assíncrona (Transactional Outbox)
 
