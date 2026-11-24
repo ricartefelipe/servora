@@ -2,6 +2,8 @@
 
 module WorkOrders
   class StockReservationsController < TenantController
+    requires_module :inventory
+
     include WorkOrderMaterials
 
     def create

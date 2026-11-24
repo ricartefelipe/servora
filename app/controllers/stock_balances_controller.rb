@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StockBalancesController < TenantController
+  requires_module :inventory
+
   def index
     authorize StockBalance
     @warehouses = policy_scope(tenant_relation(Warehouse)).alphabetical

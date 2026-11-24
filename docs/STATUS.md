@@ -47,6 +47,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | API v1 | Credenciais com escopo, validade e revogação; isolamento; paginação limitada; filtros; idempotência; OpenAPI conferida contra as rotas | `spec/requests/api_spec.rb` |
 | Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
+| Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -58,8 +59,8 @@ demonstração em `docs/`.
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 82 exemplos (regras puras) + 454 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,51%, branches 84,50% |
+| `bash bin/test-all` | 84 exemplos (regras puras) + 463 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,51%, branches 84,17% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |

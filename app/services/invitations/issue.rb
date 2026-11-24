@@ -20,6 +20,8 @@ module Invitations
       raise AlreadyMember, "Esta pessoa já faz parte da equipe." if member?(organization)
       raise AlreadyInvited, "Já existe um convite pendente para este e-mail." if pending?(organization)
 
+      Subscriptions::Seats.ensure_available!(organization.id) if @role.to_s == "technician"
+
       invitation = organization.invitations.create!(
         email: @email, role: @role, invited_by: @inviter,
         token_digest: Invitation.digest(Invitation.generate_token),

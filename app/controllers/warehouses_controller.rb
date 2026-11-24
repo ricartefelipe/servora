@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class WarehousesController < TenantController
+  requires_module :inventory
+
   include ModalForms
 
   before_action :load_warehouse, only: %i[edit update]

@@ -1052,6 +1052,43 @@ CREATE TABLE public.payments (
 
 
 --
+-- Name: plan_modules; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.plan_modules (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    code character varying NOT NULL,
+    name character varying NOT NULL,
+    monthly_price numeric(14,2) NOT NULL,
+    "position" integer NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT plan_modules_price CHECK ((monthly_price >= (0)::numeric))
+);
+
+
+--
+-- Name: plans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.plans (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    code character varying NOT NULL,
+    name character varying NOT NULL,
+    monthly_price numeric(14,2) NOT NULL,
+    included_technicians integer NOT NULL,
+    extra_technician_price numeric(14,2) NOT NULL,
+    implementation_fee numeric(14,2) NOT NULL,
+    modules character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    trial_days integer DEFAULT 14 NOT NULL,
+    "position" integer NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT plans_values CHECK (((monthly_price >= (0)::numeric) AND (extra_technician_price >= (0)::numeric) AND (implementation_fee >= (0)::numeric) AND (included_technicians > 0) AND (trial_days >= 0)))
+);
+
+
+--
 -- Name: portal_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1451,6 +1488,32 @@ CREATE TABLE public.stock_reservations (
     catalog_item_id uuid NOT NULL,
     CONSTRAINT stock_reservations_quantities CHECK (((quantity > (0)::numeric) AND (consumed_quantity >= (0)::numeric) AND (released_quantity >= (0)::numeric) AND ((consumed_quantity + released_quantity) <= quantity))),
     CONSTRAINT stock_reservations_status CHECK (((status)::text = ANY (ARRAY['active'::text, 'closed'::text])))
+);
+
+
+--
+-- Name: subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.subscriptions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    status character varying DEFAULT 'trialing'::character varying NOT NULL,
+    trial_ends_on date,
+    technician_seats integer NOT NULL,
+    addon_modules character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    monthly_amount numeric(14,2) NOT NULL,
+    implementation_fee numeric(14,2) DEFAULT 0.0 NOT NULL,
+    implementation_status character varying DEFAULT 'not_applicable'::character varying NOT NULL,
+    activated_at timestamp(6) with time zone,
+    canceled_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    plan_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT subscriptions_implementation_status CHECK (((implementation_status)::text = ANY (ARRAY['not_applicable'::text, 'pending'::text, 'paid'::text, 'waived'::text]))),
+    CONSTRAINT subscriptions_status CHECK (((status)::text = ANY (ARRAY['trialing'::text, 'active'::text, 'past_due'::text, 'canceled'::text]))),
+    CONSTRAINT subscriptions_values CHECK (((technician_seats > 0) AND (monthly_amount >= (0)::numeric) AND (implementation_fee >= (0)::numeric) AND (((status)::text <> 'trialing'::text) OR (trial_ends_on IS NOT NULL))))
 );
 
 
@@ -2175,6 +2238,22 @@ ALTER TABLE ONLY public.payments
 
 
 --
+-- Name: plan_modules plan_modules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.plan_modules
+    ADD CONSTRAINT plan_modules_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.plans
+    ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: portal_access_grants portal_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2324,6 +2403,14 @@ ALTER TABLE ONLY public.stock_movements
 
 ALTER TABLE ONLY public.stock_reservations
     ADD CONSTRAINT stock_reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3272,6 +3359,20 @@ CREATE UNIQUE INDEX index_payments_on_tenant_key ON public.payments USING btree 
 
 
 --
+-- Name: index_plan_modules_on_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_plan_modules_on_code ON public.plan_modules USING btree (code);
+
+
+--
+-- Name: index_plans_on_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_plans_on_code ON public.plans USING btree (code);
+
+
+--
 -- Name: index_portal_access_grants_on_organization_id_and_contact_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3619,6 +3720,20 @@ CREATE INDEX index_stock_reservations_on_organization_id_and_work_order_id ON pu
 --
 
 CREATE UNIQUE INDEX index_stock_reservations_on_tenant_key ON public.stock_reservations USING btree (organization_id, id);
+
+
+--
+-- Name: index_subscriptions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_subscriptions_on_tenant_key ON public.subscriptions USING btree (organization_id, id);
+
+
+--
+-- Name: index_subscriptions_one_per_organization; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_subscriptions_one_per_organization ON public.subscriptions USING btree (organization_id);
 
 
 --
@@ -4572,6 +4687,14 @@ ALTER TABLE ONLY public.business_hours
 
 
 --
+-- Name: subscriptions fk_rails_364213cc3e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT fk_rails_364213cc3e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: inbound_webhooks fk_rails_36cda06530; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4689,6 +4812,14 @@ ALTER TABLE ONLY public.active_storage_blobs
 
 ALTER TABLE ONLY public.contract_service_types
     ADD CONSTRAINT fk_rails_5cd6448630 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: subscriptions fk_rails_63d3df128b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT fk_rails_63d3df128b FOREIGN KEY (plan_id) REFERENCES public.plans(id);
 
 
 --
@@ -5814,6 +5945,12 @@ ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock_reservations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: subscriptions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: team_members; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -6189,6 +6326,13 @@ CREATE POLICY tenant_isolation ON public.stock_reservations USING ((organization
 
 
 --
+-- Name: subscriptions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.subscriptions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: team_members tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -6411,6 +6555,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124015000'),
 ('20261124014000'),
 ('20261124013000'),
 ('20261124012000'),

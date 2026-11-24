@@ -31,9 +31,16 @@ module NavigationHelper
       NavItem.new("Pagamentos", :edit_payment_integration_path, :finance, :integrations_manage, %w[payment_integrations]),
       NavItem.new("Integrações", :integrations_path, :integrations, :integrations_manage, %w[integrations]),
       NavItem.new("Prazos (SLA)", :sla_settings_path, :clock, :organization_manage, %w[sla_settings holidays]),
+      NavItem.new("Assinatura", :subscription_path, :key, :subscription_manage, %w[subscriptions]),
       NavItem.new("Configurações", :edit_settings_path, :settings, :organization_manage, %w[settings])
     ]]
   ].freeze
+
+  # Navigation entries that belong to an optional module of the subscription.
+  MODULE_ROUTES = {
+    stock_balances_path: :inventory, contracts_path: :preventive, receivables_path: :finance,
+    edit_payment_integration_path: :finance, integrations_path: :api
+  }.freeze
 
   def navigation_groups
     NAVIGATION.filter_map do |title, items|
@@ -44,6 +51,7 @@ module NavigationHelper
 
   # Work orders are visible to office roles and to technicians (own orders).
   def item_visible?(item)
+    return false if MODULE_ROUTES.key?(item.route) && !module_enabled?(MODULE_ROUTES.fetch(item.route))
     return can?(:work_orders_view_all) || can?(:work_orders_execute) if item.route == :work_orders_path
 
     item.permission.nil? || can?(item.permission)

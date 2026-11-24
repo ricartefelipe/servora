@@ -20,6 +20,7 @@ module Organizations
       Servora::Tenancy.with_context(organization_id:, user_id: @user.id) do
         organization = Organization.create!(@attributes.merge(id: organization_id))
         membership = organization.memberships.create!(user: @user, role: "owner")
+        Subscriptions::StartTrial.new(organization:).call
         Current.set(user: @user, membership:, organization:) do
           AuditEvent.record!(action: "organization.created", organization:, auditable: organization,
             changes: organization.attributes.slice("name", "segment", "time_zone"))
