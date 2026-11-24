@@ -49,7 +49,7 @@
           <p class="text-xs text-ink-500">IP <%= user_session.ip_address %> · último acesso <%= l(user_session.last_seen_at, format: :short) %></p>
         </div>
         <% if user_session.id == @current_session_id %>
-          <%= badge("Esta sessão", tone: :brand) %>
+          <%= badge("Esta sessão", tone: :indigo, dot: false) %>
         <% else %>
           <%= button_to "Encerrar", account_session_path(user_session), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700" %>
         <% end %>

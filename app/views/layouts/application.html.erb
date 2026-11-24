@@ -2,18 +2,8 @@
 <html lang="pt-BR" class="h-full">
   <head>
     <title><%= [content_for(:title), "Servora"].compact_blank.join(" · ") %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <meta name="application-name" content="Servora">
-    <meta name="theme-color" content="#0a877a">
     <meta name="description" content="Gestão de serviços de campo e manutenção, da solicitação ao resultado financeiro.">
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
-    <%= yield :head %>
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/icon.png">
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
+    <%= render "layouts/head" %>
   </head>
   <body class="h-full">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>

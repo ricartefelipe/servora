@@ -3,7 +3,7 @@
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
   <%= stat_tile("Em aberto", money(@summary.outstanding), hint: "Saldo a receber de contas não quitadas") %>
-  <%= stat_tile("Vencido", money(@summary.overdue), hint: "Saldo com vencimento anterior a hoje", tone: @summary.overdue.positive? ? :danger : :brand) %>
+  <%= stat_tile("Vencido", money(@summary.overdue), hint: "Saldo com vencimento anterior a hoje", tone: @summary.overdue.positive? ? :danger : :neutral) %>
   <%= stat_tile("Recebido no mês", money(@summary.received_this_month), hint: "Pagamentos menos estornos") %>
 </div>
 

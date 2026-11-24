@@ -14,7 +14,7 @@
     <ol class="grid gap-px bg-ink-100 sm:grid-cols-2 xl:grid-cols-4">
       <% @overview.onboarding_steps.each_with_index do |step, index| %>
         <li class="flex gap-4 bg-white p-5">
-          <span class="grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold <%= step.done ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600' %>">
+          <span class="grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold <%= step.done ? 'bg-emerald-600 text-white' : 'bg-ink-100 text-ink-600' %>">
             <%= step.done ? icon(:check, size: 16, label: "Concluído") : index + 1 %>
           </span>
           <div>
@@ -28,7 +28,7 @@
 <% end %>
 
 <% if current_subscription&.status == "trialing" && can?(:subscription_manage) %>
-  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900" role="status">
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900" role="status">
     <span><% if current_subscription.trial_expired? %>A avaliação terminou. Os dados seguem disponíveis para consulta.<% else %>Avaliação: <%= pluralize(current_subscription.trial_days_left, "dia restante", plural: "dias restantes") %> com todos os módulos.<% end %></span>
     <%= link_to "Ver assinatura", subscription_path, class: "sv-btn-primary sv-btn-sm" %>
   </div>
@@ -40,11 +40,11 @@
   <% end %>
   <% alerts = @overview.equipment_alerts %>
   <% if can?(:customers_view) %>
-    <%= stat_tile("Equipamentos parados", alerts["inoperative"] || 0, tone: (alerts["inoperative"].to_i.positive? ? :danger : :brand),
+    <%= stat_tile("Equipamentos parados", alerts["inoperative"] || 0, tone: (alerts["inoperative"].to_i.positive? ? :danger : :neutral),
           hint: "#{alerts['attention'] || 0} requerem atenção") %>
   <% end %>
   <% if (sla = @overview.sla_alerts) %>
-    <%= stat_tile("Prazos estourados", sla[:breached], tone: sla[:breached].positive? ? :danger : :brand,
+    <%= stat_tile("Prazos estourados", sla[:breached], tone: sla[:breached].positive? ? :danger : :neutral,
           hint: "#{sla[:at_risk]} em risco (SLA)") %>
   <% end %>
   <%= stat_tile("Membros ativos", @overview.active_members_count) %>

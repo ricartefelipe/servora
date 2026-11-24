@@ -41,7 +41,7 @@
                 <span class="block font-medium text-ink-900"><%= item.name %></span>
                 <span class="text-xs text-ink-500"><%= [item.sku, (pluralize(item.estimated_minutes, "minuto") if item.estimated_minutes)].compact.join(" · ") %></span>
               </td>
-              <td><%= badge(item.kind_label, tone: item.service? ? :info : :brand, dot: false) %><% unless item.active? %> <%= badge("Inativo") %><% end %></td>
+              <td><%= badge(item.kind_label, tone: item.service? ? :info : :indigo, dot: false) %><% unless item.active? %> <%= badge("Inativo") %><% end %></td>
               <td><%= item.unit_label %></td>
               <td class="sv-num text-right"><%= money(item.unit_price) %></td>
               <% if policy(CatalogItem).view_cost? %><td class="sv-num text-right text-ink-600"><%= item.unit_cost ? number_to_currency(item.unit_cost, unit: "R$", separator: ",", delimiter: ".", precision: 4, format: "%u %n") : "—" %></td><% end %>

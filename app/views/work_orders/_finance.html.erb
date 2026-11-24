@@ -36,7 +36,7 @@
         <thead class="text-xs text-ink-500"><tr><th scope="col" class="py-1 font-medium">Margem</th><th scope="col" class="py-1 text-right font-medium">Prevista</th><th scope="col" class="py-1 text-right font-medium">Realizada</th></tr></thead>
         <tbody class="divide-y divide-ink-100">
           <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Receita</th><td class="sv-num text-right"><%= money(predicted.total) %></td><td class="sv-num text-right"><%= money(realized.revenue) %></td></tr>
-          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Material</th><td class="text-right text-ink-400" rowspan="3"><%= predicted.estimated_cost ? money(predicted.estimated_cost) : "custo incompleto" %></td><td class="sv-num text-right"><%= money(realized.material_cost) %></td></tr>
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Material</th><td class="text-right text-ink-500" rowspan="3"><%= predicted.estimated_cost ? money(predicted.estimated_cost) : "custo incompleto" %></td><td class="sv-num text-right"><%= money(realized.material_cost) %></td></tr>
           <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Mão de obra</th><td class="sv-num text-right"><%= money(realized.labor_cost) %></td></tr>
           <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Despesas</th><td class="sv-num text-right"><%= money(realized.expenses) %></td></tr>
           <tr class="font-semibold text-ink-900">

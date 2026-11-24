@@ -22,6 +22,47 @@ RSpec.describe "Authentication" do
     expect(user.user_sessions.active.count).to eq(1)
   end
 
+  describe "front door" do
+    it "renders the sign-in form at the root" do
+      get "/"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Entrar no Servora", %(action="#{user_session_path}"))
+    end
+
+    it "permanently redirects the former sign-in address to the root" do
+      get "/conta/entrar"
+
+      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to redirect_to("/")
+    end
+
+    it "sends signed-in users to their organizations with a temporary redirect" do
+      sign_in_with(email: user.email, password:)
+
+      get "/"
+
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(organizations_path)
+    end
+
+    it "shows the form again after signing out, without a redirect loop" do
+      sign_in_with(email: user.email, password:)
+      delete destroy_user_session_path
+      expect(response).to redirect_to(new_user_session_path)
+
+      get "/"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Entrar no Servora")
+    end
+
+    it "sends unauthenticated visits to protected pages to the root form" do
+      get dashboard_path
+
+      expect(response).to redirect_to("/")
+    end
+  end
+
   it "uses the same message for unknown e-mails and wrong passwords" do
     sign_in_with(email: "ninguem@servora.test", password:)
     unknown = flash[:alert]
