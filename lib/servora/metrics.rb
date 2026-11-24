@@ -19,7 +19,14 @@ module Servora
       schedule_conflicts_total: [:counter, "Reservas de agenda recusadas por conflito", %i[source]],
       integration_requests_total: [:counter, "Chamadas a integrações externas", %i[integration operation outcome]],
       integration_request_duration_seconds: [:histogram, "Duração das chamadas externas", %i[integration operation],
-                                             { buckets: [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30] }]
+                                             { buckets: [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30] }],
+      webhook_deliveries_total: [:counter, "Entregas de webhooks por resultado", %i[outcome]],
+      outbox_events: [:gauge, "Eventos da outbox por situação", %i[status], { store_settings: { aggregation: :most_recent } }],
+      outbox_oldest_pending_seconds: [:gauge, "Idade do evento pendente mais antigo da outbox", [],
+                                      { store_settings: { aggregation: :most_recent } }],
+      jobs_ready: [:gauge, "Jobs prontos aguardando execução por fila", %i[queue],
+                   { store_settings: { aggregation: :most_recent } }],
+      jobs_failed: [:gauge, "Jobs com falha definitiva registrada", [], { store_settings: { aggregation: :most_recent } }]
     }.freeze
 
     module_function
@@ -36,10 +43,38 @@ module Servora
       registry.get(name).observe(value, labels:)
     end
 
+    def set(name, value, labels = {})
+      registry.get(name).set(value, labels:)
+    end
+
+    # Measures an external call: duration and outcome (ok / error class name).
+    def measure_integration(integration, operation)
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      outcome = "error"
+      result = yield
+      outcome = "ok"
+      result
+    rescue StandardError => e
+      outcome = e.class.name.demodulize.underscore
+      raise
+    ensure
+      observe(:integration_request_duration_seconds, Process.clock_gettime(Process::CLOCK_MONOTONIC) - started,
+        { integration:, operation: })
+      increment(:integration_requests_total, { integration:, operation:, outcome: })
+    end
+
+    # Gauge aggregation only applies to the multi-process file store.
+    def store_options(options)
+      return options if Prometheus::Client.config.data_store.class.name.end_with?("DirectFileStore")
+
+      options.except(:store_settings)
+    end
+
     def register_all(registry)
       DEFINITIONS.each do |name, (type, docstring, labels, options)|
-        metric_class = { counter: Prometheus::Client::Counter, histogram: Prometheus::Client::Histogram }.fetch(type)
-        registry.register(metric_class.new(name, docstring:, labels:, **(options || {})))
+        metric_class = { counter: Prometheus::Client::Counter, histogram: Prometheus::Client::Histogram,
+                         gauge: Prometheus::Client::Gauge }.fetch(type)
+        registry.register(metric_class.new(name, docstring:, labels:, **store_options(options || {})))
       end
     end
   end

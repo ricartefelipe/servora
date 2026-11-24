@@ -97,6 +97,7 @@ module Webhooks
           delivered_at: status == "delivered" ? Time.current : nil)
         status
       end
+      Servora::Metrics.increment(:webhook_deliveries_total, { outcome: })
       raise Retry, "webhook delivery #{@delivery_id} will be retried" if outcome == "pending"
     end
   end

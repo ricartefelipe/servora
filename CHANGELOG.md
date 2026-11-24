@@ -50,6 +50,9 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   contra SSRF; webhooks de entrada do Asaas autenticados, gravados antes da confirmação e deduplicados.
 - Tela de integrações com segredos exibidos uma única vez.
 
+- Observabilidade: logs JSON por requisição, job e consulta lenta com id de correlação; métricas Prometheus
+  protegidas por token (HTTP, jobs, outbox, filas, integrações, consultas lentas) sem rótulos de alta
+  cardinalidade.
 - Assinaturas da plataforma: planos com técnicos incluídos, técnicos adicionais, módulos adicionais (estoque,
   preventiva, financeiro, API), avaliação de 14 dias, taxa de implantação, vagas de técnico controladas e modo
   somente leitura após a avaliação sem ativação.

@@ -26,7 +26,8 @@ module Preventive
         Preventive::GenerateOccurrences.new(plan:, today: date || Time.zone.today).call
       end
     rescue Servora::RuleViolation, ActiveRecord::RecordInvalid => e
-      Rails.logger.warn(event: "preventive.generation_failed", plan_id:, error_class: e.class.name, message: e.message)
+      Rails.logger.warn(Servora::StructuredLog.line(event: "preventive.generation_failed", plan_id:, error_class: e.class.name,
+        message: e.message))
     end
   end
 end
