@@ -4,6 +4,7 @@
 # Merges the coverage recorded by every suite (unit without Rails and the
 # Rails-backed suites), writes the HTML report and enforces the thresholds
 # documented in docs/REQUISITOS.md for the core rules and use cases.
+require "bundler/setup"
 require "simplecov"
 
 ROOT = File.expand_path("..", __dir__)
