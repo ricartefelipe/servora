@@ -21,7 +21,7 @@
       <% end %>
     </dl>
     <% if @equipment.under_warranty? %>
-      <p class="mt-4 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">Em garantia<%= ": #{@equipment.warranty_notes}" if @equipment.warranty_notes.present? %></p>
+      <p class="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Em garantia<%= ": #{@equipment.warranty_notes}" if @equipment.warranty_notes.present? %></p>
     <% end %>
     <% if @equipment.notes.present? %><p class="mt-4 whitespace-pre-line text-sm text-ink-700"><%= @equipment.notes %></p><% end %>
 
@@ -51,7 +51,7 @@
     <ol class="relative space-y-4 border-l-2 border-ink-200 pl-6" role="list">
       <% @events.each do |event| %>
         <li class="relative">
-          <span class="absolute -left-[33px] top-1 grid size-4 place-items-center rounded-full border-2 border-white bg-brand-500" aria-hidden="true"></span>
+          <span class="absolute -left-[33px] top-1 grid size-4 place-items-center rounded-full border-2 border-white bg-ink-400" aria-hidden="true"></span>
           <div class="sv-card p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <p class="font-semibold text-ink-900"><%= event.kind_label %></p>

@@ -16,7 +16,8 @@ Senha das contas de demonstração: valor de `SEED_PASSWORD` (padrão local `ser
 Perfis com verificação em duas etapas obrigatória (proprietário, administrador, financeiro) têm prazo de
 carência para ativá-la; a demonstração pode seguir dentro do prazo.
 
-1. **Entrar na organização A** — login como Bruno; a organização Clima Norte é aberta pelo seletor.
+1. **Entrar na organização A** — em `http://localhost:3000` (a raiz abre o formulário de acesso), entrar como Bruno;
+   a organização Clima Norte é aberta pelo seletor.
 2. **Cliente, local e equipamento** — Clientes → Novo cliente (com CNPJ válido e primeiro local) → no cliente,
    Novo local pelo modal → Equipamento com número de série.
 3. **Orçamento aprovado pelo portal** — Orçamentos → Novo (cliente e local) → incluir itens do catálogo → Enviar

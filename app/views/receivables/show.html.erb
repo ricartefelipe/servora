@@ -14,7 +14,7 @@
         <div><dt class="text-ink-500">Valor</dt><dd class="sv-num text-lg font-semibold text-ink-900"><%= money(position.amount) %></dd></div>
         <div><dt class="text-ink-500">Descontos</dt><dd class="sv-num text-lg font-semibold text-ink-900"><%= money(position.discount) %></dd></div>
         <div><dt class="text-ink-500">Recebido</dt><dd class="sv-num text-lg font-semibold text-ink-900"><%= money(position.net_paid) %></dd></div>
-        <div><dt class="text-ink-500">Saldo</dt><dd class="sv-num text-lg font-bold <%= position.balance.positive? ? 'text-brand-700' : 'text-ink-900' %>"><%= @receivable.canceled? ? "—" : money(position.balance) %></dd></div>
+        <div><dt class="text-ink-500">Saldo</dt><dd class="sv-num text-lg font-bold <%= position.balance.positive? ? 'text-ember-600' : 'text-ink-900' %>"><%= @receivable.canceled? ? "—" : money(position.balance) %></dd></div>
       </dl>
       <% if @receivable.canceled? %>
         <p class="mt-4 rounded-xl bg-ink-50 p-3 text-sm text-ink-700">Cancelada em <%= date_time(@receivable.canceled_at) %>: <%= @receivable.cancel_reason %></p>

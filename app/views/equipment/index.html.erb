@@ -36,7 +36,7 @@
               </td>
               <td><span class="block text-ink-900"><%= equipment.customer.display_name %></span><span class="text-xs text-ink-500"><%= equipment.service_location.name %></span></td>
               <td class="font-mono text-xs"><%= [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence || "—" %></td>
-              <td><%= equipment.under_warranty? ? badge("Até #{l(equipment.warranty_until)}", tone: :brand, dot: false) : "—" %></td>
+              <td><%= equipment.under_warranty? ? badge("Até #{l(equipment.warranty_until)}", tone: :success, dot: false) : "—" %></td>
               <td><%= render "equipment/status_badge", equipment: %></td>
             </tr>
           <% end %>

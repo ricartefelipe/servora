@@ -43,8 +43,8 @@
                 </p>
               </div>
               <div class="flex items-center gap-2 text-xs text-ink-500">
-                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1"><%= pluralize(@counts[:locations][customer.id] || 0, "local", plural: "locais") %></span>
-                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1"><%= pluralize(@counts[:equipment][customer.id] || 0, "equipamento", plural: "equipamentos") %></span>
+                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1 text-ink-600"><%= pluralize(@counts[:locations][customer.id] || 0, "local", plural: "locais") %></span>
+                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1 text-ink-600"><%= pluralize(@counts[:equipment][customer.id] || 0, "equipamento", plural: "equipamentos") %></span>
                 <% if customer.archived? %><%= badge("Arquivado") %><% end %>
               </div>
               <%= icon(:chevron_right, css: "text-ink-300") %>

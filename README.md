@@ -42,7 +42,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-A aplicação fica em `http://localhost:3000` e o Mailpit em `http://localhost:58025`. O roteiro de
+A aplicação fica em `http://localhost:3000`, que abre diretamente o formulário de acesso, e o Mailpit em
+`http://localhost:58025`. O roteiro de
 demonstração com as contas de exemplo está em [`docs/DEMO.md`](docs/DEMO.md).
 
 Testes completos (regras puras, Rails, sistema e metas de cobertura): `bash bin/test-all`.

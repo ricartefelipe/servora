@@ -27,7 +27,7 @@
                   <p class="text-sm text-ink-600"><%= order.customer.display_name %></p>
                   <p class="truncate text-xs text-ink-500"><%= order.service_location.address_line %></p>
                 </div>
-                <%= badge(visit.status == "in_progress" ? "Em andamento" : order.number, tone: visit.status == "in_progress" ? :warning : :neutral, dot: false) %>
+                <%= badge(visit.status == "in_progress" ? "Em andamento" : order.number, tone: visit.status == "in_progress" ? :ember : :neutral, dot: false) %>
               <% end %>
             </li>
           <% end %>

@@ -7,10 +7,10 @@ module Documents
   # identifies the source version (content digest). Text is restricted to the
   # Windows-1252 repertoire of Prawn's built-in fonts, which covers Portuguese.
   class Base
-    INK = "1F2937"
-    MUTED = "6B7280"
-    BRAND = "0F766E"
-    LINE = "E5E7EB"
+    INK = "1D1D21"
+    MUTED = "6E6E79"
+    BRAND = "A80C28"
+    LINE = "E2E2E6"
 
     def initialize(title:, organization:, reference:, digest:)
       @title = title

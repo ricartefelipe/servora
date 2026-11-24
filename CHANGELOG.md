@@ -5,6 +5,23 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.3.0] - 2026-11-24
+
+Acesso pela raiz da aplicação e nova identidade visual.
+
+### Alterado
+
+- A raiz da aplicação (`/`) passa a abrir diretamente o formulário de acesso; quem já entrou é encaminhado às suas
+  organizações. O endereço `/conta/entrar` redireciona para a raiz. A página pública de apresentação foi removida.
+- Nova identidade visual: vermelho rubi como cor da marca, neutros grafite e dourado como destaque, aplicados à
+  interface, aos e-mails, aos PDFs, ao ícone e ao manifesto do aplicativo.
+- Telas de acesso, cadastro e recuperação com novo layout em duas colunas e painel ilustrado.
+- Cores de status revisadas: estados neutros ou positivos não usam mais a cor da marca; botões de exclusão passam a
+  ser contornados, distintos da ação principal.
+- Ao sair do portal, o cliente vê uma página própria do portal em vez do formulário de acesso da equipe.
+- Contraste revisado (WCAG AA) em textos auxiliares, marcadores, menu lateral e e-mails; caixas de seleção na cor
+  da marca; indicadores em alerta destacados com ícone; página sem conexão com a identidade do produto.
+
 ## [1.2.0] - 2026-11-24
 
 Relatórios gerenciais e correções de conclusão de ordens e de proteção de arquivos.
@@ -133,7 +150,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.2.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.3.0...develop
+[1.3.0]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ricartefelipe/servora/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ricartefelipe/servora/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ricartefelipe/servora/compare/v0.1.0...v1.0.0

@@ -5,7 +5,7 @@
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
   <%= stat_tile("Posições com saldo", @summary.positions, hint: @warehouse ? @warehouse.name : "Todos os depósitos visíveis") %>
-  <%= stat_tile("Abaixo do mínimo", @summary.below_minimum, hint: "Disponível menor que o mínimo definido", tone: @summary.below_minimum.positive? ? :danger : :brand) %>
+  <%= stat_tile("Abaixo do mínimo", @summary.below_minimum, hint: "Disponível menor que o mínimo definido", tone: @summary.below_minimum.positive? ? :danger : :neutral) %>
   <% if show_costs %>
     <%= stat_tile("Valor em estoque", money(@summary.stock_value), hint: "Saldo físico × custo médio") %>
   <% end %>
