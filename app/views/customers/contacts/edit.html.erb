@@ -1,0 +1,4 @@
+<% content_for :title, "Editar contato" %>
+<%= render layout: "shared/modal", locals: { title: "Editar contato", subtitle: @customer.display_name } do %>
+  <%= render "customers/contacts/form", customer: @customer, contact: @contact %>
+<% end %>

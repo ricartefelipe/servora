@@ -1,0 +1,19 @@
+<%= form_with model: contact, url: (contact.persisted? ? customer_contact_path(customer, contact) : customer_contacts_path(customer)),
+      scope: :customer_contact, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.field :name, label: "Nome", required: true, autofocus: true %>
+    <%= f.field :position, label: "Cargo" %>
+    <%= f.field :email, label: "E-mail", as: :email_field %>
+    <%= f.field :phone, label: "Telefone", as: :telephone_field %>
+  </div>
+  <fieldset class="space-y-3 rounded-2xl border border-ink-200 p-4">
+    <legend class="px-1 text-sm font-semibold text-ink-800">Permissões do contato</legend>
+    <%= f.toggle_field :can_follow, label: "Acompanha serviços", hint: "Recebe avisos de agendamento e conclusão." %>
+    <%= f.toggle_field :can_approve, label: "Aprova orçamentos", hint: "Pode aceitar ou recusar propostas em nome do cliente." %>
+    <%= f.toggle_field :portal_enabled, label: "Acesso ao portal do cliente", hint: "Exige e-mail. O acesso é feito por link temporário." %>
+  </fieldset>
+  <div class="flex justify-end">
+    <%= f.submit_button(contact.persisted? ? "Salvar contato" : "Adicionar contato") %>
+  </div>
+<% end %>

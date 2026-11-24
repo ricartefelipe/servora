@@ -21,12 +21,27 @@ module Dashboards
       @organization.invitations.pending.where("expires_at > ?", Time.current).count
     end
 
+    def active_customers_count
+      return nil unless @membership.can?(:customers_view)
+
+      @organization.customers.active.count
+    end
+
+    # Equipment needing attention, grouped by operational status.
+    def equipment_alerts
+      return {} unless @membership.can?(:customers_view)
+
+      @organization.equipment.active.where(operational_status: %w[attention inoperative]).group(:operational_status).count
+    end
+
     def onboarding_steps
       [
         OnboardingStep.new("Cadastre sua organização", "Dados da empresa, fuso horário e deslocamento padrão.", true,
           :edit_settings_path),
         OnboardingStep.new("Convide sua equipe", "Atendentes, coordenadores, técnicos e financeiro.", active_members_count > 1 ||
           @organization.invitations.exists?, :members_path),
+        OnboardingStep.new("Cadastre clientes", "Locais de atendimento, contatos e equipamentos.",
+          @organization.customers.exists?, :customers_path),
         OnboardingStep.new("Proteja sua conta", "Ative a verificação em duas etapas.", @membership.user.mfa_enabled?,
           :new_account_two_factor_path)
       ]

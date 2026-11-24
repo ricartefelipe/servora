@@ -1,0 +1,2 @@
+<% tones = { "operational" => :success, "attention" => :warning, "inoperative" => :danger, "decommissioned" => :neutral } %>
+<%= badge(equipment.status_label, tone: tones.fetch(equipment.operational_status)) %>

@@ -1,0 +1,10 @@
+<%= turbo_frame_tag "location-options" do %>
+  <% if @locations.empty? %>
+    <p class="sv-hint">Este cliente não possui locais ativos. Cadastre um local antes do equipamento.</p>
+  <% else %>
+    <label for="equipment_service_location_id" class="sv-label">Local de instalação</label>
+    <select name="equipment[service_location_id]" id="equipment_service_location_id" class="sv-input" required>
+      <%= options_from_collection_for_select(@locations, :id, :name) %>
+    </select>
+  <% end %>
+<% end %>

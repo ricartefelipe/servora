@@ -1,0 +1,48 @@
+<% content_for :title, "Equipamentos" %>
+<%= page_header("Equipamentos", subtitle: "Parque instalado nos clientes, com localização e histórico.") do %>
+  <% if policy(Equipment).create? %>
+    <%= link_to new_equipment_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo equipamento<% end %>
+  <% end %>
+<% end %>
+
+<%= form_with url: equipment_index_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
+  <div class="min-w-64 flex-1">
+    <%= f.label :q, "Buscar", class: "sv-label" %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Série, patrimônio, modelo, fabricante ou cliente", class: "sv-input" %>
+  </div>
+  <div>
+    <%= f.label :estado, "Estado", class: "sv-label" %>
+    <%= f.select :estado, Equipment::STATUSES.map { |value, label| [label, value] }, { include_blank: "Todos", selected: params[:estado] }, class: "sv-input" %>
+  </div>
+  <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-700">
+    <%= f.check_box :arquivados, { checked: params[:arquivados] == "1", class: "rounded border-ink-300 text-brand-600" }, "1", nil %> Incluir arquivados
+  </label>
+  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
+<% end %>
+
+<section class="sv-card overflow-hidden">
+  <% if @pagination.records.empty? %>
+    <%= empty_state("Nenhum equipamento encontrado", description: "Cadastre equipamentos a partir da ficha do cliente ou pelo botão acima.", icon_name: :equipment) %>
+  <% else %>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead><tr><th scope="col">Equipamento</th><th scope="col">Cliente / local</th><th scope="col">Série / patrimônio</th><th scope="col">Garantia</th><th scope="col">Estado</th></tr></thead>
+        <tbody class="divide-y divide-ink-100">
+          <% @pagination.records.each do |equipment| %>
+            <tr>
+              <td>
+                <%= link_to equipment.title, equipment_path(equipment), class: "sv-link" %>
+                <% if equipment.archived? %><span class="ml-1"><%= badge("Arquivado") %></span><% end %>
+              </td>
+              <td><span class="block text-ink-900"><%= equipment.customer.display_name %></span><span class="text-xs text-ink-500"><%= equipment.service_location.name %></span></td>
+              <td class="font-mono text-xs"><%= [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence || "—" %></td>
+              <td><%= equipment.under_warranty? ? badge("Até #{l(equipment.warranty_until)}", tone: :brand, dot: false) : "—" %></td>
+              <td><%= render "equipment/status_badge", equipment: %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</section>
+<%= render "shared/pagination", pagination: @pagination %>

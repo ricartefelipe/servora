@@ -1,0 +1,58 @@
+<% content_for :title, "Clientes" %>
+<%= page_header("Clientes", subtitle: "Pessoas e empresas atendidas, seus locais e equipamentos.") do %>
+  <% if policy(Customer).create? %>
+    <%= link_to new_customer_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo cliente<% end %>
+  <% end %>
+<% end %>
+
+<%= form_with url: customers_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3", data: { turbo_frame: "customers-list", turbo_action: "advance" } do |f| %>
+  <div class="min-w-64 flex-1">
+    <%= f.label :q, "Buscar", class: "sv-label" %>
+    <div class="relative">
+      <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-400"><%= icon(:search, size: 18) %></span>
+      <%= f.search_field :q, value: params[:q], placeholder: "Nome, e-mail, CPF ou CNPJ", class: "sv-input pl-10", autocomplete: "off" %>
+    </div>
+  </div>
+  <div>
+    <%= f.label :situacao, "Situação", class: "sv-label" %>
+    <%= f.select :situacao, [["Ativos", "ativos"], ["Arquivados", "arquivados"], ["Todos", "todos"]], { selected: @query[:status] }, class: "sv-input" %>
+  </div>
+  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
+<% end %>
+
+<%= turbo_frame_tag "customers-list", target: "_top" do %>
+  <section class="sv-card overflow-hidden">
+    <% if @pagination.records.empty? %>
+      <% if params[:q].present? %>
+        <%= empty_state("Nenhum cliente encontrado", description: "Revise o termo buscado ou o filtro de situação.", icon_name: :search) %>
+      <% else %>
+        <%= empty_state("Cadastre seu primeiro cliente", description: "Clientes concentram locais de atendimento, contatos e equipamentos.", icon_name: :customers) do %>
+          <% if policy(Customer).create? %><%= link_to "Novo cliente", new_customer_path, class: "sv-btn-primary" %><% end %>
+        <% end %>
+      <% end %>
+    <% else %>
+      <ul class="divide-y divide-ink-100" role="list">
+        <% @pagination.records.each do |customer| %>
+          <li>
+            <%= link_to customer_path(customer), class: "flex flex-wrap items-center gap-4 px-5 py-4 transition hover:bg-ink-50/70" do %>
+              <%= avatar(customer.display_name) %>
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-ink-900"><%= customer.display_name %></p>
+                <p class="truncate text-sm text-ink-500">
+                  <%= [customer.kind_label, (format_document(customer.document) if customer.document), customer.email].compact.join(" · ") %>
+                </p>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-ink-500">
+                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1"><%= pluralize(@counts[:locations][customer.id] || 0, "local", plural: "locais") %></span>
+                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1"><%= pluralize(@counts[:equipment][customer.id] || 0, "equipamento", plural: "equipamentos") %></span>
+                <% if customer.archived? %><%= badge("Arquivado") %><% end %>
+              </div>
+              <%= icon(:chevron_right, css: "text-ink-300") %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+  <%= render "shared/pagination", pagination: @pagination %>
+<% end %>

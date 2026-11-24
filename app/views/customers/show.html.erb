@@ -1,0 +1,129 @@
+<% content_for :title, @customer.display_name %>
+<%= page_header(@customer.display_name, eyebrow: "Cliente · #{@customer.kind_label}",
+      subtitle: [@customer.name != @customer.display_name ? @customer.name : nil, (format_document(@customer.document) if @customer.document)].compact.join(" · ").presence) do %>
+  <% if @customer.archived? %>
+    <%= badge("Arquivado", tone: :neutral) %>
+    <% if policy(@customer).restore? %><%= button_to "Reativar", restore_customer_path(@customer), method: :patch, class: "sv-btn-secondary" %><% end %>
+  <% else %>
+    <% if policy(Equipment).create? %>
+      <%= link_to new_equipment_path(customer_id: @customer.id), class: "sv-btn-secondary" do %><%= icon(:plus, size: 18) %> Equipamento<% end %>
+    <% end %>
+    <% if policy(@customer).update? %><%= link_to "Editar", edit_customer_path(@customer), class: "sv-btn-secondary" %><% end %>
+    <% if policy(@customer).archive? %>
+      <%= button_to "Arquivar", archive_customer_path(@customer), method: :patch, class: "sv-btn-ghost text-rose-700",
+            form: { data: { turbo_confirm: "Arquivar #{@customer.display_name}? O histórico é preservado." } } %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <aside class="sv-card h-fit p-5 lg:order-last">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">Contato</h2>
+    <dl class="space-y-3 text-sm">
+      <div class="flex items-center gap-2 text-ink-700"><%= icon(:mail, size: 16, css: "text-ink-400") %><dt class="sr-only">E-mail</dt><dd><%= @customer.email || "—" %></dd></div>
+      <div class="flex items-center gap-2 text-ink-700"><%= icon(:phone, size: 16, css: "text-ink-400") %><dt class="sr-only">Telefone</dt><dd><%= @customer.phone || "—" %></dd></div>
+    </dl>
+    <% if @customer.notes.present? %>
+      <h2 class="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-ink-500">Observações</h2>
+      <p class="whitespace-pre-line text-sm text-ink-700"><%= @customer.notes %></p>
+    <% end %>
+  </aside>
+
+  <div class="min-w-0 lg:col-span-2" data-controller="tabs">
+    <%= render "shared/tabs", label: "Seções do cliente", tabs: [
+          ["locais", "Locais", @locations.count { |l| !l.archived? }], ["contatos", "Contatos", @contacts.count { |c| !c.archived? }],
+          ["equipamentos", "Equipamentos", @equipment.size], ["historico", "Histórico", nil]] %>
+
+    <section id="painel-locais" role="tabpanel" aria-labelledby="aba-locais" data-tabs-target="panel" class="space-y-3">
+      <% if policy(@customer.service_locations.new).create? && !@customer.archived? %>
+        <%= link_to new_customer_location_path(@customer), class: "sv-btn-secondary sv-btn-sm", data: { turbo_frame: "modal" } do %><%= icon(:plus, size: 16) %> Novo local<% end %>
+      <% end %>
+      <% @locations.each do |location| %>
+        <article class="sv-card flex flex-wrap items-start gap-4 p-4 <%= 'opacity-60' if location.archived? %>">
+          <span class="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand-700"><%= icon(:pin, size: 18) %></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-ink-900"><%= location.name %> <% if location.archived? %><%= badge("Arquivado") %><% end %></p>
+            <p class="text-sm text-ink-600"><%= location.address_line %></p>
+            <p class="text-sm text-ink-500"><%= location.city_line %></p>
+            <% if location.access_instructions.present? %><p class="mt-1 text-xs text-ink-500"><%= location.access_instructions %></p><% end %>
+          </div>
+          <% if !location.archived? && policy(location).update? %>
+            <div class="flex w-full justify-end gap-1 sm:w-auto">
+              <%= link_to "Editar", edit_customer_location_path(@customer, location), class: "sv-btn-ghost sv-btn-sm", data: { turbo_frame: "modal" } %>
+              <%= button_to "Arquivar", archive_customer_location_path(@customer, location), method: :patch, class: "sv-btn-ghost sv-btn-sm text-rose-700",
+                    form: { data: { turbo_confirm: "Arquivar o local #{location.name}?" } } %>
+            </div>
+          <% end %>
+        </article>
+      <% end %>
+    </section>
+
+    <section id="painel-contatos" role="tabpanel" aria-labelledby="aba-contatos" data-tabs-target="panel" class="space-y-3" hidden>
+      <% if policy(@customer.contacts.new).create? && !@customer.archived? %>
+        <%= link_to new_customer_contact_path(@customer), class: "sv-btn-secondary sv-btn-sm", data: { turbo_frame: "modal" } do %><%= icon(:plus, size: 16) %> Novo contato<% end %>
+      <% end %>
+      <% if @contacts.empty? %>
+        <%= empty_state("Nenhum contato", description: "Cadastre quem acompanha e aprova serviços.", icon_name: :customers) %>
+      <% end %>
+      <% @contacts.each do |contact| %>
+        <article class="sv-card flex flex-wrap items-center gap-4 p-4 <%= 'opacity-60' if contact.archived? %>">
+          <%= avatar(contact.name) %>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-ink-900"><%= contact.name %> <span class="text-sm font-normal text-ink-500"><%= contact.position %></span></p>
+            <p class="text-sm text-ink-600"><%= [contact.email, contact.phone].compact_blank.join(" · ") %></p>
+            <div class="mt-1 flex flex-wrap gap-1.5">
+              <% if contact.can_approve? %><%= badge("Aprova orçamentos", tone: :brand) %><% end %>
+              <% if contact.can_follow? %><%= badge("Acompanha serviços", tone: :info) %><% end %>
+              <% if contact.portal_enabled? %><%= badge("Portal habilitado", tone: :success) %><% end %>
+              <% if contact.archived? %><%= badge("Arquivado") %><% end %>
+            </div>
+          </div>
+          <% if !contact.archived? && policy(contact).update? %>
+            <div class="flex w-full justify-end gap-1 sm:w-auto">
+              <%= link_to "Editar", edit_customer_contact_path(@customer, contact), class: "sv-btn-ghost sv-btn-sm", data: { turbo_frame: "modal" } %>
+              <%= button_to "Arquivar", archive_customer_contact_path(@customer, contact), method: :patch, class: "sv-btn-ghost sv-btn-sm text-rose-700",
+                    form: { data: { turbo_confirm: "Arquivar o contato #{contact.name}?" } } %>
+            </div>
+          <% end %>
+        </article>
+      <% end %>
+    </section>
+
+    <section id="painel-equipamentos" role="tabpanel" aria-labelledby="aba-equipamentos" data-tabs-target="panel" hidden>
+      <% if @equipment.empty? %>
+        <div class="sv-card"><%= empty_state("Nenhum equipamento ativo", description: "Cadastre os equipamentos atendidos neste cliente.", icon_name: :equipment) %></div>
+      <% else %>
+        <div class="sv-card relative overflow-x-auto">
+          <table class="sv-table">
+            <thead><tr><th scope="col">Equipamento</th><th scope="col">Local</th><th scope="col">Série / patrimônio</th><th scope="col">Estado</th></tr></thead>
+            <tbody class="divide-y divide-ink-100">
+              <% @equipment.each do |equipment| %>
+                <tr>
+                  <td><%= link_to equipment.title, equipment_path(equipment), class: "sv-link" %></td>
+                  <td><%= equipment.service_location.name %></td>
+                  <td class="font-mono text-xs"><%= [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence || "—" %></td>
+                  <td><%= render "equipment/status_badge", equipment: %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </section>
+
+    <section id="painel-historico" role="tabpanel" aria-labelledby="aba-historico" data-tabs-target="panel" hidden>
+      <% if @history.empty? %>
+        <div class="sv-card"><%= empty_state("Sem histórico ainda", description: "Movimentações de equipamentos e atendimentos aparecerão aqui.", icon_name: :clock) %></div>
+      <% else %>
+        <ol class="sv-card divide-y divide-ink-100" role="list">
+          <% @history.each do |event| %>
+            <li class="flex gap-3 px-5 py-3 text-sm">
+              <span class="sv-num w-32 shrink-0 text-ink-500"><%= l(event.occurred_at, format: :short) %></span>
+              <span class="text-ink-800"><strong><%= event.kind_label %></strong> · <%= link_to event.equipment.title, equipment_path(event.equipment), class: "sv-link" %></span>
+            </li>
+          <% end %>
+        </ol>
+      <% end %>
+    </section>
+  </div>
+</div>

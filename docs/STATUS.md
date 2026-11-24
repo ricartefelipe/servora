@@ -17,6 +17,9 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Interface | Layouts, navegação por permissão, estados de erro/acesso negado, menu acessível no mobile | `spec/system/**` |
 | Outbox | Publicação transacional, claim com lease e SKIP LOCKED, retentativas, falhas definitivas, reprocessamento auditado | `spec/services/outbox/**` |
 | Notificações | Notificações internas idempotentes, stream privado por vínculo com autorização no canal | `spec/channels/**`, `spec/requests/outbox_and_notifications_spec.rb` |
+| Clientes | PF/PJ com CPF/CNPJ, locais, contatos (aprovação, acompanhamento, portal), busca, arquivamento, bloqueio otimista | `spec/requests/customers_spec.rb`, `spec/services/customers/**` |
+| Equipamentos | Cadastro, local do mesmo cliente garantido no banco, mudança de local, transferência, estado operacional, histórico, arquivamento | `spec/services/equipment_lifecycle/**`, `spec/database/customer_integrity_spec.rb` |
+| Responsividade | Sem rolagem horizontal nas telas principais em 390 px | `spec/system/responsive_spec.rb` |
 
 ## Verificações executadas localmente
 
@@ -30,8 +33,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Clientes, locais de atendimento e equipamentos.
+- Catálogo de serviços e peças, orçamentos versionados e aprovação pelo portal do cliente.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/clientes-e-equipamentos` a partir de `develop`.
+Próxima branch: `feature/catalogo-e-orcamentos` a partir de `develop`.
