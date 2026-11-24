@@ -73,6 +73,7 @@ demonstração em `docs/`.
 
 | Versão | Conteúdo |
 |---|---|
+| 1.6.0 | Deslocamento e cliente ausente no campo (offline), indicador de sincronização, situação em lote, densidade compacta, formulários em seções, avisos persistentes e resumo do portal |
 | 1.5.0 | Busca rápida (Ctrl+K), auditoria legível, linha do agora em tempo real na agenda e gráficos no painel |
 | 1.4.0 | Interface interna "Precisão": menu claro com marcador rubi, painel com capa rubi e lista de atenção, layout do técnico, portal com etapas, listas e formulários padronizados |
 | 1.3.0 | Formulário de acesso na raiz da aplicação; identidade visual rubi com papéis de cor e contraste AA; saída do portal com página própria |
@@ -94,5 +95,5 @@ demonstração em `docs/`.
 
 ## Ponto de continuidade
 
-Versão 1.5.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
+Versão 1.6.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
 cobrança da plataforma) — chave apenas no `.env` local, nunca no repositório.
