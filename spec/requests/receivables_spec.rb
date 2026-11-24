@@ -90,7 +90,7 @@ RSpec.describe "Receivables" do
 
     get receivable_path(receivable)
     expect(response.body).to include("Executar manualmente", "Marcar como executado")
-    patch resolve_receivable_refund_path(receivable, refund), params: { resolution: { action: "confirm" } }
+    patch receivable_resolve_refund_path(receivable, refund), params: { resolution: { action: "confirm" } }
 
     expect(reload_in_tenant(refund).status).to eq("accepted")
   end

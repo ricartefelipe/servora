@@ -162,9 +162,7 @@ Rails.application.routes.draw do
         resources :payments, path: "pagamentos", only: %i[new create] do
           patch :refund, on: :member, path: "estornar"
         end
-        resources :refunds, path: "estornos", only: [] do
-          patch :resolve, on: :member, path: "resolver"
-        end
+        patch "estornos/:id/resolver", to: "refunds#resolve", as: :resolve_refund
         resources :discounts, path: "descontos", only: %i[new create]
         resources :charges, path: "cobrancas", only: :create do
           member do

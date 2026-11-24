@@ -42,11 +42,11 @@
                     <% if refund.last_error.present? %><span class="text-rose-700"><%= refund.last_error %></span><% end %>
                     <% if rp.refund? && refund.needs_attention? %>
                       <span class="ml-auto flex gap-2">
-                        <%= button_to (refund.status == "manual" ? "Marcar como executado" : "Confirmado no provedor"), resolve_receivable_refund_path(@receivable, refund),
+                        <%= button_to (refund.status == "manual" ? "Marcar como executado" : "Confirmado no provedor"), receivable_resolve_refund_path(@receivable, refund),
                               method: :patch, params: { resolution: { action: "confirm" } }, class: "sv-btn-ghost sv-btn-sm",
                               form: { data: { turbo_confirm: "Confirmar que o estorno foi executado?" } } %>
                         <% if refund.status == "unknown" || refund.status == "failed" %>
-                          <%= button_to "Reenviar ao provedor", resolve_receivable_refund_path(@receivable, refund), method: :patch,
+                          <%= button_to "Reenviar ao provedor", receivable_resolve_refund_path(@receivable, refund), method: :patch,
                                 params: { resolution: { action: "retry" } }, class: "sv-btn-ghost sv-btn-sm",
                                 form: { data: { turbo_confirm: "Reenviar somente se o estorno NÃO aparece no provedor. Continuar?" } } %>
                         <% end %>
