@@ -5,6 +5,29 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.5.0] - 2026-11-24
+
+Busca rápida, auditoria legível, agenda ao vivo e gráficos no painel.
+
+### Adicionado
+
+- Busca rápida (Ctrl+K / Cmd+K, menu lateral e barra superior) em ordens de serviço, clientes, equipamentos e
+  orçamentos, com cada grupo condicionado às mesmas permissões, escopos e módulos das listas, navegação por
+  teclado e limite de requisições por membro.
+- Gráficos no painel: ordens em aberto por situação e recebimentos dos últimos 7 dias no fuso da organização,
+  com tabela de dados e descrição para leitores de tela.
+
+### Alterado
+
+- Auditoria com ações e alterações em português ("Campo: de → para"), nomes no lugar de identificadores e
+  campos sensíveis sempre ocultos; leitura adaptada ao celular.
+- Linha do horário atual na agenda atualizada em tempo real no fuso da organização e centralizada no celular.
+
+### Segurança
+
+- Termos de busca filtrados dos logs.
+- Falso positivo de varredura de segredos registrado por impressão digital, sem reescrita de histórico.
+
 ## [1.4.0] - 2026-11-24
 
 Interface interna redesenhada na direção "Precisão".
@@ -173,7 +196,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.4.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.5.0...develop
+[1.5.0]: https://github.com/ricartefelipe/servora/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ricartefelipe/servora/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ricartefelipe/servora/compare/v1.1.0...v1.2.0

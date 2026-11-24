@@ -15,7 +15,15 @@ module Dashboards
     # to the pre-filtered list where the item is resolved.
     Attention = Data.define(:key, :count, :label, :severity, :route, :params)
 
+    # One slice of the open work orders, in lifecycle order.
+    StatusSlice = Data.define(:status, :label, :count)
+
+    # Money received on one calendar day of the organization (net of refunds).
+    DailyReceipt = Data.define(:date, :amount, :today)
+
     UPCOMING_LIMIT = 6
+    RECEIPT_DAYS = 7
+    NET_RECEIVED_SQL = "payments.amount - payments.refunded_amount"
 
     def initialize(membership:, visits:, stock_balances:, today: Time.zone.today, now: Time.current)
       @membership = membership
@@ -54,6 +62,33 @@ module Dashboards
 
     def upcoming_visits
       upcoming_scope.includes(work_order: %i[customer service_location]).limit(UPCOMING_LIMIT).to_a
+    end
+
+    # Open work orders grouped by status, lifecycle order, empty statuses left
+    # out (nil without permission to see every work order).
+    def open_orders_by_status
+      return nil unless can?(:work_orders_view_all)
+
+      @open_orders_by_status ||= begin
+        counts = WorkOrder.open_work.group(:status).count
+        WorkOrders::LABELS.filter_map do |status, label|
+          StatusSlice.new(status:, label:, count: counts[status]) if counts[status].to_i.positive?
+        end
+      end
+    end
+
+    # Net money received on each of the last RECEIPT_DAYS days, oldest first and
+    # ending today. Days follow the organization's time zone; a refund lowers the
+    # day the payment was received (nil when finance is not visible or not in the
+    # plan).
+    def daily_receipts
+      return nil unless can?(:finance_view) && module?(:finance)
+
+      @daily_receipts ||= begin
+        days = (@today - (RECEIPT_DAYS - 1))..@today
+        sums = received_per_day(days, @organization.zone)
+        days.map { |date| DailyReceipt.new(date:, amount: Pricing::Amount.money(sums.fetch(date, 0)), today: date == @today) }
+      end
     end
 
     private
@@ -95,6 +130,14 @@ module Dashboards
       count = @stock_balances.where(StockBalance::BELOW_MINIMUM_SQL).count
       Attention.new(key: :stock_below_minimum, count:, label: "Itens abaixo do estoque mínimo", severity: :medium,
         route: :stock_balances_path, params: { abaixo: "1" })
+    end
+
+    # Sum of net payments keyed by the local date they were received on.
+    def received_per_day(days, zone)
+      local_date = "(payments.paid_at AT TIME ZONE #{Payment.connection.quote(zone.tzinfo.name)})::date"
+      Payment.where(organization_id: @organization.id)
+        .where(paid_at: days.first.in_time_zone(zone)...(days.last + 1).in_time_zone(zone))
+        .group(Arel.sql(local_date)).sum(Arel.sql(NET_RECEIVED_SQL))
     end
 
     def upcoming_scope = @visits.upcoming.where(scheduled_end: @now..)

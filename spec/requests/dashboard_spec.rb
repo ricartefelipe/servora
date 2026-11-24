@@ -100,4 +100,87 @@ RSpec.describe "Dashboard" do
     expect(body).not_to include("Hotel da Elisa", "Clínica da Elisa", "3 visitas hoje")
     expect(body).not_to include("OS em aberto", "OS com prazo")
   end
+
+  describe "charts" do
+    let(:chart_titles) { ["OS por situação", "Recebido · últimos 7 dias"] }
+
+    def dashboard_for(membership)
+      travel_to(tuesday_at(10)) do
+        sign_in_as(membership)
+        get dashboard_path
+      end
+      response.body
+    end
+
+    def received_today(amount)
+      work_order = travel_to(tuesday_at(8)) { open_work_order(scenario, title: "Faturada") }
+      add_authorized_item(scenario, work_order, unit_price: amount)
+      travel_to(tuesday_at(9)) do
+        receivable = issue_receivable(scenario, work_order, amount, due_on: Date.new(2026, 12, 20))
+        pay(receivable, amount)
+      end
+    end
+
+    it "shows each chart only to the members allowed to read it", :aggregate_failures do
+      visible = {
+        owner: ["OS por situação", "Recebido · últimos 7 dias"],
+        finance: ["OS por situação", "Recebido · últimos 7 dias"],
+        coordinator: ["OS por situação"],
+        attendant: ["OS por situação"],
+        technician: []
+      }
+
+      visible.each do |role, titles|
+        body = dashboard_for(member(role, name: "Pessoa #{role}"))
+        charts = chart_titles.select { |title| body.include?(title) }
+        expect(charts).to eq(titles), role.to_s
+      end
+    end
+
+    it "drops the receipts chart when the plan does not include finance" do
+      in_tenant(organization) do
+        plan = Plan.find_by!(code: "profissional")
+        Subscription.create!(organization:, plan:, status: "active", technician_seats: plan.included_technicians,
+          monthly_amount: plan.monthly_price, activated_at: Time.current)
+      end
+
+      body = dashboard_for(member(:owner, name: "Ana Proprietária"))
+
+      expect(body).to include("OS por situação")
+      expect(body).not_to include("Recebido · últimos 7 dias")
+    end
+
+    it "says so when there is nothing to chart" do
+      body = dashboard_for(member(:owner, name: "Ana Proprietária"))
+
+      expect(body).to include("Nenhuma ordem de serviço em aberto.", "Nenhum recebimento nos últimos 7 dias.")
+      expect(body).not_to include("Ver dados")
+    end
+
+    context "with open orders and money received today" do
+      let(:page) do
+        received_today("1250.00")
+        in_tenant(organization) { WorkOrder.last.update_columns(status: "in_progress") }
+        Nokogiri::HTML(dashboard_for(member(:finance, name: "Gabriela Financeiro")))
+      end
+
+      it "draws the open orders as a labelled SVG bar in the status hue, with its data table" do
+        bar = page.at_css('svg[role="img"][aria-label^="OS em aberto por situação"]')
+
+        expect(bar["aria-label"]).to eq("OS em aberto por situação: 1 em execução.")
+        expect(bar.css("rect.fill-ember-500").size).to eq(1)
+        expect(page.at_css("table caption:contains('Ordens de serviço em aberto por situação')")).to be_present
+      end
+
+      it "draws today's receipts in ruby, summarised for assistive technology, with its data table" do
+        chart = page.css("figure").find { |figure| figure.at_css("figcaption").text.start_with?("Recebido nos últimos 7 dias") }
+
+        expect(chart.at_css("figcaption").text).to include("R$ 1.250,00", "Hoje: R$ 1.250,00")
+        expect(chart.css("path.fill-brand-600").size).to eq(1)
+        expect(chart.css("path.fill-ink-300")).to be_empty
+        expect(page.css("details summary").map { |summary| summary.text.strip }.count("Ver dados")).to eq(2)
+        expect(page.at_css("table caption:contains('Recebido por dia')").parent.text).to include("(hoje)", "R$ 1.250,00")
+      end
+    end
+  end
 end

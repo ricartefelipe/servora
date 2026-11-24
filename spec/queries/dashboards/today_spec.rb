@@ -262,4 +262,134 @@ RSpec.describe Dashboards::Today do
       expect(areas(create(:membership, :auditor, organization:))).to eq(6)
     end
   end
+
+  describe "#open_orders_by_status" do
+    def order_in(status)
+      order = open_work_order(scenario)
+      finished = { "completed" => { completed_at: Time.current },
+                   "canceled" => { canceled_at: Time.current, cancel_reason: "Cliente desistiu" } }
+      in_tenant(organization) { order.update_columns(status:, **finished.fetch(status, {})) }
+      order
+    end
+
+    before do
+      %w[in_progress open scheduled open waiting_parts completed canceled].each { |status| order_in(status) }
+    end
+
+    it "counts the open work orders per status in lifecycle order, leaving out finished and empty statuses" do
+      slices = on_dashboard(coordinator, &:open_orders_by_status)
+
+      expect(slices.map { |slice| [slice.status, slice.label, slice.count] })
+        .to eq([["open", "Aberta", 2], ["scheduled", "Agendada", 1], ["in_progress", "Em execução", 1],
+                ["waiting_parts", "Aguardando peças", 1]])
+      expect(slices.sum(&:count)).to eq(on_dashboard(coordinator, &:cover).open_orders)
+    end
+
+    it "is only available to members who see every work order" do
+      expect(on_dashboard(create(:membership, :finance, organization:), &:open_orders_by_status).sum(&:count)).to eq(5)
+      expect(on_dashboard(scenario[:technician], &:open_orders_by_status)).to be_nil
+    end
+
+    it "never counts another organization's work orders" do
+      build_work_order_scenario.then { |other| open_work_order(other) }
+
+      expect(on_dashboard(coordinator, &:open_orders_by_status).sum(&:count)).to eq(5)
+    end
+  end
+
+  describe "#daily_receipts" do
+    let(:finance) { create(:membership, :finance, organization:) }
+    let(:receivable) do
+      work_order = travel_to(at("2026-11-20 09:00")) { open_work_order(scenario, title: "Faturada") }
+      add_authorized_item(scenario, work_order, unit_price: "5000.00")
+      travel_to(at("2026-11-20 10:00")) { issue_receivable(scenario, work_order, "5000", due_on: Date.new(2026, 12, 20)) }
+    end
+
+    def paid(amount, at:, on: receivable)
+      travel_to(tuesday_at(23, 50)) do
+        in_tenant(organization) do
+          Receivables::RegisterPayment.new(receivable: on.reload, amount:, payment_method: "pix", actor: nil, paid_at: at).call
+        end
+      end
+    end
+
+    def refund(payment, amount)
+      in_tenant(organization) do
+        Receivables::RefundPayment.new(payment: payment.reload, amount:, reason: "Cobrança em duplicidade", actor: nil).call
+      end
+    end
+
+    def amounts(receipts) = receipts.to_h { |receipt| [receipt.date, receipt.amount] }
+
+    it "returns the last seven days ending today, with empty days at zero" do
+      receipts = on_dashboard(finance, &:daily_receipts)
+
+      expect(receipts.map(&:date)).to eq((Date.new(2026, 11, 25)..tuesday).to_a)
+      expect(receipts.map(&:amount)).to all(eq(0))
+      expect(receipts.map(&:today)).to eq(([false] * 6) + [true])
+    end
+
+    it "adds up each day's payments, net of refunds" do
+      paid("100.00", at: at("2026-11-27 09:00"))
+      partially_refunded = paid("300.00", at: at("2026-11-27 15:00"))
+      refund(partially_refunded, "120.00")
+      refund(paid("50.00", at: at("2026-11-28 10:00")), "50.00")
+      paid("75.50", at: tuesday_at(8))
+
+      receipts = amounts(on_dashboard(finance, &:daily_receipts))
+
+      expect(receipts[Date.new(2026, 11, 27)]).to eq(BigDecimal("280.00"))
+      expect(receipts[Date.new(2026, 11, 28)]).to eq(0)
+      expect(receipts[tuesday]).to eq(BigDecimal("75.50"))
+      expect(receipts.values.sum).to eq(BigDecimal("355.50"))
+    end
+
+    it "places each payment on the organization's calendar day" do
+      paid("10.00", at: at("2026-11-24 23:59"))
+      paid("20.00", at: at("2026-11-25 00:00"))
+      paid("30.00", at: at("2026-11-30 23:30")) # already Tuesday in UTC
+      paid("40.00", at: at("2026-12-01 00:10"))
+
+      receipts = amounts(on_dashboard(finance, &:daily_receipts))
+
+      expect(receipts.values.sum).to eq(BigDecimal("90.00"))
+      expect(receipts.values_at(Date.new(2026, 11, 25), Date.new(2026, 11, 30), tuesday))
+        .to eq([20, 30, 40].map { BigDecimal(it) })
+    end
+
+    it "follows the organization's time zone even when the request runs in another one" do
+      in_tenant(organization) { organization.update!(time_zone: "America/Rio_Branco") }
+      rio_branco = ActiveSupport::TimeZone["America/Rio_Branco"]
+      paid("30.00", at: rio_branco.parse("2026-11-30 22:30")) # 00:30 on Tuesday in Brasília
+
+      receipts = as_member(finance) do
+        Time.use_zone("America/Sao_Paulo") do
+          described_class.new(membership: finance.reload, visits: Visit.none, stock_balances: StockBalance.none,
+            today: tuesday).daily_receipts
+        end
+      end
+
+      expect(amounts(receipts).values_at(Date.new(2026, 11, 30), tuesday)).to eq([BigDecimal("30.00"), 0])
+    end
+
+    it "never counts another organization's payments" do
+      other = build_work_order_scenario
+      work_order = open_work_order(other)
+      add_authorized_item(other, work_order, unit_price: "900.00")
+      other_receivable = issue_receivable(other, work_order, "900", due_on: Date.new(2026, 12, 20))
+      travel_to(tuesday_at(12)) { pay(other_receivable, "900.00") }
+      paid("15.00", at: tuesday_at(9))
+
+      expect(on_dashboard(finance, &:daily_receipts).sum(&:amount)).to eq(BigDecimal("15.00"))
+    end
+
+    it "is only available with finance permission and the finance module" do
+      expect(on_dashboard(create(:membership, :owner, organization:), &:daily_receipts)).to be_present
+      expect(on_dashboard(coordinator, &:daily_receipts)).to be_nil
+
+      subscribe("profissional")
+
+      expect(on_dashboard(finance, &:daily_receipts)).to be_nil
+    end
+  end
 end
