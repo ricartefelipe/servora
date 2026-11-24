@@ -1711,8 +1711,10 @@ CREATE TABLE public.work_orders (
     updated_at timestamp(6) with time zone NOT NULL,
     quote_version_id uuid,
     service_type_id uuid,
-    created_by_membership_id uuid NOT NULL,
+    created_by_membership_id uuid,
     contract_id uuid,
+    requested_by_contact_id uuid,
+    CONSTRAINT work_orders_author CHECK (((created_by_membership_id IS NOT NULL) OR (requested_by_contact_id IS NOT NULL))),
     CONSTRAINT work_orders_cancel_reason CHECK ((((status)::text <> 'canceled'::text) OR ((canceled_at IS NOT NULL) AND (cancel_reason IS NOT NULL)))),
     CONSTRAINT work_orders_completed_at CHECK ((((status)::text <> 'completed'::text) OR (completed_at IS NOT NULL))),
     CONSTRAINT work_orders_origin CHECK (((origin)::text = ANY (ARRAY['phone'::text, 'email'::text, 'whatsapp'::text, 'portal'::text, 'quote'::text, 'preventive'::text, 'internal'::text]))),
@@ -2570,6 +2572,13 @@ CREATE UNIQUE INDEX index_contracts_on_organization_id_and_number ON public.cont
 --
 
 CREATE UNIQUE INDEX index_contracts_on_tenant_key ON public.contracts USING btree (organization_id, id);
+
+
+--
+-- Name: index_customer_contacts_on_customer_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_customer_contacts_on_customer_key ON public.customer_contacts USING btree (organization_id, customer_id, id);
 
 
 --
@@ -5040,6 +5049,14 @@ ALTER TABLE ONLY public.work_orders
 
 
 --
+-- Name: work_orders fk_work_orders_requested_by_contact; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_requested_by_contact FOREIGN KEY (organization_id, customer_id, requested_by_contact_id) REFERENCES public.customer_contacts(organization_id, customer_id, id);
+
+
+--
 -- Name: work_orders fk_work_orders_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5937,6 +5954,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124013000'),
 ('20261124011000'),
 ('20261124010000'),
 ('20261124009000'),
