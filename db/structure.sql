@@ -25,6 +25,20 @@ COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiS
 
 
 --
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
 -- Name: servora_claim_outbox_events(text, integer, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -130,6 +144,102 @@ CREATE TABLE public.audit_events (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT audit_events_actor_type CHECK (((actor_type)::text = ANY (ARRAY['user'::text, 'portal_contact'::text, 'api_credential'::text, 'system'::text])))
+);
+
+
+--
+-- Name: customer_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.customer_contacts (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    email character varying,
+    phone character varying,
+    "position" character varying,
+    can_approve boolean DEFAULT false NOT NULL,
+    can_follow boolean DEFAULT true NOT NULL,
+    portal_enabled boolean DEFAULT false NOT NULL,
+    archived_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    customer_id uuid NOT NULL,
+    CONSTRAINT customer_contacts_portal_requires_email CHECK (((NOT portal_enabled) OR (email IS NOT NULL)))
+);
+
+
+--
+-- Name: customers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.customers (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    name character varying NOT NULL,
+    trade_name character varying,
+    document character varying,
+    email character varying,
+    phone character varying,
+    notes text,
+    archived_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT customers_kind CHECK (((kind)::text = ANY (ARRAY['individual'::text, 'company'::text])))
+);
+
+
+--
+-- Name: equipment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.equipment (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    service_location_id uuid NOT NULL,
+    equipment_type character varying NOT NULL,
+    manufacturer character varying,
+    model character varying,
+    serial_number character varying,
+    asset_tag character varying,
+    capacity character varying,
+    installed_on date,
+    warranty_until date,
+    warranty_notes character varying,
+    operational_status character varying DEFAULT 'operational'::character varying NOT NULL,
+    notes text,
+    archived_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT equipment_operational_status CHECK (((operational_status)::text = ANY (ARRAY['operational'::text, 'attention'::text, 'inoperative'::text, 'decommissioned'::text]))),
+    CONSTRAINT equipment_warranty_after_installation CHECK (((warranty_until IS NULL) OR (installed_on IS NULL) OR (warranty_until >= installed_on)))
+);
+
+
+--
+-- Name: equipment_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.equipment_events (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    from_customer_id uuid,
+    to_customer_id uuid,
+    from_location_id uuid,
+    to_location_id uuid,
+    from_status character varying,
+    to_status character varying,
+    description character varying,
+    actor_membership_id uuid,
+    occurred_at timestamp(6) with time zone NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    equipment_id uuid NOT NULL,
+    CONSTRAINT equipment_events_kind CHECK (((kind)::text = ANY (ARRAY['registered'::text, 'relocated'::text, 'ownership_transferred'::text, 'status_changed'::text, 'archived'::text, 'restored'::text, 'maintenance'::text])))
 );
 
 
@@ -274,6 +384,31 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: service_locations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.service_locations (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    street character varying NOT NULL,
+    number character varying,
+    complement character varying,
+    district character varying,
+    city character varying NOT NULL,
+    state character varying(2) NOT NULL,
+    postal_code character varying,
+    access_instructions text,
+    archived_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    customer_id uuid NOT NULL,
+    CONSTRAINT service_locations_postal_code CHECK (((postal_code IS NULL) OR ((postal_code)::text ~ '^[0-9]{8}$'::text))),
+    CONSTRAINT service_locations_state CHECK (((state)::text ~ '^[A-Z]{2}$'::text))
+);
+
+
+--
 -- Name: user_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -341,6 +476,38 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: customer_contacts customer_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customer_contacts
+    ADD CONSTRAINT customer_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customers
+    ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: equipment_events equipment_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment_events
+    ADD CONSTRAINT equipment_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: equipment equipment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment
+    ADD CONSTRAINT equipment_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -397,6 +564,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: service_locations service_locations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_locations
+    ADD CONSTRAINT service_locations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -417,6 +592,13 @@ ALTER TABLE ONLY public.users
 --
 
 CREATE INDEX idx_on_organization_id_auditable_type_auditable_id_b2857e335c ON public.audit_events USING btree (organization_id, auditable_type, auditable_id);
+
+
+--
+-- Name: idx_on_organization_id_equipment_id_occurred_at_c8e2c7ae7c; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_equipment_id_occurred_at_c8e2c7ae7c ON public.equipment_events USING btree (organization_id, equipment_id, occurred_at);
 
 
 --
@@ -459,6 +641,97 @@ CREATE INDEX index_audit_events_on_organization_id_and_created_at ON public.audi
 --
 
 CREATE UNIQUE INDEX index_audit_events_on_tenant_key ON public.audit_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_customer_contacts_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_customer_contacts_on_organization_id_and_customer_id ON public.customer_contacts USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_customer_contacts_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_customer_contacts_on_tenant_key ON public.customer_contacts USING btree (organization_id, id);
+
+
+--
+-- Name: index_customers_name_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_customers_name_trgm ON public.customers USING gin (name public.gin_trgm_ops);
+
+
+--
+-- Name: index_customers_on_organization_id_and_archived_at_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_customers_on_organization_id_and_archived_at_and_name ON public.customers USING btree (organization_id, archived_at, name);
+
+
+--
+-- Name: index_customers_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_customers_on_tenant_key ON public.customers USING btree (organization_id, id);
+
+
+--
+-- Name: index_customers_unique_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_customers_unique_document ON public.customers USING btree (organization_id, document) WHERE (document IS NOT NULL);
+
+
+--
+-- Name: index_equipment_events_on_organization_id_and_equipment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_equipment_events_on_organization_id_and_equipment_id ON public.equipment_events USING btree (organization_id, equipment_id);
+
+
+--
+-- Name: index_equipment_events_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_equipment_events_on_tenant_key ON public.equipment_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_equipment_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_equipment_on_organization_id_and_customer_id ON public.equipment USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_equipment_on_organization_id_and_service_location_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_equipment_on_organization_id_and_service_location_id ON public.equipment USING btree (organization_id, service_location_id);
+
+
+--
+-- Name: index_equipment_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_equipment_on_tenant_key ON public.equipment USING btree (organization_id, id);
+
+
+--
+-- Name: index_equipment_unique_asset_tag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_equipment_unique_asset_tag ON public.equipment USING btree (organization_id, asset_tag) WHERE (asset_tag IS NOT NULL);
+
+
+--
+-- Name: index_equipment_unique_serial; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_equipment_unique_serial ON public.equipment USING btree (organization_id, manufacturer, serial_number) WHERE (serial_number IS NOT NULL);
 
 
 --
@@ -560,6 +833,27 @@ CREATE UNIQUE INDEX index_outbox_events_on_tenant_key ON public.outbox_events US
 
 
 --
+-- Name: index_service_locations_on_customer_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_locations_on_customer_key ON public.service_locations USING btree (organization_id, customer_id, id);
+
+
+--
+-- Name: index_service_locations_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_service_locations_on_organization_id_and_customer_id ON public.service_locations USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_service_locations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_locations_on_tenant_key ON public.service_locations USING btree (organization_id, id);
+
+
+--
 -- Name: index_user_sessions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -602,6 +896,38 @@ CREATE UNIQUE INDEX index_users_on_unlock_token ON public.users USING btree (unl
 
 
 --
+-- Name: customer_contacts fk_customer_contacts_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customer_contacts
+    ADD CONSTRAINT fk_customer_contacts_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: equipment fk_equipment_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment
+    ADD CONSTRAINT fk_equipment_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: equipment_events fk_equipment_events_equipment_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment_events
+    ADD CONSTRAINT fk_equipment_events_equipment_id_tenant FOREIGN KEY (organization_id, equipment_id) REFERENCES public.equipment(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: equipment fk_equipment_location_of_same_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment
+    ADD CONSTRAINT fk_equipment_location_of_same_customer FOREIGN KEY (organization_id, customer_id, service_location_id) REFERENCES public.service_locations(organization_id, customer_id, id);
+
+
+--
 -- Name: invitations fk_invitations_invited_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -634,11 +960,35 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: service_locations fk_rails_2f359873f8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_locations
+    ADD CONSTRAINT fk_rails_2f359873f8 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: notifications fk_rails_394d9847aa; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT fk_rails_394d9847aa FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: equipment fk_rails_5284aaf58e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment
+    ADD CONSTRAINT fk_rails_5284aaf58e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: customers fk_rails_58234c715e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customers
+    ADD CONSTRAINT fk_rails_58234c715e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -698,10 +1048,58 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: customer_contacts fk_rails_c2c8ebb3b1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customer_contacts
+    ADD CONSTRAINT fk_rails_c2c8ebb3b1 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: equipment_events fk_rails_e71dc665bc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.equipment_events
+    ADD CONSTRAINT fk_rails_e71dc665bc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: service_locations fk_service_locations_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_locations
+    ADD CONSTRAINT fk_service_locations_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
 -- Name: audit_events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: customer_contacts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.customer_contacts ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: customers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: equipment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.equipment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: equipment_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.equipment_events ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -784,10 +1182,44 @@ ALTER TABLE public.outbox_event_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbox_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: service_locations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.service_locations ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY tenant_isolation ON public.audit_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: customer_contacts tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.customer_contacts USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: customers tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.customers USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: equipment tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.equipment USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: equipment_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.equipment_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -819,12 +1251,21 @@ CREATE POLICY tenant_isolation ON public.outbox_events USING ((organization_id =
 
 
 --
+-- Name: service_locations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.service_locations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124003100'),
+('20261124003000'),
 ('20261124002100'),
 ('20261124002000'),
 ('20261124001300'),
