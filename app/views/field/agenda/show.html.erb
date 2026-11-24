@@ -1,52 +1,62 @@
 <% content_for :title, "Minha agenda" %>
-<%= page_header("Minha agenda", subtitle: "Visitas dos próximos 7 dias e ordens atribuídas a você.") %>
+<% content_for :theme_color, "#ffffff" %>
+<% zone = current_organization.zone %>
+<% upcoming = @visits_by_day.values.flatten %>
+<% next_visit = upcoming.find { |visit| visit.status == "in_progress" } || upcoming.first %>
+<% today_total = @visits_by_day.fetch(@today, []).size %>
+<% content_for :field_title, today_total.zero? ? "Hoje · sem visitas" : "Hoje · #{pluralize(today_total, 'visita', plural: 'visitas')}" %>
 <div data-controller="service-worker"></div>
 
-<div class="space-y-6">
-  <% (@today...(@today + Field::AgendaController::DAYS)).each do |day| %>
-    <% visits = @visits_by_day.fetch(day, []) %>
-    <% next if visits.empty? && day != @today %>
-    <section aria-labelledby="dia-<%= day.iso8601 %>">
-      <h2 id="dia-<%= day.iso8601 %>" class="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">
-        <%= day == @today ? "Hoje" : (day == @today + 1 ? "Amanhã" : l(day, format: "%A, %d/%m")) %>
-      </h2>
-      <% if visits.empty? %>
-        <div class="sv-card px-5 py-6 text-sm text-ink-500">Nenhuma visita hoje.</div>
-      <% else %>
-        <ul class="space-y-3" role="list">
-          <% visits.each do |visit| %>
-            <% order = visit.work_order %>
+<div>
+  <%= page_header("Minha agenda", eyebrow: l(@today, format: "%A, %d de %B").upcase_first,
+        subtitle: "Visitas dos próximos 7 dias e ordens atribuídas a você.", size: :md) %>
+
+  <div class="space-y-8">
+    <%= render "field/agenda/next_visit", visit: next_visit, zone:, today: @today if next_visit %>
+
+    <% (@today...(@today + Field::AgendaController::DAYS)).each do |day| %>
+      <% visits = @visits_by_day.fetch(day, []).reject { |visit| visit == next_visit } %>
+      <% next if visits.empty? && day != @today %>
+      <section aria-labelledby="dia-<%= day.iso8601 %>">
+        <h2 id="dia-<%= day.iso8601 %>" class="mb-3 flex items-baseline gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-700">
+          <%= day == @today ? "Hoje" : (day == @today + 1 ? "Amanhã" : l(day, format: "%A, %d/%m")) %>
+          <% if visits.any? %><span class="sv-num font-mono text-xs font-medium normal-case tracking-normal text-ink-500"><%= pluralize(visits.size, "visita", plural: "visitas") %></span><% end %>
+        </h2>
+        <% if visits.empty? && today_total.positive? %>
+          <p class="rounded-2xl bg-white px-4 py-5 text-[15px] text-ink-600 ring-1 ring-ink-200">Nenhuma outra visita hoje.</p>
+        <% elsif visits.empty? %>
+          <div class="sv-card">
+            <%= empty_state("Nenhuma visita hoje", icon_name: :calendar,
+                  description: next_visit ? "A próxima visita aparece no destaque acima." : "Quando uma visita for agendada para você, ela aparece aqui.") %>
+          </div>
+        <% else %>
+          <ul class="space-y-3" role="list">
+            <% visits.each do |visit| %>
+              <li><%= render "field/agenda/visit", visit:, zone: %></li>
+            <% end %>
+          </ul>
+        <% end %>
+      </section>
+    <% end %>
+
+    <% if @unscheduled.any? %>
+      <section aria-labelledby="sem-visita-title">
+        <h2 id="sem-visita-title" class="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-700">Atribuídas sem visita marcada</h2>
+        <ul class="divide-y divide-ink-150 overflow-hidden rounded-2xl bg-white ring-1 ring-ink-200" role="list">
+          <% @unscheduled.each do |order| %>
             <li>
-              <%= link_to field_work_order_path(order), class: "sv-card flex items-start gap-4 p-4 transition hover:border-brand-300 focus-visible:outline-2" do %>
-                <div class="sv-num w-16 shrink-0 text-center">
-                  <p class="text-lg font-bold text-ink-950"><%= l(visit.scheduled_start.in_time_zone(current_organization.zone), format: "%H:%M") %></p>
-                  <p class="text-xs text-ink-500">até <%= l(visit.scheduled_end.in_time_zone(current_organization.zone), format: "%H:%M") %></p>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="font-semibold text-ink-900"><%= order.title %></p>
-                  <p class="text-sm text-ink-600"><%= order.customer.display_name %></p>
-                  <p class="truncate text-xs text-ink-500"><%= order.service_location.address_line %></p>
-                </div>
-                <%= badge(visit.status == "in_progress" ? "Em andamento" : order.number, tone: visit.status == "in_progress" ? :ember : :neutral, dot: false) %>
+              <%= link_to field_work_order_path(order), class: "flex min-h-14 items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-ink-25 focus-visible:-outline-offset-2" do %>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-base font-medium text-ink-950"><%= order.title %></span>
+                  <span class="block text-sm text-ink-600"><%= order.customer.display_name %></span>
+                </span>
+                <span class="font-mono text-xs text-ink-500"><%= order.number %></span>
+                <%= icon(:chevron_right, size: 18, css: "shrink-0 text-ink-400") %>
               <% end %>
             </li>
           <% end %>
         </ul>
-      <% end %>
-    </section>
-  <% end %>
-
-  <% if @unscheduled.any? %>
-    <section aria-labelledby="sem-visita-title">
-      <h2 id="sem-visita-title" class="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">Atribuídas sem visita marcada</h2>
-      <ul class="sv-card divide-y divide-ink-100" role="list">
-        <% @unscheduled.each do |order| %>
-          <li><%= link_to field_work_order_path(order), class: "flex items-center gap-3 px-4 py-3 hover:bg-ink-50" do %>
-            <span class="min-w-0 flex-1"><span class="block font-medium text-ink-900"><%= order.title %></span><span class="text-xs text-ink-500"><%= order.customer.display_name %></span></span>
-            <span class="font-mono text-xs text-ink-500"><%= order.number %></span>
-          <% end %></li>
-        <% end %>
-      </ul>
-    </section>
-  <% end %>
+      </section>
+    <% end %>
+  </div>
 </div>

@@ -1,0 +1,14 @@
+<%# Fields to finish a visit. When the submit lives in the sticky action bar (submit_inline: false) it targets this form by id. %>
+<%= form_with url: finish_work_order_visit_path(work_order, visit, origem: "campo"), method: :patch, scope: :finish,
+      id: "finalizar-visita-#{visit.id}", class: "space-y-3" do |f| %>
+  <div>
+    <%= f.label :outcome_note, "Resumo da visita", class: "sv-label text-sm", for: "resumo-visita-#{visit.id}" %>
+    <%= f.text_area :outcome_note, rows: 3, id: "resumo-visita-#{visit.id}", class: "sv-input text-base" %>
+  </div>
+  <label class="flex min-h-11 items-center gap-3 text-[15px] text-ink-800">
+    <%= f.check_box :needs_return, id: "retorno-visita-#{visit.id}", class: "size-[22px] shrink-0 rounded border-ink-400" %> Precisa de retorno
+  </label>
+  <% if submit_inline %>
+    <%= f.button "Finalizar visita", type: "submit", class: "sv-btn-secondary h-12 w-full text-base" %>
+  <% end %>
+<% end %>
