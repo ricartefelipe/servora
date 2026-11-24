@@ -295,3 +295,19 @@ status atualizado.
 - **Consequências**: reenvios de integrações instáveis não duplicam ordens; reutilizar a chave com outro
   conteúdo é erro explícito.
 
+## DEC-037 — Dados de referência fora das migrations
+
+- **Contexto**: o `structure.sql` contém apenas esquema; dados inseridos por migrations não chegam a bancos
+  criados a partir do dump (CI, novos ambientes).
+- **Decisão**: planos e módulos são carregados por `Servora::ReferenceData` (upsert por código) com o papel owner
+  junto com a aplicação de privilégios, em todos os fluxos de preparação do banco.
+- **Consequências**: preços e nomes podem ser atualizados sem nova migration; o papel de aplicação não altera o
+  catálogo.
+
+## DEC-038 — Avaliação completa e modo somente leitura
+
+- **Decisão**: avaliação de 14 dias com todos os módulos; ao terminar sem ativação, leitura liberada e escrita
+  bloqueada, em vez de bloquear o acesso.
+- **Consequências**: nenhum dado fica inacessível ao cliente; a decisão comercial não interrompe consultas
+  operacionais.
+
