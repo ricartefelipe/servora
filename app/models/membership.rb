@@ -12,6 +12,10 @@ class Membership < TenantRecord
   }.freeze
 
   belongs_to :user
+  has_many :membership_skills, dependent: nil
+  has_many :skills, through: :membership_skills
+  has_many :work_schedules, -> { order(:weekday, :start_minute) }, dependent: nil, inverse_of: :membership
+  has_many :allocations, class_name: "TechnicianAllocation", dependent: nil
 
   enum :role, Authorization::Permissions::ROLES.index_by(&:itself), validate: true
   enum :status, { active: "active", deactivated: "deactivated" }, validate: true
@@ -34,4 +38,6 @@ class Membership < TenantRecord
   def role_label
     ROLE_LABELS.fetch(role)
   end
+
+  def working_hours = Scheduling::WorkingHours.new(work_schedules.map(&:slot))
 end

@@ -34,6 +34,10 @@ class Organization < ApplicationRecord
   has_many :portal_access_grants, dependent: :restrict_with_exception
   has_many :service_types, dependent: :restrict_with_exception
   has_many :work_orders, dependent: :restrict_with_exception
+  has_many :visits, dependent: :restrict_with_exception
+  has_many :skills, dependent: :restrict_with_exception
+  has_many :teams, dependent: :restrict_with_exception
+  has_many :technician_allocations, dependent: :restrict_with_exception
 
   enum :status, { active: "active", suspended: "suspended" }, validate: true
 
