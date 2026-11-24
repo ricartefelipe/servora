@@ -46,13 +46,14 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Portal ampliado | Chamados com triagem e notificação, ordens, visitas, equipamentos e histórico, PDFs, cobranças; isolamento por cliente; uso no celular | `spec/requests/portal_service_spec.rb`, `spec/system/portal_requests_spec.rb` |
 | API v1 | Credenciais com escopo, validade e revogação; isolamento; paginação limitada; filtros; idempotência; OpenAPI conferida contra as rotas | `spec/requests/api_spec.rb` |
 | Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
+| Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 82 exemplos (regras puras) + 448 exemplos (Rails e system) — 0 falhas |
+| `bash bin/test-all` | 82 exemplos (regras puras) + 454 exemplos (Rails e system) — 0 falhas |
 | Cobertura do núcleo | linhas 98,51%, branches 84,50% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
@@ -72,8 +73,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Observabilidade (logs estruturados com correlação, métricas e consultas lentas) e assinaturas da plataforma.
+- Assinaturas da plataforma (planos, trial, limites e módulos).
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/observabilidade` a partir de `develop`.
+Próxima branch: `feature/assinaturas` a partir de `develop`.

@@ -7,7 +7,8 @@ class ApplicationJob < ActiveJob::Base
   retry_on Servora::TransientError, ActiveRecord::Deadlocked, ActiveRecord::LockWaitTimeout,
     wait: :polynomially_longer, attempts: 5
   discard_on ActiveJob::DeserializationError, Servora::PermanentError do |job, error|
-    Rails.logger.error(event: "job.discarded", job: job.class.name, job_id: job.job_id, error_class: error.class.name)
+    Rails.logger.error(Servora::StructuredLog.line(event: "job.discarded", job: job.class.name, job_id: job.job_id,
+      error_class: error.class.name))
   end
 
   around_perform do |job, block|
@@ -17,7 +18,9 @@ class ApplicationJob < ActiveJob::Base
     outcome = "succeeded"
   ensure
     Servora::Metrics.increment(:jobs_total, { job: job.class.name, outcome: })
-    Servora::Metrics.observe(:job_duration_seconds, Process.clock_gettime(Process::CLOCK_MONOTONIC) - started,
-      { job: job.class.name })
+    duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+    Servora::Metrics.observe(:job_duration_seconds, duration, { job: job.class.name })
+    Rails.logger.info(Servora::StructuredLog.line(event: "job.performed", job: job.class.name, job_id: job.job_id,
+      outcome:, duration_ms: (duration * 1000).round(1), executions: job.executions))
   end
 end
