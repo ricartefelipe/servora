@@ -16,7 +16,7 @@ class EquipmentPolicy < ApplicationPolicy
   def record_archived? = record.respond_to?(:archived?) && record.archived?
 
   # Office roles see the whole asset base. Technicians only see equipment
-  # linked to work they are assigned to (scope extended with work orders).
+  # linked to work orders they are assigned to.
   class Scope < Scope
     def resolve
       return scope.all if can?(:customers_view)
@@ -28,7 +28,9 @@ class EquipmentPolicy < ApplicationPolicy
     private
 
     def assigned_to_technician
-      scope.none
+      assigned_orders = WorkOrderAssignment.where(membership_id: membership.id).select(:work_order_id)
+      assigned = WorkOrderEquipment.where(work_order_id: assigned_orders)
+      scope.where(id: assigned.select(:equipment_id))
     end
   end
 end
