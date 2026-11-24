@@ -170,6 +170,11 @@ Rails.application.routes.draw do
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
     resources :holidays, path: "configuracoes/sla/feriados", only: %i[create destroy]
+    namespace :field, path: "campo" do
+      root "agenda#show"
+      resources :work_orders, path: "ordens", only: :show
+      resources :operations, path: "operacoes", only: :create
+    end
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

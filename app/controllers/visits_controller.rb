@@ -57,7 +57,7 @@ class VisitsController < TenantController
   def start
     authorize @visit, :execute?
     Visits::Start.new(visit: @visit, actor: current_membership).call
-    redirect_to work_order_path(@work_order), notice: "Visita iniciada.", status: :see_other
+    redirect_to execution_path, notice: "Visita iniciada.", status: :see_other
   end
 
   def finish
@@ -65,7 +65,7 @@ class VisitsController < TenantController
     finish_params = params.expect(finish: %i[outcome_note needs_return])
     Visits::Finish.new(visit: @visit, actor: current_membership, outcome_note: finish_params[:outcome_note],
       needs_return: finish_params[:needs_return] == "1").call
-    redirect_to work_order_path(@work_order), notice: "Visita finalizada. A ordem segue aberta até a conclusão formal.",
+    redirect_to execution_path, notice: "Visita finalizada. A ordem segue aberta até a conclusão formal.",
       status: :see_other
   end
 
@@ -82,6 +82,11 @@ class VisitsController < TenantController
   end
 
   private
+
+  # Field area actions return to the mobile execution view.
+  def execution_path
+    params[:origem] == "campo" ? field_work_order_path(@work_order) : work_order_path(@work_order)
+  end
 
   def load_work_order
     @work_order = policy_scope(tenant_relation(WorkOrder)).includes(:organization, :assignments, service_type: :skills)

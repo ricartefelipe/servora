@@ -8,6 +8,7 @@ module NavigationHelper
   NAVIGATION = [
     ["Operação", [
       NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards]),
+      NavItem.new("Minha agenda", :field_root_path, :device, :work_orders_execute, %w[field/agenda field/work_orders]),
       NavItem.new("Ordens de serviço", :work_orders_path, :orders, nil, %w[work_orders checklist_items assignments visits]),
       NavItem.new("Agenda", :agenda_index_path, :calendar, :schedule_view, %w[agenda absences]),
       NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes decisions]),
@@ -47,7 +48,11 @@ module NavigationHelper
     item.permission.nil? || can?(item.permission)
   end
 
+  # Entries with a namespace ("field/agenda") match the controller path; plain
+  # names match controllers outside the field area.
   def nav_item_active?(item)
-    item.controllers.include?(controller_name)
+    item.controllers.any? do |name|
+      name.include?("/") ? name == controller_path : name == controller_name && !controller_path.start_with?("field/")
+    end
   end
 end
