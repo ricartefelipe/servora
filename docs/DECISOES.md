@@ -268,3 +268,15 @@ status atualizado.
 - **Consequências**: sem arquivos órfãos nem divergência entre registro e documento; o custo é gerar a cada
   download (documentos pequenos).
 
+## DEC-034 — Offline por fila de operações idempotentes, não por cópia dos dados
+
+- **Contexto**: o técnico perde conexão em subsolos e áreas rurais, mas os dados da ordem pertencem ao cliente
+  e o aparelho pode ser compartilhado ou perdido.
+- **Decisão**: o aparelho guarda somente rascunhos e operações pendentes (o que o técnico digitou), nunca uma
+  réplica dos dados; cada operação tem id do aparelho e versão de origem; o servidor guarda o resultado por id,
+  revalida permissão e recusa sobrescrever versões mais novas. O service worker não guarda páginas nem dados.
+- **Alternativas**: sincronização completa de dados (exposição maior e conflitos complexos); cache genérico de
+  páginas no service worker (vazamento entre usuários e dados desatualizados).
+- **Consequências**: a tela precisa ter sido aberta com conexão; o que se registra offline é enviado com
+  segurança e sem duplicidade.
+

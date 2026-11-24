@@ -37,6 +37,9 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   limites de tamanho, download autorizado com cabeçalhos privados e Active Storage isolado por organização.
 - PDFs da proposta comercial (versão enviada) e do relatório de execução (cada versão), gerados a partir dos
   dados congelados.
+- Área do técnico (PWA): agenda dos próximos dias, tela de execução para celular, rascunhos e fila offline de
+  checklist, registro técnico e apontamentos com sincronização idempotente, revalidação de acesso e detecção de
+  conflitos; service worker restrito a assets estáticos.
 
 ### Corrigido
 
