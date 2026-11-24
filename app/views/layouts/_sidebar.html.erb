@@ -21,7 +21,7 @@
   <nav class="flex-1 space-y-6 overflow-y-auto px-4 pb-6">
     <% navigation_groups.each do |title, items| %>
       <div>
-        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-ink-500"><%= title %></p>
+        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-ink-400"><%= title %></p>
         <ul class="space-y-0.5" role="list">
           <% items.each do |item| %>
             <li><%= nav_link(item.label, public_send(item.route), icon_name: item.icon, active: nav_item_active?(item)) %></li>
@@ -31,8 +31,8 @@
     <% end %>
   </nav>
 
-  <div class="border-t border-white/10 p-4 text-xs text-ink-500">
+  <div class="border-t border-white/10 p-4 text-xs text-ink-400">
     <p>Perfil: <span class="font-semibold text-ink-300"><%= current_membership.role_label %></span></p>
-    <p class="mt-1 text-ink-600">Servora <%= Servora::VERSION %></p>
+    <p class="mt-1 text-ink-400">Servora <%= Servora::VERSION %></p>
   </div>
 </aside>

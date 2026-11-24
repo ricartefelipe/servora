@@ -3,7 +3,7 @@
 // Deliberately narrow: only fingerprinted static assets (/assets/…) and the
 // offline notice are cached. Pages, API responses and files are always
 // fetched from the network, so no customer data is stored by the worker.
-const CACHE = "servora-static-v1"
+const CACHE = "servora-static-v2"
 const OFFLINE_PAGE = "/offline.html"
 
 self.addEventListener("install", (event) => {

@@ -36,7 +36,7 @@
               <p class="text-xs text-ink-500"><%= evidence.kind_label %> · <%= number_to_human_size(evidence.byte_size) %> · <%= evidence.uploaded_by.user.name %></p>
             </div>
             <% if wo_policy.remove_evidence? %>
-              <%= button_to work_order_evidence_path(@work_order, evidence), method: :delete, class: "rounded-lg p-1.5 text-ink-400 hover:bg-rose-50 hover:text-rose-700",
+              <%= button_to work_order_evidence_path(@work_order, evidence), method: :delete, class: "rounded-lg p-1.5 text-ink-500 hover:bg-rose-50 hover:text-rose-700",
                     form: { data: { turbo_confirm: "Remover este anexo?" } } do %><%= icon(:trash, size: 16, label: "Remover anexo") %><% end %>
             <% end %>
           </div>

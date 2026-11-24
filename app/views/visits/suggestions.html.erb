@@ -7,8 +7,8 @@
     <% else %>
       <ol class="space-y-2" role="list">
         <% @result.ranked.each_with_index do |candidate, index| %>
-          <li class="flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2 text-sm">
-            <span class="grid size-6 place-items-center rounded-full bg-brand-600 text-xs font-bold text-white"><%= index + 1 %></span>
+          <li class="flex items-center gap-2 rounded-xl bg-ink-50 px-3 py-2 text-sm">
+            <span class="grid size-6 place-items-center rounded-full bg-ink-800 text-xs font-bold text-white"><%= index + 1 %></span>
             <span class="flex-1 font-medium text-ink-900"><%= candidate.name %></span>
             <span class="text-xs text-ink-500"><%= candidate.booked_minutes %> min no dia</span>
           </li>

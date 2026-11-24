@@ -40,7 +40,7 @@
       <% end %>
       <% @locations.each do |location| %>
         <article class="sv-card flex flex-wrap items-start gap-4 p-4 <%= 'opacity-60' if location.archived? %>">
-          <span class="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand-700"><%= icon(:pin, size: 18) %></span>
+          <span class="grid size-10 place-items-center rounded-xl bg-ink-100 text-ink-600"><%= icon(:pin, size: 18) %></span>
           <div class="min-w-0 flex-1">
             <p class="font-semibold text-ink-900"><%= location.name %> <% if location.archived? %><%= badge("Arquivado") %><% end %></p>
             <p class="text-sm text-ink-600"><%= location.address_line %></p>
@@ -72,7 +72,7 @@
             <p class="font-semibold text-ink-900"><%= contact.name %> <span class="text-sm font-normal text-ink-500"><%= contact.position %></span></p>
             <p class="text-sm text-ink-600"><%= [contact.email, contact.phone].compact_blank.join(" · ") %></p>
             <div class="mt-1 flex flex-wrap gap-1.5">
-              <% if contact.can_approve? %><%= badge("Aprova orçamentos", tone: :brand) %><% end %>
+              <% if contact.can_approve? %><%= badge("Aprova orçamentos", tone: :indigo) %><% end %>
               <% if contact.can_follow? %><%= badge("Acompanha serviços", tone: :info) %><% end %>
               <% if contact.portal_enabled? %><%= badge("Portal habilitado", tone: :success) %><% end %>
               <% if contact.archived? %><%= badge("Arquivado") %><% end %>

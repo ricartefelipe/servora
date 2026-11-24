@@ -4,7 +4,7 @@
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
   <%= stat_tile("Plano", @subscription.plan.name, hint: @subscription.status_label) %>
-  <%= stat_tile("Técnicos", "#{@seats_in_use} de #{@subscription.technician_seats}", hint: "ativos e convidados / vagas", tone: @seats_in_use >= @subscription.technician_seats ? :danger : :brand) %>
+  <%= stat_tile("Técnicos", "#{@seats_in_use} de #{@subscription.technician_seats}", hint: "ativos e convidados / vagas", tone: @seats_in_use >= @subscription.technician_seats ? :danger : :neutral) %>
   <%= stat_tile("Mensalidade", money(@subscription.monthly_amount), hint: @subscription.status == "trialing" ? "após a avaliação" : "valor vigente") %>
 </div>
 
@@ -16,7 +16,7 @@
 <% end %>
 
 <% if @subscription.status == "trialing" %>
-  <div class="mb-6 rounded-2xl border <%= @subscription.trial_expired? ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-brand-200 bg-brand-50 text-brand-900' %> p-4 text-sm" role="status">
+  <div class="mb-6 rounded-2xl border <%= @subscription.trial_expired? ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-sky-200 bg-sky-50 text-sky-900' %> p-4 text-sm" role="status">
     <% if @subscription.trial_expired? %>
       A avaliação terminou em <%= l(@subscription.trial_ends_on) %>. Os dados seguem disponíveis para consulta; ative a assinatura para voltar a registrar.
     <% else %>

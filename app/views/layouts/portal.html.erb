@@ -6,7 +6,10 @@
     <meta name="robots" content="noindex">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#c8102e">
+    <link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+    <link rel="icon" href="/icon.png?v=2" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png?v=2">
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
@@ -38,6 +41,6 @@
     <main id="conteudo" class="mx-auto max-w-4xl px-5 py-8">
       <%= yield %>
     </main>
-    <footer class="mx-auto max-w-4xl px-5 pb-10 text-xs text-ink-400">Ambiente seguro operado com Servora.</footer>
+    <footer class="mx-auto max-w-4xl px-5 pb-10 text-xs text-ink-500">Ambiente seguro operado com Servora.</footer>
   </body>
 </html>

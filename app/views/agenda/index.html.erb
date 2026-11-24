@@ -9,7 +9,7 @@
   <div class="flex rounded-xl border border-ink-200 bg-white p-0.5" role="group" aria-label="Visão">
     <% [["dia", "Dia"], ["semana", "Semana"]].each do |value, label| %>
       <%= link_to label, agenda_index_path(data: @date.iso8601, visao: value, tecnico: params[:tecnico]),
-            class: "rounded-lg px-3 py-1.5 text-sm font-medium #{@mode == value ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-50'}",
+            class: "rounded-lg px-2.5 py-1 text-xs font-medium #{@mode == value ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-50'}",
             aria: { current: (@mode == value ? "page" : nil) } %>
     <% end %>
   </div>
@@ -48,7 +48,7 @@
 <% else %>
   <section class="sv-card relative overflow-x-auto p-4" aria-label="Linha do tempo do dia">
     <div class="min-w-[960px]">
-      <div class="ml-44 grid grid-cols-16 border-b border-ink-100 pb-1 text-[11px] font-medium text-ink-400" aria-hidden="true">
+      <div class="ml-44 grid grid-cols-16 border-b border-ink-100 pb-1 text-[11px] font-medium text-ink-500" aria-hidden="true">
         <% (Scheduling::AgendaQuery::DAY_START_HOUR...Scheduling::AgendaQuery::DAY_END_HOUR).each do |hour| %>
           <span><%= format("%02d:00", hour) %></span>
         <% end %>
@@ -70,7 +70,7 @@
                 <% else %>
                   <% visit = block.visit %>
                   <%= link_to work_order_path(visit.work_order),
-                        class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-lg border-l-4 px-2 py-1 text-xs transition hover:brightness-95 focus-visible:outline-2 #{visit.in_progress? ? 'border-ember-500 bg-ember-50 text-ember-600' : visit.completed? ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-brand-600 bg-brand-50 text-brand-800'}",
+                        class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-lg border-l-4 px-2 py-1 text-xs transition hover:brightness-95 focus-visible:outline-2 #{visit.in_progress? ? 'border-ember-600 bg-ember-50 text-ember-600' : visit.completed? ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-indigo-500 bg-indigo-50 text-indigo-800'}",
                         aria: { label: "#{visit.work_order.number}, #{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{visit.work_order.customer.display_name}, #{visit.status_label}" } do %>
                     <span class="truncate font-semibold"><%= visit.work_order.number %></span>
                     <span class="truncate"><%= l(visit.scheduled_start, format: "%H:%M") %>–<%= l(visit.scheduled_end, format: "%H:%M") %> · <%= visit.work_order.customer.display_name %></span>

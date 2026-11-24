@@ -1,3 +1,3 @@
-<% labels = { "pending" => ["Pendente", :info], "processing" => ["Em processamento", :brand], "processed" => ["Processado", :success], "dead" => ["Falha definitiva", :danger] } %>
+<% labels = { "pending" => ["Pendente", :info], "processing" => ["Em processamento", :indigo], "processed" => ["Processado", :success], "dead" => ["Falha definitiva", :danger] } %>
 <% label, tone = labels.fetch(event.status) %>
 <%= badge(label, tone:) %>

@@ -35,7 +35,7 @@
           <% @pagination.records.each do |movement| %>
             <tr>
               <td class="whitespace-nowrap text-xs text-ink-600"><%= date_time(movement.occurred_at) %></td>
-              <td><%= badge(movement.kind_label, tone: movement.inbound? ? :success : (movement.outbound? ? :ember : :info)) %></td>
+              <td><%= badge(movement.kind_label, tone: movement.inbound? ? :success : (movement.outbound? ? :indigo : :info)) %></td>
               <td class="font-medium text-ink-900"><%= movement.catalog_item.name %></td>
               <td><%= movement.warehouse.name %></td>
               <td class="sv-num text-right"><%= movement.outbound? ? "−" : (movement.inbound? ? "+" : "") %><%= quantity(movement.quantity, movement.catalog_item.unit) %></td>

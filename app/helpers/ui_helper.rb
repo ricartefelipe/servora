@@ -8,12 +8,15 @@ module UiHelper
     warning: "bg-amber-50 text-amber-800 ring-amber-200",
     danger: "bg-rose-50 text-rose-800 ring-rose-200",
     info: "bg-sky-50 text-sky-800 ring-sky-200",
+    indigo: "bg-indigo-50 text-indigo-800 ring-indigo-200",
     ember: "bg-ember-50 text-ember-600 ring-ember-100"
   }.freeze
 
+  AVATAR_CLASSES = "shrink-0 place-items-center rounded-full bg-ink-100 font-bold text-ink-700 ring-1 ring-inset ring-ink-200"
+
   DOT_TONES = {
     neutral: "bg-ink-400", brand: "bg-brand-500", success: "bg-emerald-500", warning: "bg-amber-500",
-    danger: "bg-rose-500", info: "bg-sky-500", ember: "bg-ember-500"
+    danger: "bg-rose-500", info: "bg-sky-500", indigo: "bg-indigo-500", ember: "bg-ember-500"
   }.freeze
 
   def badge(text, tone: :neutral, dot: true)
@@ -32,7 +35,7 @@ module UiHelper
           (tag.p(subtitle, class: "mt-1 text-sm text-ink-600") if subtitle)
         ].compact)
       end
-      safe_join([heading, (tag.div(class: "flex flex-wrap items-center gap-2", &actions) if actions)].compact)
+      safe_join([heading, (tag.div(class: "flex flex-wrap items-center gap-2 sm:shrink-0", &actions) if actions)].compact)
     end
   end
 
@@ -48,12 +51,16 @@ module UiHelper
     end
   end
 
-  def stat_tile(label, value, hint: nil, tone: :brand)
-    tag.div(class: "sv-card p-5") do
+  # A danger tile is marked by an alert icon and a rose tint, not by the colour of
+  # the number alone (rose and the ruby brand are close hues).
+  def stat_tile(label, value, hint: nil, tone: :neutral)
+    danger = tone == :danger
+    tag.div(class: danger ? "sv-card p-5 bg-rose-50/40 ring-1 ring-rose-200" : "sv-card p-5") do
       safe_join([
-        tag.p(label, class: "text-xs font-semibold uppercase tracking-wide text-ink-500"),
-        tag.p(value,
-          class: "sv-num mt-2 text-3xl font-bold tracking-tight #{tone == :danger ? "text-rose-700" : "text-ink-950"}"),
+        tag.p(class: "flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500") do
+          safe_join([(icon(:alert, size: 14, css: "text-rose-600", label: "Atenção") if danger), label].compact)
+        end,
+        tag.p(value, class: "sv-num mt-2 text-3xl font-bold tracking-tight #{danger ? "text-rose-700" : "text-ink-950"}"),
         (tag.p(hint, class: "mt-1 text-xs text-ink-500") if hint)
       ].compact)
     end
@@ -62,8 +69,7 @@ module UiHelper
   def avatar(name, size: :md)
     initials = name.to_s.split.first(2).pluck(0).join.upcase.presence || "?"
     dimension = size == :sm ? "size-7 text-[11px]" : "size-9 text-xs"
-    tag.span(initials, class: "grid #{dimension} shrink-0 place-items-center rounded-full bg-brand-100 font-bold text-brand-800",
-      aria: { hidden: true })
+    tag.span(initials, class: "grid #{dimension} #{AVATAR_CLASSES}", aria: { hidden: true })
   end
 
   def nav_link(label, path, icon_name:, active: false)

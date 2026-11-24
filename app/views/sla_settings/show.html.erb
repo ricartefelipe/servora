@@ -47,7 +47,7 @@
           <% 2.times do |index| %>
             <div class="flex items-center gap-1">
               <%= text_field_tag "sla[hours][#{weekday}][start#{index + 1}]", fields["start#{index + 1}"], id: "expediente-#{weekday}-#{index}-inicio", class: "sv-input w-24", placeholder: "08:00", aria: { label: "#{day}, intervalo #{index + 1}, início" } %>
-              <span class="text-ink-400" aria-hidden="true">–</span>
+              <span class="text-ink-500" aria-hidden="true">–</span>
               <%= text_field_tag "sla[hours][#{weekday}][end#{index + 1}]", fields["end#{index + 1}"], id: "expediente-#{weekday}-#{index}-fim", class: "sv-input w-24", placeholder: "12:00", aria: { label: "#{day}, intervalo #{index + 1}, fim" } %>
             </div>
           <% end %>

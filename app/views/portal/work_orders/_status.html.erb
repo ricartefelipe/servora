@@ -1,2 +1,2 @@
-<% tone = { "completed" => :success, "canceled" => :neutral, "open" => :info, "in_progress" => :warning, "scheduled" => :brand }.fetch(work_order.status, :neutral) %>
+<% tone = { "completed" => :success, "canceled" => :neutral, "open" => :info, "in_progress" => :ember, "scheduled" => :indigo }.fetch(work_order.status, :neutral) %>
 <%= badge(work_order.status == "open" ? "Em análise" : work_order.status_label, tone:) %>
