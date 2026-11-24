@@ -6,6 +6,7 @@ class Customer < TenantRecord
   has_many :service_locations, dependent: :restrict_with_exception
   has_many :contacts, class_name: "CustomerContact", dependent: :restrict_with_exception
   has_many :equipment, dependent: :restrict_with_exception
+  has_many :quotes, dependent: :restrict_with_exception
 
   enum :kind, KINDS.keys.index_by(&:itself), validate: true
 
