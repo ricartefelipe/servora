@@ -8,6 +8,8 @@ module Portal
       @receivables = customer_scope(Receivable).active.includes(:work_order).order(due_on: :desc).limit(100)
       @charges = PaymentCharge.where(receivable_id: @receivables.map(&:id), status: %w[submitted unknown])
         .where.not(payment_url: nil).index_by(&:receivable_id)
+      @invoices = ServiceInvoice.where(receivable_id: @receivables.map(&:id), status: "authorized").where.not(pdf_url: nil)
+        .index_by(&:receivable_id)
     end
   end
 end
