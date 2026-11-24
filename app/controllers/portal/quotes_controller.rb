@@ -4,6 +4,8 @@ module Portal
   # Customers only see quotes of their own customer record and only the
   # frozen snapshot of sent versions (never drafts or internal costs).
   class QuotesController < BaseController
+    include FileDelivery
+
     VISIBLE_STATUSES = %w[sent approved rejected expired converted].freeze
 
     rate_limit to: 10, within: 10.minutes, only: :decide, name: "portal-decision",
@@ -30,6 +32,14 @@ module Portal
       redirect_to portal_quote_path(quote), notice: message, status: :see_other
     rescue Servora::RuleViolation => e
       redirect_to portal_quote_path(quote), alert: e.message, status: :see_other
+    end
+
+    def pdf
+      quote = visible_quotes.find(params.expect(:id))
+      version = QuoteVersion.where(quote_id: quote.id).where.not(status: "draft")
+        .find_by!(version_number: params.expect(:version))
+      deliver_file(Documents::QuoteProposal.new(version).render, type: "application/pdf",
+        filename: "proposta-#{quote.number}-v#{version.version_number}.pdf")
     end
 
     private

@@ -1,0 +1,20 @@
+<% content_for :title, "Visitas" %>
+<h1 class="mb-6 text-2xl font-bold tracking-tight text-ink-950">Próximas visitas</h1>
+<% if @visits.empty? %>
+  <div class="sv-card"><%= empty_state("Nenhuma visita marcada", icon_name: :calendar) %></div>
+<% else %>
+  <ul class="space-y-3" role="list">
+    <% @visits.each do |visit| %>
+      <li class="sv-card flex flex-wrap items-center gap-4 p-4">
+        <div class="sv-num w-28 shrink-0">
+          <p class="font-bold text-ink-950"><%= l(visit.scheduled_start.to_date, format: "%d/%m") %></p>
+          <p class="text-sm text-ink-500"><%= l(visit.scheduled_start, format: "%H:%M") %>–<%= l(visit.scheduled_end, format: "%H:%M") %></p>
+        </div>
+        <div class="min-w-0 flex-1">
+          <%= link_to visit.work_order.title, portal_work_order_path(visit.work_order), class: "sv-link font-medium" %>
+          <p class="text-sm text-ink-500"><%= visit.work_order.service_location.name %></p>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

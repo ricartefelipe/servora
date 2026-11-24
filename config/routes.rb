@@ -190,7 +190,14 @@ Rails.application.routes.draw do
     root "home#show"
     resources :quotes, path: "orcamentos", only: %i[index show] do
       post :decide, on: :member, path: "decisao"
+      get "versoes/:version/pdf", action: :pdf, as: :pdf, on: :member
     end
+    resources :work_orders, path: "chamados", path_names: { new: "novo" }, only: %i[index show new create] do
+      resources :reports, path: "relatorios", only: :show
+    end
+    resources :equipment, path: "equipamentos", only: %i[index show]
+    resources :visits, path: "visitas", only: :index
+    resources :receivables, path: "cobrancas", only: :index
   end
 
   root "pages#home"
