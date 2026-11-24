@@ -23,6 +23,12 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   transações, consulta pela referência externa após respostas ambíguas, conciliação periódica e cancelamento
   remoto; chave de API criptografada por organização.
 
+- Contratos de manutenção com condições versionadas, ativação, suspensão, retomada e encerramento,
+  tipos de serviço cobertos, limite mensal de atendimentos e vínculo automático das ordens ao contrato vigente.
+- Planos preventivos com periodicidade semanal, mensal ou anual (e múltiplos), âncora de calendário
+  preservada, antecedência, modo "após a conclusão", reancoragem sem alterar ocorrências geradas, geração diária
+  idempotente com recuperação gradual e identidade estável (plano, sequência).
+
 ### Corrigido
 
 - A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).

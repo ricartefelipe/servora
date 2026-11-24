@@ -27,9 +27,7 @@ class WorkOrdersController < TenantController
     wo_policy = policy(@work_order)
     @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if wo_policy.add_item?
     @technicians = current_organization.memberships.technicians.includes(:user).ordered if wo_policy.assign?
-    load_materials if wo_policy.view_materials?
-    load_finance(wo_policy) if wo_policy.view_finance? || wo_policy.view_costs?
-    load_approvers if wo_policy.decide_item?
+    load_panels(wo_policy)
   end
 
   def new
@@ -92,6 +90,13 @@ class WorkOrdersController < TenantController
   end
 
   private
+
+  def load_panels(wo_policy)
+    load_materials if wo_policy.view_materials?
+    load_finance(wo_policy) if wo_policy.view_finance? || wo_policy.view_costs?
+    load_approvers if wo_policy.decide_item?
+    @coverage = Contracts::Coverage.new(@work_order).call if @work_order.contract_id
+  end
 
   def load_approvers
     @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)

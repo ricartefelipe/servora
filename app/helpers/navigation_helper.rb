@@ -11,6 +11,7 @@ module NavigationHelper
       NavItem.new("Ordens de serviço", :work_orders_path, :orders, nil, %w[work_orders checklist_items assignments visits]),
       NavItem.new("Agenda", :agenda_index_path, :calendar, :schedule_view, %w[agenda absences]),
       NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes decisions]),
+      NavItem.new("Contratos", :contracts_path, :preventive, :contracts_view, %w[contracts plans]),
       NavItem.new("Estoque", :stock_balances_path, :stock, :inventory_view,
         %w[stock_balances stock_movements warehouses receipts transfers adjustments]),
       NavItem.new("Financeiro", :receivables_path, :finance, :finance_view, %w[receivables payments discounts charges])

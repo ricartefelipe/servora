@@ -236,6 +236,41 @@ Aba "Materiais": reservas (com liberação manual), consumo a partir de reserva 
 devolução. `work_order.canceled` e `work_order.completed` acionam
 `Inventory::Handlers::ReleaseWorkOrderReservations` pela outbox.
 
+## Contratos e manutenção preventiva
+
+### Contratos
+
+```
+draft ─▶ active ─▶ suspended ─▶ active
+            └────────┴──────────▶ ended
+```
+
+- Condições (vigência, mensalidade, limite mensal de atendimentos, peças, escopo, tipos de serviço cobertos)
+  são versionadas: cada alteração grava um `contract_versions` append-only com o motivo (obrigatório depois do
+  rascunho). Contratos encerrados não mudam mais; encerrar desativa os planos.
+- Ordens novas sem contrato informado são vinculadas ao contrato vigente do cliente que cobre o tipo de
+  serviço (`Contracts::Coverage.resolve`). A cobertura de cada ordem considera vigência, tipos cobertos e o
+  limite mensal contado sobre `(requested_at, id)`; a ordem mostra se está coberta ou por que não.
+- FKs compostas `(organization_id, customer_id, contract_id)` impedem usar o contrato de outro cliente em
+  ordens e planos; equipamentos e locais do plano também são do mesmo cliente.
+
+### Planos preventivos
+
+- `Preventive::Frequency` e `Preventive::Schedule` (domínio puro): a ocorrência *n* vence
+  `âncora + (n − sequência_âncora) × período`, sempre calculada a partir da âncora. Dia 31 vira o último dia em
+  meses curtos e volta a 31 depois; 29/02 vira 28/02 em anos comuns e volta a 29/02 nos bissextos.
+- Identidade estável: `(plano, sequência)` é único no banco e cada ocorrência aponta para a ordem gerada.
+- `Preventive::GenerateOccurrences` trava o plano, relê `last_sequence` e gera as ocorrências cuja janela
+  (vencimento − antecedência) abriu, em ordem e no máximo 12 por execução — recuperação gradual após
+  indisponibilidade do agendador, sem pular nem repetir. Spec concorrente com três geradores simultâneos.
+- Alterar período, modo ou data base depois de gerar ocorrências **reancora** o plano na próxima sequência;
+  ocorrências e ordens já geradas não mudam. A nova data base precisa ser posterior à última ocorrência.
+- Modo "após a conclusão": a próxima ocorrência só é gerada quando a ordem anterior termina e vence um período
+  depois da conclusão efetiva.
+- Contrato suspenso não gera ocorrências; ao retomar, as datas que caíram na suspensão são puladas (não são
+  devidas). O término do contrato limita as datas geradas.
+- `Preventive::GenerateDueJob` roda diariamente (01:30) por organização ativa, um plano por transação.
+
 ## Financeiro operacional
 
 ### Contas a receber

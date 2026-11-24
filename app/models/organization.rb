@@ -40,6 +40,7 @@ class Organization < ApplicationRecord
   has_many :technician_allocations, dependent: :restrict_with_exception
   has_many :warehouses, dependent: :restrict_with_exception
   has_many :receivables, dependent: :restrict_with_exception
+  has_many :contracts, dependent: :restrict_with_exception
 
   enum :status, { active: "active", suspended: "suspended" }, validate: true
 

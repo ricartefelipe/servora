@@ -17,7 +17,7 @@ RSpec.describe "Layout responsivo", :js do
     page.current_window.resize_to(390, 844)
 
     [dashboard_path, customers_path, customer_path(customer), equipment_index_path, members_path, stock_balances_path,
-     stock_movements_path, warehouses_path, receivables_path].each do |path|
+     stock_movements_path, warehouses_path, receivables_path, contracts_path].each do |path|
       visit path
       overflow = page.evaluate_script("document.documentElement.scrollWidth - document.documentElement.clientWidth")
       expect(overflow).to be <= 0, "#{path} transborda #{overflow}px"

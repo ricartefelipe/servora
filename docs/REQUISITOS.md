@@ -105,6 +105,8 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
   da ocorrência (plano + número sequencial).
 - **RF-PRV-04** Alterar o plano não recria ocorrências já geradas nem reescreve ordens executadas.
 - **RF-PRV-05** Modo "após conclusão" calcula a próxima data a partir da conclusão efetiva.
+- **RF-PRV-06** Contrato suspenso não gera ocorrências; ao retomar, datas que caíram na suspensão não são
+  geradas. O término do contrato limita as datas e desativa os planos.
 
 ## 8. Estoque
 

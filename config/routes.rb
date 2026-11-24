@@ -146,6 +146,12 @@ Rails.application.routes.draw do
     resources :stock_balances, path: "estoque", only: :index do
       patch :minimum, on: :collection, path: "minimo"
     end
+    resources :contracts, path: "contratos", except: :destroy do
+      patch :change_status, on: :member, path: "situacao"
+      resources :plans, path: "planos", module: :contracts, only: %i[new create show edit update] do
+        post :generate, on: :member, path: "gerar"
+      end
+    end
     resources :receivables, path: "financeiro", only: %i[index show new create] do
       patch :cancel, on: :member, path: "cancelar"
       scope module: :receivables do
