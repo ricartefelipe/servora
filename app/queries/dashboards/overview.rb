@@ -34,6 +34,14 @@ module Dashboards
       @organization.equipment.active.where(operational_status: %w[attention inoperative]).group(:operational_status).count
     end
 
+    # Running SLA clocks past their deadline and within the warning window.
+    def sla_alerts(now: Time.current)
+      return nil unless @membership.can?(:work_orders_view_all)
+
+      running = SlaClock.running
+      { breached: running.where(due_at: ..now).count, at_risk: running.where(due_at: now..).where(warn_at: ..now).count }
+    end
+
     def onboarding_steps
       [
         OnboardingStep.new("Cadastre sua organização", "Dados da empresa, fuso horário e deslocamento padrão.", true,

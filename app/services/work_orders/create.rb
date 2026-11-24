@@ -18,6 +18,7 @@ module WorkOrders
           requested_at: @attributes[:requested_at] || Time.current, status: "open"
         ))
         Setup.new(work_order:, equipment_ids: @equipment_ids).call
+        Sla::Track.new(work_order).start
         Transition.new(work_order:, to: @requires_approval ? "awaiting_approval" : "approved", actor: @actor).call
         AuditEvent.record!(action: "work_order.created", auditable: work_order, changes: { number: work_order.number })
         Outbox::Publisher.publish!(event_type: "work_order.created", aggregate: work_order)

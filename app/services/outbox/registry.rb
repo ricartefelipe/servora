@@ -19,7 +19,9 @@ module Outbox
       "visit.started" => [],
       "visit.finished" => [],
       "payment_charge.requested" => ["Payments::Handlers::SubmitCharge"],
-      "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"]
+      "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"],
+      "sla.warning" => ["Notifications::Handlers::SlaAlert"],
+      "sla.breached" => ["Notifications::Handlers::SlaAlert"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

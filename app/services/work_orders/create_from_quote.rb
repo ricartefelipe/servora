@@ -51,6 +51,7 @@ module WorkOrders
 
     def complete_conversion(work_order)
       copy_items(work_order)
+      Sla::Track.new(work_order).start
       Transition.new(work_order:, to: "approved", actor: @actor, reason: "Orçamento #{@quote.number} aprovado").call
       @quote.update!(status: "converted")
       Quotes::History.record!(@quote, kind: "converted", note: work_order.number)
