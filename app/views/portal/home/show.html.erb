@@ -7,34 +7,83 @@
   <%= link_to new_portal_work_order_path, class: "sv-btn-primary h-11 px-4 text-sm" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %>
 </div>
 
-<section class="sv-card grid divide-y divide-ink-150 overflow-hidden sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="Resumo">
-  <%= link_to portal_work_orders_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
-    <span class="block text-[13px] font-medium text-ink-600">Atendimentos em andamento</span>
-    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= @open_orders %></span>
-  <% end %>
-  <%= link_to portal_visits_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
-    <span class="block text-[13px] font-medium text-ink-600">Próxima visita</span>
-    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= @next_visit ? l(@next_visit.scheduled_start, format: "%d/%m %H:%M") : "—" %></span>
-  <% end %>
-  <%= link_to portal_receivables_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
-    <span class="block text-[13px] font-medium text-ink-600">Saldo em aberto</span>
-    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= money(@open_balance) %></span>
-  <% end %>
+<% cell_class = "group flex h-full flex-col bg-white p-5 transition-colors hover:bg-ink-25 focus-visible:-outline-offset-2" %>
+<% label_class = "flex items-start justify-between gap-3 text-[13px] font-medium text-ink-600" %>
+<% value_class = "sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950" %>
+<% detail_class = "mt-1 block text-sm text-ink-500" %>
+<section class="sv-card overflow-hidden" aria-labelledby="resumo-title">
+  <h2 id="resumo-title" class="sr-only">Resumo</h2>
+  <ul class="grid gap-px bg-ink-150 sm:grid-cols-2" role="list">
+    <li class="bg-white">
+      <%= link_to portal_visits_path, class: cell_class do %>
+        <span class="<%= label_class %>">Visitas agendadas<%= icon(:chevron_right, size: 16, css: "text-ink-400 group-hover:text-ink-600") %></span>
+        <span class="<%= value_class %>"><%= @upcoming_visits %></span>
+        <span class="<%= detail_class %>">
+          <% if @next_visit.nil? %>
+            Nenhuma visita marcada
+          <% elsif @next_visit.status == "in_progress" %>
+            Visita em andamento agora
+          <% elsif @next_visit.status == "traveling" %>
+            Equipe a caminho
+          <% else %>
+            Próxima em <span class="sv-num font-medium text-ink-800"><%= l(@next_visit.scheduled_start, format: "%d/%m às %H:%M") %></span>
+          <% end %>
+        </span>
+      <% end %>
+    </li>
+    <li class="bg-white">
+      <%= link_to portal_quotes_path, class: cell_class do %>
+        <span class="<%= label_class %>"><%= @can_approve ? "Orçamentos aguardando você" : "Orçamentos aguardando aprovação" %><%= icon(:chevron_right, size: 16, css: "text-ink-400 group-hover:text-ink-600") %></span>
+        <span class="<%= value_class %>"><%= @pending_quotes_count %></span>
+        <span class="<%= detail_class %>">
+          <% if !@can_approve %>
+            A decisão cabe aos aprovadores da sua empresa
+          <% elsif @pending_quotes_count.zero? %>
+            Nenhum orçamento pendente
+          <% else %>
+            Analise e responda pelo portal
+          <% end %>
+        </span>
+      <% end %>
+    </li>
+    <li class="bg-white">
+      <%= link_to portal_receivables_path, class: cell_class do %>
+        <span class="<%= label_class %>">Faturas em aberto<%= icon(:chevron_right, size: 16, css: "text-ink-400 group-hover:text-ink-600") %></span>
+        <span class="<%= value_class %>"><%= @open_receivables %></span>
+        <span class="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-500">
+          <span>Saldo de <span class="sv-num font-medium text-ink-950"><%= money(@open_balance) %></span></span>
+          <% if @overdue_receivables.positive? %>
+            <%= badge(@overdue_receivables == 1 ? "1 vencida" : "#{@overdue_receivables} vencidas", tone: :danger) %>
+          <% end %>
+        </span>
+      <% end %>
+    </li>
+    <li class="bg-white">
+      <%= link_to portal_work_orders_path, class: cell_class do %>
+        <span class="<%= label_class %>">Atendimentos em andamento<%= icon(:chevron_right, size: 16, css: "text-ink-400 group-hover:text-ink-600") %></span>
+        <span class="<%= value_class %>"><%= @open_orders %></span>
+        <span class="<%= detail_class %>">Chamados e ordens de serviço abertos</span>
+      <% end %>
+    </li>
+  </ul>
 </section>
 
 <section class="mt-8" aria-labelledby="pendentes-title">
-  <h2 id="pendentes-title" class="mb-3 text-base font-semibold text-ink-950">Propostas aguardando sua análise</h2>
+  <h2 id="pendentes-title" class="text-base font-semibold text-ink-950"><%= @can_approve ? "Orçamentos aguardando sua aprovação" : "Orçamentos aguardando aprovação" %></h2>
+  <p class="mb-3 mt-1 text-sm text-ink-500">
+    <%= @can_approve ? "Abra o orçamento para conferir os itens e aprovar ou recusar." : "Somente os contatos autorizados pela sua empresa podem aprovar ou recusar orçamentos." %>
+  </p>
   <% if @pending_quotes.empty? %>
-    <div class="sv-card"><%= empty_state("Nenhuma proposta pendente", description: "Quando houver uma nova proposta, ela aparecerá aqui.", icon_name: :quote) %></div>
+    <div class="sv-card"><%= empty_state("Nenhum orçamento pendente", description: "Quando houver um novo orçamento, ele aparecerá aqui.", icon_name: :quote) %></div>
   <% else %>
     <ul class="sv-card divide-y divide-ink-150 overflow-hidden" role="list">
       <% @pending_quotes.each do |quote| %>
         <li>
-          <%= link_to portal_quote_path(quote), class: "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-ink-25" do %>
+          <%= link_to portal_quote_path(quote), class: "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-ink-25 focus-visible:-outline-offset-2" do %>
             <span class="sv-icon-chip"><%= icon(:quote, size: 18) %></span>
             <span class="min-w-0 flex-1">
               <span class="block font-semibold text-ink-950"><%= quote.number %> · <%= quote.title %></span>
-              <span class="block text-sm text-ink-500">Válida até <%= l(quote.current_version.valid_until) %></span>
+              <span class="block text-sm text-ink-500">Válido até <%= l(quote.current_version.valid_until) %></span>
             </span>
             <span class="sv-num shrink-0 font-semibold text-ink-950"><%= money(quote.current_version.total) %></span>
             <%= icon(:chevron_right, size: 16, css: "text-ink-400") %>
