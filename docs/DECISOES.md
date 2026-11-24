@@ -345,3 +345,16 @@ status atualizado.
 - **Consequências**: números sempre consistentes com os registros; períodos longos têm custo limitado pelo teto de
   366 dias e pelos limites de linhas.
 
+## DEC-043 — Acesso na raiz e identidade rubi com papéis de cor
+
+- **Decisão**: a raiz (`/`) exibe o formulário de acesso e encaminha quem já entrou às suas organizações com
+  redirecionamento temporário; `GET /conta/entrar` redireciona permanentemente para a raiz; a saída do portal do
+  cliente leva a uma página própria do portal. A identidade visual usa vermelho rubi (`brand`) para ações
+  principais, links, seleção e foco; neutros grafite (`ink`); dourado (`ember`) para atenção. Estados neutros ou
+  positivos nunca usam a cor da marca: sucesso em verde, estados calmos em índigo ou azul, perigo em rosa com
+  ícone, e botões de exclusão contornados.
+- **Alternativas**: manter uma página pública de apresentação (sem papel no fluxo de uso de equipes autenticadas e
+  do portal); usar o vermelho também como cor de alerta (ambíguo com a marca).
+- **Consequências**: um único ponto de entrada; o redirecionamento de quem já entrou não é armazenado pelo
+  navegador, evitando ciclos após a saída; ícones servidos com versão no endereço para renovar caches e
+  instalações do aplicativo.
