@@ -20,6 +20,11 @@ default: &default
     queue: default
     schedule: every 5 minutes
 
+  invoice_reconciliation:
+    class: Invoices::ReconcileJob
+    queue: integrations
+    schedule: every 10 minutes
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default
