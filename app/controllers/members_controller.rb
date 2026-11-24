@@ -37,7 +37,7 @@ class MembersController < TenantController
   private
 
   def load_membership
-    @membership = current_organization.memberships.includes(:user).find(params.expect(:id))
+    @membership = tenant_relation(Membership).includes(:user, :organization).find(params.expect(:id))
     authorize @membership, :"#{action_name == "edit" ? "update" : action_name}?"
   end
 

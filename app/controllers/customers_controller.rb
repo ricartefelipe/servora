@@ -62,7 +62,7 @@ class CustomersController < TenantController
   private
 
   def load_customer
-    @customer = policy_scope(current_organization.customers).find(params.expect(:id))
+    @customer = policy_scope(tenant_relation(Customer)).find(params.expect(:id))
     authorize @customer, :"#{action_name == "edit" ? "update" : action_name}?"
   end
 

@@ -1,0 +1,7 @@
+<% content_for :title, "Acesso" %>
+<div class="mx-auto max-w-md sv-card p-8 text-center animate-slide-up">
+  <div class="mx-auto mb-5 grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700"><%= icon(:key, size: 24) %></div>
+  <h1 class="text-2xl font-bold tracking-tight text-ink-950">Acessar o portal de <%= @organization_name %></h1>
+  <p class="mt-3 text-sm text-ink-600">Por segurança, o link pode ser usado uma única vez. Ao continuar, uma sessão restrita será aberta neste navegador por até 12 horas.</p>
+  <%= button_to "Continuar", portal_access_path(@token), method: :post, class: "sv-btn-primary mt-6 w-full" %>
+</div>

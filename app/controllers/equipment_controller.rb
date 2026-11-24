@@ -21,7 +21,7 @@ class EquipmentController < TenantController
   def new
     authorize Equipment, :create?
     customer_id = params[:customer_id]
-    customer = customer_id && policy_scope(current_organization.customers).active.find(customer_id)
+    customer = customer_id && policy_scope(tenant_relation(Customer)).active.find(customer_id)
     @equipment = current_organization.equipment.new(customer:)
     @customer_options = customer_options
   end
@@ -54,7 +54,7 @@ class EquipmentController < TenantController
   def move; end
 
   def relocate
-    location = current_organization.service_locations.active.includes(:customer)
+    location = tenant_relation(ServiceLocation).active.includes(:customer)
       .find(params.expect(relocation: [:service_location_id])[:service_location_id])
     authorize location.customer, :show?
     EquipmentLifecycle::Relocate.new(equipment: @equipment, location:, actor: current_membership,
@@ -103,7 +103,7 @@ class EquipmentController < TenantController
   end
 
   def load_equipment
-    @equipment = policy_scope(current_organization.equipment).includes(:customer, :service_location).find(params.expect(:id))
+    @equipment = policy_scope(tenant_relation(Equipment)).includes(:customer, :service_location).find(params.expect(:id))
     authorize @equipment, ACTION_PERMISSIONS.fetch(action_name, :"#{action_name}?")
   end
 
