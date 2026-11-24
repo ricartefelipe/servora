@@ -1,29 +1,43 @@
 <% content_for :title, "Início" %>
-<h1 class="text-2xl font-bold tracking-tight text-ink-950">Olá, <%= current_contact.name.split.first %></h1>
-<p class="mt-1 text-sm text-ink-600"><%= current_contact.customer.display_name %></p>
-
-<div class="mt-6 grid gap-4 sm:grid-cols-3">
-  <%= link_to portal_work_orders_path, class: "block" do %><%= stat_tile("Atendimentos em andamento", @open_orders) %><% end %>
-  <%= link_to portal_visits_path, class: "block" do %><%= stat_tile("Próxima visita", @next_visit ? l(@next_visit.scheduled_start, format: "%d/%m %H:%M") : "—") %><% end %>
-  <%= link_to portal_receivables_path, class: "block" do %><%= stat_tile("Saldo em aberto", money(@open_balance)) %><% end %>
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div class="min-w-0">
+    <h1 class="sv-display text-display-md text-ink-950">Olá, <%= current_contact.name.split.first %></h1>
+    <p class="mt-1 text-sm text-ink-600"><%= current_contact.customer.display_name %></p>
+  </div>
+  <%= link_to new_portal_work_order_path, class: "sv-btn-primary h-11 px-4 text-sm" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %>
 </div>
-<p class="mt-4"><%= link_to new_portal_work_order_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %></p>
+
+<section class="sv-card grid divide-y divide-ink-150 overflow-hidden sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="Resumo">
+  <%= link_to portal_work_orders_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
+    <span class="block text-[13px] font-medium text-ink-600">Atendimentos em andamento</span>
+    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= @open_orders %></span>
+  <% end %>
+  <%= link_to portal_visits_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
+    <span class="block text-[13px] font-medium text-ink-600">Próxima visita</span>
+    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= @next_visit ? l(@next_visit.scheduled_start, format: "%d/%m %H:%M") : "—" %></span>
+  <% end %>
+  <%= link_to portal_receivables_path, class: "block p-5 transition-colors hover:bg-ink-25" do %>
+    <span class="block text-[13px] font-medium text-ink-600">Saldo em aberto</span>
+    <span class="sv-num mt-2 block text-2xl font-semibold tracking-tight text-ink-950"><%= money(@open_balance) %></span>
+  <% end %>
+</section>
 
 <section class="mt-8" aria-labelledby="pendentes-title">
-  <h2 id="pendentes-title" class="mb-3 font-semibold text-ink-900">Propostas aguardando sua análise</h2>
+  <h2 id="pendentes-title" class="mb-3 text-base font-semibold text-ink-950">Propostas aguardando sua análise</h2>
   <% if @pending_quotes.empty? %>
     <div class="sv-card"><%= empty_state("Nenhuma proposta pendente", description: "Quando houver uma nova proposta, ela aparecerá aqui.", icon_name: :quote) %></div>
   <% else %>
-    <ul class="space-y-3" role="list">
+    <ul class="sv-card divide-y divide-ink-150 overflow-hidden" role="list">
       <% @pending_quotes.each do |quote| %>
         <li>
-          <%= link_to portal_quote_path(quote), class: "sv-card flex items-center gap-4 p-5 transition hover:border-brand-300" do %>
-            <span class="grid size-10 place-items-center rounded-xl bg-ember-50 text-ember-600"><%= icon(:quote) %></span>
+          <%= link_to portal_quote_path(quote), class: "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-ink-25" do %>
+            <span class="sv-icon-chip"><%= icon(:quote, size: 18) %></span>
             <span class="min-w-0 flex-1">
-              <span class="block font-semibold text-ink-900"><%= quote.number %> · <%= quote.title %></span>
+              <span class="block font-semibold text-ink-950"><%= quote.number %> · <%= quote.title %></span>
               <span class="block text-sm text-ink-500">Válida até <%= l(quote.current_version.valid_until) %></span>
             </span>
-            <span class="sv-num font-semibold text-ink-900"><%= money(quote.current_version.total) %></span>
+            <span class="sv-num shrink-0 font-semibold text-ink-950"><%= money(quote.current_version.total) %></span>
+            <%= icon(:chevron_right, size: 16, css: "text-ink-400") %>
           <% end %>
         </li>
       <% end %>

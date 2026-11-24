@@ -1,13 +1,13 @@
 <% content_for :title, "Equipamentos" %>
-<h1 class="mb-6 text-2xl font-bold tracking-tight text-ink-950">Equipamentos</h1>
+<h1 class="sv-display mb-6 text-display-md text-ink-950">Equipamentos</h1>
 <% if @equipment.empty? %>
   <div class="sv-card"><%= empty_state("Nenhum equipamento cadastrado", icon_name: :equipment) %></div>
 <% else %>
   <ul class="grid gap-3 sm:grid-cols-2" role="list">
     <% @equipment.each do |item| %>
       <li>
-        <%= link_to portal_equipment_path(item), class: "sv-card block p-4 transition hover:border-brand-300" do %>
-          <span class="block font-semibold text-ink-900"><%= item.title %></span>
+        <%= link_to portal_equipment_path(item), class: "sv-card block p-4 transition-colors hover:bg-ink-25 hover:ring-ink-300" do %>
+          <span class="block font-semibold text-ink-950"><%= item.title %></span>
           <span class="block text-sm text-ink-500"><%= item.service_location.name %><% if item.serial_number %> · série <%= item.serial_number %><% end %></span>
           <span class="mt-2 inline-block"><%= badge(item.status_label, tone: { "operational" => :success, "attention" => :warning, "inoperative" => :danger }.fetch(item.operational_status, :neutral)) %></span>
         <% end %>

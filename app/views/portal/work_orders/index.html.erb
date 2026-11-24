@@ -1,27 +1,29 @@
 <% content_for :title, "Chamados" %>
 <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <h1 class="text-2xl font-bold tracking-tight text-ink-950">Chamados e ordens de serviço</h1>
-    <p class="text-sm text-ink-600">Acompanhe o andamento dos atendimentos de <%= current_contact.customer.display_name %>.</p>
+  <div class="min-w-0">
+    <h1 class="sv-display text-display-md text-ink-950">Chamados e ordens de serviço</h1>
+    <p class="mt-1 text-sm text-ink-600">Acompanhe o andamento dos atendimentos de <%= current_contact.customer.display_name %>.</p>
   </div>
-  <%= link_to new_portal_work_order_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %>
+  <%= link_to new_portal_work_order_path, class: "sv-btn-primary h-11 px-4 text-sm" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %>
 </div>
 
-<nav class="mb-4 flex gap-2" aria-label="Filtrar">
-  <%= link_to "Em andamento", portal_work_orders_path, class: "sv-btn-sm #{@open ? 'sv-btn-primary' : 'sv-btn-secondary'}", aria: { current: (@open ? "page" : nil) } %>
-  <%= link_to "Encerradas", portal_work_orders_path(situacao: "encerradas"), class: "sv-btn-sm #{@open ? 'sv-btn-secondary' : 'sv-btn-primary'}", aria: { current: (@open ? nil : "page") } %>
+<% segment_on = "inline-flex h-10 items-center rounded-md bg-white px-4 text-sm font-semibold text-ink-950 shadow-[var(--shadow-xs)] ring-1 ring-ink-400" %>
+<% segment_off = "inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-ink-600 transition-colors hover:text-ink-950" %>
+<nav class="mb-4 inline-flex gap-0.5 rounded-lg bg-ink-100 p-0.5" aria-label="Filtrar">
+  <%= link_to "Em andamento", portal_work_orders_path, class: (@open ? segment_on : segment_off), aria: { current: (@open ? "page" : nil) } %>
+  <%= link_to "Encerradas", portal_work_orders_path(situacao: "encerradas"), class: (@open ? segment_off : segment_on), aria: { current: (@open ? nil : "page") } %>
 </nav>
 
 <% if @work_orders.empty? %>
   <div class="sv-card"><%= empty_state(@open ? "Nenhum atendimento em andamento" : "Nenhum atendimento encerrado", description: "Abra um chamado quando precisar de manutenção.", icon_name: :orders) %></div>
 <% else %>
-  <ul class="space-y-3" role="list">
+  <ul class="sv-card divide-y divide-ink-150 overflow-hidden" role="list">
     <% @work_orders.each do |work_order| %>
       <li>
-        <%= link_to portal_work_order_path(work_order), class: "sv-card flex flex-wrap items-center gap-3 p-4 transition hover:border-brand-300" do %>
+        <%= link_to portal_work_order_path(work_order), class: "flex flex-wrap items-center gap-3 px-5 py-4 transition-colors hover:bg-ink-25" do %>
           <span class="min-w-0 flex-1">
-            <span class="block font-semibold text-ink-900"><%= work_order.title %></span>
-            <span class="text-sm text-ink-500"><%= work_order.number %> · <%= work_order.service_location.name %> · aberto em <%= l(work_order.requested_at.to_date) %></span>
+            <span class="block font-semibold text-ink-950"><%= work_order.title %></span>
+            <span class="text-sm text-ink-500"><span class="sv-num"><%= work_order.number %></span> · <%= work_order.service_location.name %> · aberto em <%= l(work_order.requested_at.to_date) %></span>
           </span>
           <%= render "portal/work_orders/status", work_order: %>
         <% end %>
