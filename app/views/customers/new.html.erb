@@ -1,16 +1,16 @@
 <% content_for :title, "Novo cliente" %>
-<%= page_header("Novo cliente", subtitle: "Dados cadastrais, primeiro local de atendimento e contato principal.") %>
+<%= page_header("Novo cliente", eyebrow: "Cadastros · Clientes", size: :md, subtitle: "Dados cadastrais, primeiro local de atendimento e contato principal.") %>
 
-<%= form_with model: @registration, url: customers_path, class: "max-w-4xl space-y-6" do |f| %>
+<%= form_with model: @registration, url: customers_path, class: "max-w-3xl space-y-6" do |f| %>
   <%= f.error_summary %>
   <section class="sv-card p-6" aria-labelledby="dados-title">
-    <h2 id="dados-title" class="mb-4 font-semibold text-ink-900">Dados do cliente</h2>
+    <h2 id="dados-title" class="mb-4 text-[15px] font-semibold text-ink-950">Dados do cliente</h2>
     <fieldset class="mb-5">
       <legend class="sv-label">Tipo</legend>
       <div class="flex gap-3">
         <% Customer::KINDS.each do |value, label| %>
-          <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 px-4 py-2.5 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-            <%= f.radio_button :kind, value, class: "text-brand-600 focus:ring-brand-500" %> <%= label %>
+          <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-white px-3.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-300 transition-colors duration-150 hover:bg-ink-25 has-[:checked]:bg-select has-[:checked]:font-medium has-[:checked]:text-ink-950 has-[:checked]:ring-ink-400 has-[:checked]:shadow-[inset_2px_0_0_var(--color-brand-600)]">
+            <%= f.radio_button :kind, value, class: "size-4" %> <%= label %>
           </label>
         <% end %>
       </div>
@@ -26,8 +26,8 @@
   </section>
 
   <section class="sv-card p-6" aria-labelledby="local-title">
-    <h2 id="local-title" class="mb-1 font-semibold text-ink-900">Primeiro local de atendimento</h2>
-    <p class="mb-4 text-sm text-ink-500">Outros locais podem ser adicionados depois.</p>
+    <h2 id="local-title" class="mb-1 text-[15px] font-semibold text-ink-950">Primeiro local de atendimento</h2>
+    <p class="mb-4 text-[13px] text-ink-600">Outros locais podem ser adicionados depois.</p>
     <div class="grid gap-5 sm:grid-cols-6">
       <%= f.field :location_name, label: "Identificação", required: true, wrapper: { class: "sm:col-span-2" } %>
       <%= f.field :postal_code, label: "CEP", wrapper: { class: "sm:col-span-2" }, inputmode: "numeric" %>
@@ -44,8 +44,8 @@
   </section>
 
   <section class="sv-card p-6" aria-labelledby="contato-title">
-    <h2 id="contato-title" class="mb-1 font-semibold text-ink-900">Contato principal</h2>
-    <p class="mb-4 text-sm text-ink-500">Opcional.</p>
+    <h2 id="contato-title" class="mb-1 text-[15px] font-semibold text-ink-950">Contato principal</h2>
+    <p class="mb-4 text-[13px] text-ink-600">Opcional.</p>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= f.field :contact_name, label: "Nome" %>
       <%= f.field :contact_position, label: "Cargo" %>
@@ -55,8 +55,5 @@
     <div class="mt-5"><%= f.toggle_field :contact_can_approve, label: "Pode aprovar orçamentos" %></div>
   </section>
 
-  <div class="flex gap-3">
-    <%= f.submit_button "Cadastrar cliente" %>
-    <%= link_to "Cancelar", customers_path, class: "sv-btn-secondary" %>
-  </div>
+  <%= render "shared/form_footer", f:, submit: "Cadastrar cliente", cancel_url: customers_path, sticky: true, within: :stacked %>
 <% end %>

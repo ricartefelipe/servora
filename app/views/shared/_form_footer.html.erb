@@ -1,0 +1,48 @@
+<%# Form footer: a hairline-topped bar, right-aligned, with "Cancelar"
+    (secondary) followed by the one primary submit. Every form uses the same
+    order.
+    Locals:
+      f               the form builder.
+      submit          the submit label (kept exactly; specs click it).
+      cancel_url      where "Cancelar" leads; nil leaves only the submit.
+      submit_variant  builder variant, :primary by default.
+      submits_with    turbo_submits_with text; false keeps the button plain.
+      sticky          pins the bar to the bottom of the viewport (long forms).
+      within          :card    the form or its last block is an sv-card with p-6;
+                      :modal   the form lives in shared/_modal ("Cancelar"
+                               closes the dialog, falling back to the link
+                               when the page renders without Turbo);
+                      :stacked the form is a stack of cards: the bar is its
+                               own block after them. %>
+<%# locals: (f:, submit:, cancel_url: nil, submit_variant: :primary, submits_with: "Salvando…", sticky: false, within: :card) -%>
+<%
+  in_dialog = within == :modal && (turbo_frame_request_id == "modal" || request.format.turbo_stream?)
+  placement =
+    if within == :stacked
+      "mt-6 rounded-[var(--radius-card)] px-5 py-3 ring-1 ring-ink-200"
+    elsif in_dialog
+      "-mx-6 -mb-5 mt-6 border-t border-ink-150 px-6 py-4"
+    else
+      "-mx-6 -mb-6 mt-6 rounded-b-[var(--radius-card)] border-t border-ink-150 px-6 py-4"
+    end
+  # In the dialog the scroller is #modal-body (py-5): -bottom-5 pins the bar
+  # to its edge instead of 20px above it.
+  surface =
+    if in_dialog
+      "sticky -bottom-5 z-10 bg-white"
+    elsif sticky
+      "sticky bottom-0 z-10 bg-white shadow-[0_-1px_0_var(--color-ink-200)]"
+    elsif within == :stacked
+      "bg-white"
+    else
+      "bg-ink-25"
+    end
+  submit_data = submits_with ? { turbo_submits_with: submits_with } : {}
+%>
+<div class="flex flex-wrap items-center justify-end gap-3 <%= placement %> <%= surface %>">
+  <% if cancel_url %>
+    <%= link_to "Cancelar", cancel_url, class: "sv-btn-secondary",
+          data: (within == :modal ? { action: "modal#close:prevent", turbo_frame: "_top" } : {}) %>
+  <% end %>
+  <%= f.submit_button(submit, variant: submit_variant, data: submit_data) %>
+</div>

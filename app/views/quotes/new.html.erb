@@ -1,5 +1,5 @@
 <% content_for :title, "Novo orçamento" %>
-<%= page_header("Novo orçamento", subtitle: "Escolha o local de atendimento. Os itens são incluídos em seguida.") %>
+<%= page_header("Novo orçamento", eyebrow: "Operação · Orçamentos", size: :md, subtitle: "Escolha o local de atendimento. Os itens são incluídos em seguida.") %>
 <% if @customers.empty? %>
   <section class="sv-card"><%= empty_state("Cadastre um cliente primeiro", icon_name: :customers) { link_to("Novo cliente", new_customer_path, class: "sv-btn-primary") } %></section>
 <% else %>
@@ -14,6 +14,6 @@
       <%= f.label :title, "Título", class: "sv-label" %>
       <%= f.text_field :title, class: "sv-input", placeholder: "Ex.: Manutenção corretiva da câmara fria", maxlength: 160 %>
     </div>
-    <%= f.button "Criar orçamento", type: "submit", class: "sv-btn-primary" %>
+    <%= render "shared/form_footer", f:, submit: "Criar orçamento", cancel_url: quotes_path, submits_with: false %>
   <% end %>
 <% end %>

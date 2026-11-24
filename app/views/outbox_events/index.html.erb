@@ -1,14 +1,10 @@
 <% content_for :title, "Eventos" %>
-<%= page_header("Eventos assíncronos", subtitle: "Processamento da outbox: notificações, e-mails e integrações disparados pelas operações.") %>
+<%= page_header("Eventos assíncronos", eyebrow: "Gestão · Eventos", subtitle: "Processamento da outbox: notificações, e-mails e integrações disparados pelas operações.") %>
 
-<nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar por situação">
-  <% [[nil, "Requer atenção"], ["dead", "Falha definitiva"], ["pending", "Pendentes"], ["processing", "Em processamento"], ["processed", "Processados"]].each do |value, label| %>
-    <% active = @status == value %>
-    <%= link_to outbox_events_path(situacao: value), class: "sv-btn-sm #{active ? 'sv-btn-primary' : 'sv-btn-secondary'}", aria: { current: (active ? "page" : nil) } do %>
-      <%= label %><% if value && @counts[value] %> <span class="sv-num opacity-75">(<%= @counts[value] %>)</span><% end %>
-    <% end %>
-  <% end %>
-</nav>
+<%= render "shared/filter_chips", label: "Filtrar por situação", items:
+      [[nil, "Requer atenção"], ["dead", "Falha definitiva"], ["pending", "Pendentes"], ["processing", "Em processamento"], ["processed", "Processados"]].map { |value, text|
+        [text, outbox_events_path(situacao: value), @status == value, (@counts[value] if value)]
+      } %>
 
 <section class="sv-card overflow-hidden">
   <% if @pagination.records.empty? %>
@@ -17,13 +13,13 @@
     <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><th scope="col">Evento</th><th scope="col">Situação</th><th scope="col">Tentativas</th><th scope="col">Criado</th><th scope="col"><span class="sr-only">Detalhes</span></th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |event| %>
             <tr>
-              <td><code class="text-xs text-ink-700"><%= event.event_type %></code></td>
+              <td><code class="font-mono text-xs font-medium text-ink-800"><%= event.event_type %></code></td>
               <td><%= render "outbox_events/status", event: %></td>
-              <td class="sv-num"><%= event.attempts %>/<%= event.max_attempts %></td>
-              <td class="whitespace-nowrap text-ink-600"><%= l(event.created_at, format: :short) %></td>
+              <td class="sv-num font-mono text-xs text-ink-700"><%= event.attempts %>/<%= event.max_attempts %></td>
+              <td class="sv-num whitespace-nowrap font-mono text-xs text-ink-600"><%= l(event.created_at, format: :short) %></td>
               <td class="text-right"><%= link_to "Detalhes", outbox_event_path(event), class: "sv-btn-ghost sv-btn-sm" %></td>
             </tr>
           <% end %>

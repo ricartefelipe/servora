@@ -1,5 +1,5 @@
 <% content_for :title, "Equipamentos" %>
-<%= page_header("Equipamentos", subtitle: "Parque instalado nos clientes, com localização e histórico.") do %>
+<%= page_header("Equipamentos", eyebrow: "Cadastros · Equipamentos", subtitle: "Parque instalado nos clientes, com localização e histórico.") do %>
   <% if policy(Equipment).create? %>
     <%= link_to new_equipment_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo equipamento<% end %>
   <% end %>
@@ -15,7 +15,7 @@
     <%= f.select :estado, Equipment::STATUSES.map { |value, label| [label, value] }, { include_blank: "Todos", selected: params[:estado] }, class: "sv-input" %>
   </div>
   <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-700">
-    <%= f.check_box :arquivados, { checked: params[:arquivados] == "1", class: "rounded border-ink-300 text-brand-600" }, "1", nil %> Incluir arquivados
+    <%= f.check_box :arquivados, { checked: params[:arquivados] == "1", class: "size-4" }, "1", nil %> Incluir arquivados
   </label>
   <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
 <% end %>
@@ -24,18 +24,40 @@
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhum equipamento encontrado", description: "Cadastre equipamentos a partir da ficha do cliente ou pelo botão acima.", icon_name: :equipment) %>
   <% else %>
-    <div class="relative overflow-x-auto">
+    <%# Below sm the table becomes a stacked list with the same data. %>
+    <ul class="divide-y divide-ink-150 sm:hidden" role="list" aria-label="Equipamentos">
+      <% @pagination.records.each do |equipment| %>
+        <% codes = [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence %>
+        <li>
+          <%= link_to equipment_path(equipment), class: "flex items-start gap-3 px-4 py-3.5 transition-colors duration-150 hover:bg-ink-25" do %>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-ink-950"><%= equipment.title %></p>
+              <p class="truncate text-xs text-ink-600"><%= equipment.customer.display_name %> · <%= equipment.service_location.name %></p>
+              <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
+                <span class="font-mono text-ink-700"><%= codes || "Sem série" %></span>
+                <% if equipment.under_warranty? %><span class="whitespace-nowrap">Garantia até <%= l(equipment.warranty_until) %></span><% end %>
+              </p>
+            </div>
+            <div class="flex shrink-0 flex-col items-end gap-1">
+              <%= render "equipment/status_badge", equipment: %>
+              <% if equipment.archived? %><%= badge("Arquivado") %><% end %>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <div class="relative hidden overflow-x-auto sm:block">
       <table class="sv-table">
         <thead><tr><th scope="col">Equipamento</th><th scope="col">Cliente / local</th><th scope="col">Série / patrimônio</th><th scope="col">Garantia</th><th scope="col">Estado</th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |equipment| %>
             <tr>
-              <td>
+              <td class="font-medium text-ink-950">
                 <%= link_to equipment.title, equipment_path(equipment), class: "sv-link" %>
                 <% if equipment.archived? %><span class="ml-1"><%= badge("Arquivado") %></span><% end %>
               </td>
-              <td><span class="block text-ink-900"><%= equipment.customer.display_name %></span><span class="text-xs text-ink-500"><%= equipment.service_location.name %></span></td>
-              <td class="font-mono text-xs"><%= [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence || "—" %></td>
+              <td><span class="block text-ink-950"><%= equipment.customer.display_name %></span><span class="text-xs text-ink-500"><%= equipment.service_location.name %></span></td>
+              <td class="font-mono text-xs text-ink-700"><%= [equipment.serial_number, equipment.asset_tag].compact.join(" / ").presence || "—" %></td>
               <td><%= equipment.under_warranty? ? badge("Até #{l(equipment.warranty_until)}", tone: :success, dot: false) : "—" %></td>
               <td><%= render "equipment/status_badge", equipment: %></td>
             </tr>

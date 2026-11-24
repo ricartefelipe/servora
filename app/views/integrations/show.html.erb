@@ -1,30 +1,30 @@
 <% content_for :title, "Integrações" %>
-<%= page_header("Integrações", subtitle: "API pública, webhooks de saída e notificações do provedor de pagamentos.") do %>
+<%= page_header("Integrações", eyebrow: "Gestão · Integrações", subtitle: "API pública, webhooks de saída e notificações do provedor de pagamentos.") do %>
   <%= link_to "Documentação da API (OpenAPI)", api_v1_openapi_path, class: "sv-btn-secondary", data: { turbo: false } %>
 <% end %>
 
 <% if @secret %>
-  <section class="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5" role="alert" aria-labelledby="segredo-title">
-    <h2 id="segredo-title" class="font-semibold text-amber-950"><%= @secret[:title] %></h2>
-    <p class="mt-1 text-sm text-amber-900">Copie agora: este valor não será exibido novamente. Guarde-o em um cofre de segredos.</p>
+  <section class="mb-6 rounded-xl bg-amber-50 p-5 ring-1 ring-inset ring-amber-600/25" role="alert" aria-labelledby="segredo-title">
+    <h2 id="segredo-title" class="flex items-center gap-2 text-[15px] font-semibold text-amber-900"><%= icon(:key, size: 16, css: "text-amber-700") %><%= @secret[:title] %></h2>
+    <p class="mt-1 text-[13px] text-amber-800">Copie agora: este valor não será exibido novamente. Guarde-o em um cofre de segredos.</p>
     <label for="segredo-valor" class="sr-only">Valor</label>
     <input id="segredo-valor" type="text" readonly value="<%= @secret[:value] %>" class="sv-input mt-3 font-mono text-sm" data-controller="focus-on-connect">
-    <% if @secret[:url] %><p class="mt-2 text-sm text-amber-900">URL de notificação: <code class="font-mono"><%= @secret[:url] %></code></p><% end %>
+    <% if @secret[:url] %><p class="mt-2 text-[13px] text-amber-800">URL de notificação: <code class="font-mono"><%= @secret[:url] %></code></p><% end %>
   </section>
 <% end %>
 
 <div class="space-y-6">
   <section class="sv-card overflow-hidden" aria-labelledby="credenciais-title">
-    <div class="border-b border-ink-100 px-5 py-4">
-      <h2 id="credenciais-title" class="font-semibold text-ink-900">Credenciais da API</h2>
-      <p class="text-sm text-ink-500">Cada sistema integrado deve ter sua própria credencial, com os escopos mínimos necessários.</p>
+    <div class="border-b border-ink-150 px-5 py-4">
+      <h2 id="credenciais-title" class="text-[15px] font-semibold text-ink-950">Credenciais da API</h2>
+      <p class="mt-0.5 text-[13px] text-ink-600">Cada sistema integrado deve ter sua própria credencial, com os escopos mínimos necessários.</p>
     </div>
     <% if @credentials.any? %>
-      <ul class="divide-y divide-ink-100" role="list">
+      <ul class="divide-y divide-ink-150" role="list">
         <% @credentials.each do |credential| %>
-          <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm <%= 'opacity-60' unless credential.usable? %>">
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-[13px]">
             <div class="min-w-0 flex-1">
-              <p class="font-medium text-ink-900"><%= credential.name %> <span class="font-mono text-xs text-ink-500"><%= credential.token_prefix %>…</span></p>
+              <p class="font-medium text-ink-950"><%= credential.name %> <span class="font-mono text-xs text-ink-500"><%= credential.token_prefix %>…</span></p>
               <p class="text-xs text-ink-500"><%= credential.scopes.map { |scope| ApiCredential::SCOPES.fetch(scope, scope) }.to_sentence %>
                 · <%= credential.last_used_at ? "último uso #{date_time(credential.last_used_at)}" : "nunca utilizada" %>
                 <% if credential.expires_at %> · expira <%= date(credential.expires_at) %><% end %></p>
@@ -32,21 +32,23 @@
             <% if credential.revoked_at %>
               <%= badge("Revogada") %>
             <% else %>
-              <%= button_to "Revogar", revoke_credential_integrations_path(id: credential.id), method: :patch, class: "sv-btn-ghost sv-btn-sm text-rose-700",
-                    form: { data: { turbo_confirm: "Revogar a credencial #{credential.name}? Sistemas que a utilizam deixarão de funcionar." } } %>
+              <%= button_to revoke_credential_integrations_path(id: credential.id), method: :patch, class: "sv-btn-danger sv-btn-sm",
+                    form: { data: { turbo_confirm: "Revogar a credencial #{credential.name}? Sistemas que a utilizam deixarão de funcionar." } } do %>
+                <%= icon(:close, size: 14) %> Revogar
+              <% end %>
             <% end %>
           </li>
         <% end %>
       </ul>
     <% end %>
-    <%= form_with url: create_credential_integrations_path, scope: :api_credential, class: "grid gap-3 border-t border-ink-100 px-5 py-4 sm:grid-cols-6" do |f| %>
+    <%= form_with url: create_credential_integrations_path, scope: :api_credential, class: "grid gap-3 border-t border-ink-150 px-5 py-4 sm:grid-cols-6" do |f| %>
       <div class="sm:col-span-3"><%= f.label :name, "Nome do sistema", class: "sv-label" %><%= f.text_field :name, class: "sv-input", required: true, maxlength: 80 %></div>
       <div class="sm:col-span-3"><%= f.label :expires_on, "Validade (opcional)", class: "sv-label" %><%= f.date_field :expires_on, class: "sv-input", min: Time.zone.tomorrow.iso8601 %></div>
       <fieldset class="sm:col-span-6">
         <legend class="sv-label">Escopos</legend>
-        <div class="flex flex-wrap gap-4 text-sm text-ink-700">
+        <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-700">
           <% ApiCredential::SCOPES.each do |scope, label| %>
-            <label class="flex items-center gap-2"><%= check_box_tag "api_credential[scopes][]", scope, false, id: "escopo-#{scope.tr(':', '-')}", class: "rounded border-ink-300 text-brand-600" %> <%= label %></label>
+            <label class="flex items-center gap-2"><%= check_box_tag "api_credential[scopes][]", scope, false, id: "escopo-#{scope.tr(':', '-')}", class: "size-4 rounded border-ink-400" %> <%= label %></label>
           <% end %>
         </div>
       </fieldset>
@@ -55,14 +57,14 @@
   </section>
 
   <section class="sv-card overflow-hidden" aria-labelledby="webhooks-title">
-    <div class="border-b border-ink-100 px-5 py-4">
-      <h2 id="webhooks-title" class="font-semibold text-ink-900">Webhooks de saída</h2>
-      <p class="text-sm text-ink-500">Enviados por HTTPS para endereços públicos, assinados com HMAC-SHA256 (<code>Servora-Signature</code>) e com id de evento estável para deduplicação.</p>
+    <div class="border-b border-ink-150 px-5 py-4">
+      <h2 id="webhooks-title" class="text-[15px] font-semibold text-ink-950">Webhooks de saída</h2>
+      <p class="mt-0.5 text-[13px] text-ink-600">Enviados por HTTPS para endereços públicos, assinados com HMAC-SHA256 (<code>Servora-Signature</code>) e com id de evento estável para deduplicação.</p>
     </div>
     <% if @endpoints.any? %>
-      <ul class="divide-y divide-ink-100" role="list">
+      <ul class="divide-y divide-ink-150" role="list">
         <% @endpoints.each do |endpoint| %>
-          <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-[13px]">
             <div class="min-w-0 flex-1">
               <p class="truncate font-mono text-xs text-ink-900"><%= endpoint.url %></p>
               <p class="text-xs text-ink-500"><%= endpoint.description.presence || "Sem descrição" %> · <%= endpoint.events.map { |e| WebhookEndpoint::EVENTS.fetch(e, e) }.to_sentence %></p>
@@ -73,26 +75,26 @@
         <% end %>
       </ul>
     <% end %>
-    <%= form_with url: create_endpoint_integrations_path, scope: :webhook_endpoint, class: "grid gap-3 border-t border-ink-100 px-5 py-4 sm:grid-cols-6" do |f| %>
+    <%= form_with url: create_endpoint_integrations_path, scope: :webhook_endpoint, class: "grid gap-3 border-t border-ink-150 px-5 py-4 sm:grid-cols-6" do |f| %>
       <div class="sm:col-span-4"><%= f.label :url, "URL (https)", class: "sv-label" %><%= f.url_field :url, class: "sv-input", required: true, placeholder: "https://erp.exemplo.com.br/webhooks/servora" %></div>
       <div class="sm:col-span-2"><%= f.label :description, "Descrição", class: "sv-label" %><%= f.text_field :description, class: "sv-input", maxlength: 120 %></div>
       <fieldset class="sm:col-span-6">
         <legend class="sv-label">Eventos</legend>
-        <div class="flex flex-wrap gap-4 text-sm text-ink-700">
+        <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-700">
           <% WebhookEndpoint::EVENTS.each do |event, label| %>
-            <label class="flex items-center gap-2"><%= check_box_tag "webhook_endpoint[events][]", event, false, id: "evento-#{event.tr('.', '-')}", class: "rounded border-ink-300 text-brand-600" %> <%= label %></label>
+            <label class="flex items-center gap-2"><%= check_box_tag "webhook_endpoint[events][]", event, false, id: "evento-#{event.tr('.', '-')}", class: "size-4 rounded border-ink-400" %> <%= label %></label>
           <% end %>
         </div>
       </fieldset>
       <div class="sm:col-span-6 flex justify-end"><%= f.button "Cadastrar webhook", type: "submit", class: "sv-btn-primary" %></div>
     <% end %>
     <% if @deliveries.any? %>
-      <div class="border-t border-ink-100">
-        <h3 class="px-5 pt-4 text-sm font-semibold text-ink-900">Entregas recentes</h3>
-        <ul class="divide-y divide-ink-100" role="list">
+      <div class="border-t border-ink-150">
+        <h3 class="px-5 pt-4 text-[13px] font-semibold text-ink-950">Entregas recentes</h3>
+        <ul class="divide-y divide-ink-150" role="list">
           <% @deliveries.each do |delivery| %>
             <li class="flex flex-wrap items-center gap-3 px-5 py-2 text-xs">
-              <span class="w-32 text-ink-500"><%= date_time(delivery.created_at) %></span>
+              <span class="sv-num w-32 font-mono text-ink-600"><%= date_time(delivery.created_at) %></span>
               <span class="min-w-0 flex-1 text-ink-800"><%= WebhookEndpoint::EVENTS.fetch(delivery.event_type, delivery.event_type) %> · <span class="font-mono"><%= delivery.event_id.first(8) %></span> · <%= delivery.attempts %> tentativa(s)<% if delivery.last_error %> · <%= delivery.last_error %><% end %></span>
               <%= badge(delivery.status_label, tone: { "delivered" => :success, "failed" => :danger }.fetch(delivery.status, :warning)) %>
               <% unless delivery.status == "delivered" %>
@@ -106,9 +108,9 @@
   </section>
 
   <section class="sv-card p-5" aria-labelledby="notificacoes-title">
-    <h2 id="notificacoes-title" class="font-semibold text-ink-900">Notificações de pagamento (Asaas)</h2>
-    <p class="mt-1 text-sm text-ink-500">Configure no Asaas a URL <code class="font-mono"><%= asaas_webhook_url %></code> e o token gerado aqui (cabeçalho <code>asaas-access-token</code>). As notificações são gravadas antes da confirmação e processadas sem duplicidade.</p>
-    <p class="mt-3 text-sm text-ink-700">Situação: <%= @payment_integration.webhook_configured? ? badge("Token configurado", tone: :success) : badge("Sem token") %></p>
+    <h2 id="notificacoes-title" class="text-[15px] font-semibold text-ink-950">Notificações de pagamento (Asaas)</h2>
+    <p class="mt-1 text-[13px] text-ink-600">Configure no Asaas a URL <code class="font-mono"><%= asaas_webhook_url %></code> e o token gerado aqui (cabeçalho <code>asaas-access-token</code>). As notificações são gravadas antes da confirmação e processadas sem duplicidade.</p>
+    <p class="mt-3 flex items-center gap-2 text-[13px] text-ink-700">Situação: <%= @payment_integration.webhook_configured? ? badge("Token configurado", tone: :success) : badge("Sem token") %></p>
     <%= button_to @payment_integration.webhook_configured? ? "Gerar novo token" : "Gerar token", rotate_payment_token_integrations_path, class: "sv-btn-secondary mt-3",
           form: { data: { turbo_confirm: @payment_integration.webhook_configured? ? "O token atual deixará de funcionar. Continuar?" : nil }.compact } %>
   </section>

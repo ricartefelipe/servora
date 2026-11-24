@@ -7,7 +7,7 @@
   <%= f.field :name, label: "Nome completo", autocomplete: "name", required: true %>
   <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "email", required: true,
         hint: (resource.pending_reconfirmation? ? "Aguardando confirmação de #{resource.unconfirmed_email}." : nil) %>
-  <fieldset class="space-y-5 rounded-2xl border border-ink-200 p-4">
+  <fieldset class="space-y-5 rounded-xl border border-ink-200 p-4">
     <legend class="px-1 text-sm font-semibold text-ink-800">Alterar senha</legend>
     <%= f.field :password, label: "Nova senha", as: :password_field, autocomplete: "new-password", hint: "Deixe em branco para manter a atual." %>
     <%= f.field :password_confirmation, label: "Confirme a nova senha", as: :password_field, autocomplete: "new-password" %>

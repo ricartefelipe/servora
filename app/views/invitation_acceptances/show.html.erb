@@ -1,6 +1,9 @@
 <% content_for :title, "Convite" %>
 <% state = @invitation.state %>
-<div class="mb-6 grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700"><%= icon(:team, size: 24) %></div>
+<div class="relative mb-6 grid size-12 place-items-center rounded-xl bg-white text-ink-700 ring-1 ring-ink-200">
+  <%= icon(:team, size: 22) %>
+  <span class="sv-facet absolute -right-0.5 -top-0.5 size-2" aria-hidden="true"></span>
+</div>
 <%= render "shared/auth_heading", title: "Convite para #{@invitation.organization.name}",
       subtitle: "#{@invitation.invited_by.user.name} convidou #{@invitation.email} com o perfil #{@invitation.role_label}." %>
 
@@ -9,8 +12,9 @@
     <% if current_user.email == @invitation.email %>
       <%= button_to "Aceitar convite", invitation_path(@token), method: :post, class: "sv-btn-primary w-full" %>
     <% else %>
-      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
-        Você está conectado como <strong><%= current_user.email %></strong>. Entre com o e-mail do convite para aceitá-lo.
+      <div class="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-[13px] text-amber-800 ring-1 ring-inset ring-amber-600/20" role="alert">
+        <%= icon(:info, size: 18, css: "mt-px text-amber-700") %>
+        <p class="min-w-0 flex-1">Você está conectado como <strong class="font-semibold text-amber-900"><%= current_user.email %></strong>. Entre com o e-mail do convite para aceitá-lo.</p>
       </div>
     <% end %>
   <% else %>
@@ -20,7 +24,7 @@
     </div>
   <% end %>
 <% else %>
-  <div class="rounded-xl border border-ink-200 bg-ink-50 p-4 text-sm text-ink-700" role="status">
+  <div class="rounded-xl bg-ink-50 p-4 text-[13px] text-ink-700 ring-1 ring-inset ring-ink-200" role="status">
     <%= { accepted: "Este convite já foi utilizado.", revoked: "Este convite foi revogado.",
           expired: "Este convite expirou. Peça um novo convite ao administrador." }.fetch(state) %>
   </div>

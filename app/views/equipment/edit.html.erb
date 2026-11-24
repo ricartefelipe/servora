@@ -1,3 +1,3 @@
 <% content_for :title, "Editar equipamento" %>
-<%= page_header("Editar equipamento", eyebrow: @equipment.title, subtitle: "Mudanças de local e de estado têm ações próprias, registradas no histórico.") %>
+<%= page_header(@equipment.title, eyebrow: "Cadastros · Equipamentos", subtitle: "Mudanças de local e de estado têm ações próprias, registradas no histórico.", size: :md) %>
 <%= render "equipment/form", equipment: @equipment %>

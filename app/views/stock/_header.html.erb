@@ -1,6 +1,6 @@
 <%# Shared header of the inventory area: title, operations and section links. %>
 <% stock_policy = policy(StockBalance) %>
-<%= page_header("Estoque", subtitle: "Saldo físico, reservado e disponível por depósito. Toda alteração gera uma movimentação rastreável.") do %>
+<%= page_header("Estoque", eyebrow: "Operação · Estoque", subtitle: "Saldo físico, reservado e disponível por depósito. Toda alteração gera uma movimentação rastreável.") do %>
   <% if stock_policy.adjust? %>
     <%= link_to new_stock_adjustment_path(deposito: @warehouse&.id), class: "sv-btn-ghost", data: { turbo_frame: "modal" } do %><%= icon(:audit, size: 18) %> Ajuste<% end %>
   <% end %>
@@ -17,6 +17,6 @@
       ["Depósitos", warehouses_path, "warehouses"]].each do |label, path, section| %>
     <% current = controller_name == section %>
     <%= link_to label, path, aria: { current: (current ? "page" : nil) },
-          class: "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium #{current ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-500 hover:text-ink-800'}" %>
+          class: "-mb-px flex h-10 items-center whitespace-nowrap border-b-2 px-4 text-[13px] #{current ? 'border-brand-600 font-semibold text-ink-950' : 'border-transparent font-medium text-ink-500 hover:text-ink-800'}" %>
   <% end %>
 </nav>

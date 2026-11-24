@@ -1,15 +1,15 @@
 <% content_for :title, "Agenda" %>
 <% step = @agenda.week? ? 7 : 1 %>
-<%= page_header("Agenda", subtitle: @agenda.week? ? "Semana de #{l(@agenda.days.first)} a #{l(@agenda.days.last)}" : l(@date, format: :long)) do %>
+<%= page_header("Agenda", eyebrow: "Operação · Agenda", subtitle: @agenda.week? ? "Semana de #{l(@agenda.days.first)} a #{l(@agenda.days.last)}" : l(@date, format: :long)) do %>
   <nav class="flex items-center gap-1" aria-label="Navegar na agenda">
     <%= link_to agenda_index_path(data: (@date - step).iso8601, visao: @mode, tecnico: params[:tecnico]), class: "sv-btn-secondary sv-btn-sm", aria: { label: "Período anterior" } do %><%= icon(:chevron_right, size: 16, css: "rotate-180") %><% end %>
     <%= link_to "Hoje", agenda_index_path(visao: @mode, tecnico: params[:tecnico]), class: "sv-btn-secondary sv-btn-sm" %>
     <%= link_to agenda_index_path(data: (@date + step).iso8601, visao: @mode, tecnico: params[:tecnico]), class: "sv-btn-secondary sv-btn-sm", aria: { label: "Próximo período" } do %><%= icon(:chevron_right, size: 16) %><% end %>
   </nav>
-  <div class="flex rounded-xl border border-ink-200 bg-white p-0.5" role="group" aria-label="Visão">
+  <div class="flex rounded-lg bg-ink-100 p-0.5" role="group" aria-label="Visão">
     <% [["dia", "Dia"], ["semana", "Semana"]].each do |value, label| %>
       <%= link_to label, agenda_index_path(data: @date.iso8601, visao: value, tecnico: params[:tecnico]),
-            class: "rounded-lg px-2.5 py-1 text-xs font-medium #{@mode == value ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-50'}",
+            class: @mode == value ? "inline-flex h-7 items-center rounded-md bg-white px-2.5 text-xs font-semibold text-ink-950 shadow-[var(--shadow-xs)] ring-1 ring-ink-400" : "inline-flex h-7 items-center rounded-md px-2.5 text-xs font-medium text-ink-600 transition-colors hover:text-ink-950",
             aria: { current: (@mode == value ? "page" : nil) } %>
     <% end %>
   </div>
@@ -23,16 +23,22 @@
     <table class="sv-table">
       <thead>
         <tr>
-          <th scope="col">Técnico</th>
+          <th scope="col" class="sticky left-0 z-10 bg-ink-50">Técnico</th>
           <% @agenda.days.each do |day| %>
-            <th scope="col" class="<%= 'text-brand-700' if day == Time.zone.today %>"><%= l(day, format: "%a %d/%m") %></th>
+            <% if day == Time.zone.today %>
+              <th scope="col" class="text-ink-950">
+                <span class="inline-flex items-center gap-1.5"><span class="size-1 rounded-full bg-brand-600" aria-hidden="true"></span><%= l(day, format: "%a %d/%m") %><span class="sr-only">(hoje)</span></span>
+              </th>
+            <% else %>
+              <th scope="col"><%= l(day, format: "%a %d/%m") %></th>
+            <% end %>
           <% end %>
         </tr>
       </thead>
-      <tbody class="divide-y divide-ink-100">
+      <tbody class="divide-y divide-ink-150">
         <% @agenda.rows.each do |row| %>
           <tr>
-            <th scope="row" class="whitespace-nowrap px-4 py-3 text-left font-medium text-ink-900"><%= row.membership.user.name %></th>
+            <th scope="row" class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left align-top text-[13px] font-medium normal-case tracking-normal text-ink-950"><%= row.membership.user.name %></th>
             <% @agenda.days.each do |day| %>
               <td class="min-w-36 align-top">
                 <% @agenda.allocations_on(row, day).each do |allocation| %>
@@ -46,34 +52,57 @@
     </table>
   </section>
 <% else %>
+  <%# "Agora" marker: placed on the 15-minute slot of the current time when the day shown is today. %>
+  <% now = Time.zone.now %>
+  <% minutes_into_day = ((now - now.change(hour: Scheduling::AgendaQuery::DAY_START_HOUR)) / 60).floor %>
+  <% now_slot = (minutes_into_day / Scheduling::AgendaQuery::SLOT_MINUTES) + 1 if @date == Time.zone.today && minutes_into_day >= 0 && minutes_into_day < Scheduling::AgendaQuery::SLOTS * Scheduling::AgendaQuery::SLOT_MINUTES %>
   <section class="sv-card relative overflow-x-auto p-4" aria-label="Linha do tempo do dia">
+    <% if now_slot %><p class="sr-only">Agora, <%= l(now, format: "%H:%M") %></p><% end %>
     <div class="min-w-[960px]">
-      <div class="ml-44 grid grid-cols-16 border-b border-ink-100 pb-1 text-[11px] font-medium text-ink-500" aria-hidden="true">
+      <% if now_slot %>
+        <div class="ml-31 grid grid-cols-[repeat(64,minmax(0,1fr))] pb-1 sm:ml-44" aria-hidden="true">
+          <span class="col-start-<%= now_slot %> row-start-1 inline-flex -translate-x-1/2 items-center gap-1 justify-self-start whitespace-nowrap rounded-full bg-noir-950 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white">
+            <span class="size-1 rotate-45 bg-brand-300"></span><%= l(now, format: "%H:%M") %>
+          </span>
+        </div>
+      <% end %>
+      <div class="ml-31 grid grid-cols-16 border-b border-ink-150 pb-1 font-mono text-[11px] text-ink-500 sm:ml-44" aria-hidden="true">
         <% (Scheduling::AgendaQuery::DAY_START_HOUR...Scheduling::AgendaQuery::DAY_END_HOUR).each do |hour| %>
           <span><%= format("%02d:00", hour) %></span>
         <% end %>
       </div>
-      <ul class="divide-y divide-ink-100" role="list">
+      <ul class="divide-y divide-ink-150" role="list">
         <% @agenda.rows.each do |row| %>
           <li class="flex items-stretch gap-3 py-2">
-            <div class="w-41 shrink-0 pt-1">
-              <p class="truncate text-sm font-semibold text-ink-900"><%= row.membership.user.name %></p>
+            <div class="sticky left-0 z-10 w-28 shrink-0 bg-white pt-1 sm:w-41">
+              <p class="truncate text-[13px] font-semibold text-ink-950"><%= row.membership.user.name %></p>
               <p class="text-xs text-ink-500"><%= pluralize(@agenda.allocations_on(row, @date).count { |a| a.kind == "visit" }, "visita") %></p>
             </div>
-            <div class="relative grid min-h-14 flex-1 grid-cols-[repeat(64,minmax(0,1fr))] rounded-xl bg-[linear-gradient(to_right,var(--color-ink-100)_1px,transparent_1px)] bg-[length:6.25%_100%]">
+            <div class="relative grid min-h-14 flex-1 grid-cols-[repeat(64,minmax(0,1fr))] rounded-lg bg-[linear-gradient(to_right,var(--color-ink-150)_1px,transparent_1px)] bg-[length:6.25%_100%]">
+              <% if now_slot %>
+                <span class="col-start-<%= now_slot %> row-start-1 pointer-events-none z-10 w-[1.5px] justify-self-start bg-brand-600" aria-hidden="true"></span>
+              <% end %>
               <% @agenda.blocks_for(row, @date).each do |block| %>
                 <% if block.absence? %>
-                  <div class="col-start-<%= block.column_start %> col-span-<%= block.column_span %> row-start-1 m-0.5 flex items-center overflow-hidden rounded-lg bg-[repeating-linear-gradient(45deg,var(--color-ink-100),var(--color-ink-100)_6px,var(--color-ink-200)_6px,var(--color-ink-200)_12px)] px-2 text-xs font-medium text-ink-600"
+                  <div class="col-start-<%= block.column_start %> col-span-<%= block.column_span %> row-start-1 m-0.5 flex items-center overflow-hidden rounded-md border-l-[3px] border-ink-400 bg-[repeating-linear-gradient(45deg,var(--color-ink-100),var(--color-ink-100)_6px,var(--color-ink-150)_6px,var(--color-ink-150)_12px)] px-2 text-xs font-medium text-ink-700"
                        title="Ausência: <%= block.allocation.reason %>">
                     Ausência
                   </div>
                 <% else %>
                   <% visit = block.visit %>
+                  <% tone = if visit.in_progress?
+                              "border-ember-600 bg-ember-50 hover:bg-ember-100"
+                            elsif visit.completed?
+                              "border-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                            else
+                              "border-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+                            end %>
+                  <% state_icon = visit.in_progress? ? :clock : (visit.completed? ? :check : :calendar) %>
                   <%= link_to work_order_path(visit.work_order),
-                        class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-lg border-l-4 px-2 py-1 text-xs transition hover:brightness-95 focus-visible:outline-2 #{visit.in_progress? ? 'border-ember-600 bg-ember-50 text-ember-600' : visit.completed? ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-indigo-500 bg-indigo-50 text-indigo-800'}",
+                        class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors focus-visible:outline-2 #{tone}",
                         aria: { label: "#{visit.work_order.number}, #{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{visit.work_order.customer.display_name}, #{visit.status_label}" } do %>
-                    <span class="truncate font-semibold"><%= visit.work_order.number %></span>
-                    <span class="truncate"><%= l(visit.scheduled_start, format: "%H:%M") %>–<%= l(visit.scheduled_end, format: "%H:%M") %> · <%= visit.work_order.customer.display_name %></span>
+                    <span class="flex min-w-0 items-center gap-1 font-medium"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700") %><span class="truncate"><%= visit.work_order.number %></span></span>
+                    <span class="truncate text-ink-600"><span class="sv-num font-mono text-[11px] text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %>–<%= l(visit.scheduled_end, format: "%H:%M") %></span> · <%= visit.work_order.customer.display_name %></span>
                   <% end %>
                 <% end %>
               <% end %>

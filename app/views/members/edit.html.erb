@@ -1,5 +1,5 @@
 <% content_for :title, "Editar membro" %>
-<%= page_header(@membership.user.name, eyebrow: "Equipe", subtitle: @membership.user.email) %>
+<%= page_header(@membership.user.name, eyebrow: "Gestão · Equipe", subtitle: @membership.user.email, size: :md) %>
 
 <div class="grid gap-6 lg:grid-cols-3">
   <section class="sv-card p-6 lg:col-span-2">
@@ -14,23 +14,22 @@
         <%= f.field :hourly_cost, label: "Custo interno por hora (R$)", as: :number_field, step: "0.01", min: 0,
               hint: "Usado no custo de mão de obra dos apontamentos. Visível apenas para perfis com acesso a custos." %>
       <% end %>
-      <div class="flex gap-3">
-        <%= f.submit_button "Salvar" %>
-        <%= link_to "Cancelar", members_path, class: "sv-btn-secondary" %>
-      </div>
+      <%= render "shared/form_footer", f:, submit: "Salvar", cancel_url: members_path %>
     <% end %>
   </section>
 
   <aside class="sv-card p-6">
-    <h2 class="font-semibold text-ink-900">Acesso</h2>
+    <h2 class="text-[15px] font-semibold text-ink-950">Acesso</h2>
     <% if @membership.active? %>
-      <p class="mt-1 text-sm text-ink-600">Desativar remove o acesso imediatamente, inclusive de sessões abertas.</p>
+      <p class="mt-1 text-[13px] text-ink-600">Desativar remove o acesso imediatamente, inclusive de sessões abertas.</p>
       <% if policy(@membership).deactivate? %>
-        <%= button_to "Desativar acesso", deactivate_member_path(@membership), method: :patch, class: "sv-btn-danger mt-4 w-full",
-              form: { data: { turbo_confirm: "Desativar o acesso de #{@membership.user.name}?" } } %>
+        <%= button_to deactivate_member_path(@membership), method: :patch, class: "sv-btn-danger mt-4 w-full",
+              form: { data: { turbo_confirm: "Desativar o acesso de #{@membership.user.name}?" } } do %>
+          <%= icon(:alert, size: 16) %> Desativar acesso
+        <% end %>
       <% end %>
     <% else %>
-      <p class="mt-1 text-sm text-ink-600">Acesso desativado em <%= l(@membership.deactivated_at, format: :short) %>.</p>
+      <p class="mt-1 text-[13px] text-ink-600">Acesso desativado em <%= l(@membership.deactivated_at, format: :short) %>.</p>
       <% if policy(@membership).reactivate? %>
         <%= button_to "Reativar acesso", reactivate_member_path(@membership), method: :patch, class: "sv-btn-secondary mt-4 w-full" %>
       <% end %>

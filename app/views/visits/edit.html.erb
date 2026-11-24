@@ -1,6 +1,6 @@
 <% content_for :title, "Reagendar visita" %>
-<%= page_header("Reagendar visita", eyebrow: @work_order.number,
-      subtitle: "Atual: #{l(@visit.scheduled_start, format: :short)}–#{l(@visit.scheduled_end, format: '%H:%M')} · #{@visit.allocations.select { |a| a.status == 'active' }.map { |a| a.membership.user.name }.join(', ')}") %>
+<%= page_header("Reagendar visita", eyebrow: "Operação · Ordens de serviço", size: :md,
+      subtitle: "#{@work_order.number} · Atual: #{l(@visit.scheduled_start, format: :short)}–#{l(@visit.scheduled_end, format: '%H:%M')} · #{@visit.allocations.select { |a| a.status == 'active' }.map { |a| a.membership.user.name }.join(', ')}") %>
 <%= form_with url: work_order_visit_path(@work_order, @visit), method: :patch, scope: :visit, class: "sv-card max-w-2xl space-y-5 p-6" do |f| %>
   <div class="grid gap-4 sm:grid-cols-3">
     <div><%= f.label :date, "Nova data", class: "sv-label" %><%= f.date_field :date, value: @visit.scheduled_start.to_date, class: "sv-input", required: true %></div>
@@ -9,8 +9,5 @@
   </div>
   <div><%= f.label :reason, "Motivo", class: "sv-label" %><%= f.text_field :reason, class: "sv-input" %></div>
   <p class="text-sm text-ink-500">Se o novo horário conflitar, a reserva atual é mantida.</p>
-  <div class="flex gap-3">
-    <%= f.button "Reagendar", type: "submit", class: "sv-btn-primary" %>
-    <%= link_to "Voltar", work_order_path(@work_order), class: "sv-btn-secondary" %>
-  </div>
+  <%= render "shared/form_footer", f:, submit: "Reagendar", cancel_url: work_order_path(@work_order), submits_with: false %>
 <% end %>

@@ -1,7 +1,7 @@
 <% content_for :title, "Nota fiscal" %>
-<%= page_header("Nota fiscal de serviço (NFS-e)", subtitle: "Emitida pelo provedor de pagamentos. A inscrição municipal e o certificado digital são configurados na conta do provedor.") %>
+<%= page_header("Nota fiscal de serviço (NFS-e)", eyebrow: "Gestão · Nota fiscal", subtitle: "Emitida pelo provedor de pagamentos. A inscrição municipal e o certificado digital são configurados na conta do provedor.", size: :md) %>
 
-<section class="sv-card max-w-2xl p-6">
+<section class="sv-card max-w-3xl p-6">
   <%= form_with model: @setting, url: fiscal_settings_path, method: :patch, class: "space-y-5" do |f| %>
     <%= f.error_summary %>
     <div class="grid gap-5 sm:grid-cols-3">
@@ -12,6 +12,6 @@
     <%= f.field :default_description, label: "Texto padrão da nota", hint: "Complementado com a descrição da conta a receber" %>
     <%= f.toggle_field :retain_iss, label: "ISS retido pelo tomador" %>
     <%= f.toggle_field :auto_issue_on_payment, label: "Emitir automaticamente quando a conta for quitada" %>
-    <div class="flex justify-end"><%= f.submit_button("Salvar dados fiscais") %></div>
+    <%= render "shared/form_footer", f:, submit: "Salvar dados fiscais", cancel_url: edit_fiscal_settings_path %>
   <% end %>
 </section>

@@ -1,3 +1,3 @@
 <% content_for :title, "Editar item" %>
-<%= page_header(@item.name, eyebrow: "Catálogo", subtitle: "Alterações não modificam orçamentos já enviados ou aprovados.") %>
+<%= page_header(@item.name, eyebrow: "Cadastros · Catálogo", subtitle: "Alterações não modificam orçamentos já enviados ou aprovados.", size: :md) %>
 <%= render "catalog_items/form", item: @item %>

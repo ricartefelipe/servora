@@ -17,8 +17,5 @@
     <%= f.toggle_field :tracks_inventory, label: "Controla estoque", hint: "Somente peças. Reservas e consumos movimentam o saldo." %>
     <%= f.toggle_field :active, label: "Ativo", hint: "Itens inativos não aparecem para novos orçamentos." %>
   </div>
-  <div class="flex gap-3">
-    <%= f.submit_button(item.persisted? ? "Salvar" : "Incluir no catálogo") %>
-    <%= link_to "Cancelar", catalog_items_path, class: "sv-btn-secondary" %>
-  </div>
+  <%= render "shared/form_footer", f:, submit: (item.persisted? ? "Salvar" : "Incluir no catálogo"), cancel_url: catalog_items_path %>
 <% end %>

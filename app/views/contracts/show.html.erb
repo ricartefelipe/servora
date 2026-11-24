@@ -1,41 +1,52 @@
 <% content_for :title, @contract.number %>
 <% cp = policy(@contract) %>
-<%= page_header(@contract.title, eyebrow: @contract.number, subtitle: @contract.customer.display_name) do %>
+<% header_meta = capture do %>
   <%= render "contracts/status_badge", contract: @contract %>
-  <% if cp.update? %><%= link_to "Alterar condições", edit_contract_path(@contract), class: "sv-btn-secondary" %><% end %>
+  <% if cp.change_status? && @contract.status_reason.present? %><span class="text-sm text-ink-600">Último motivo: <%= @contract.status_reason %></span><% end %>
 <% end %>
-
-<% if cp.change_status? %>
-  <section class="sv-card mb-6 flex flex-wrap items-end gap-3 p-4" aria-label="Situação do contrato">
+<%# State transitions live in the header actions. The reason popovers open below their trigger: in the flow on
+    small screens (so they never push past the viewport) and anchored to the trigger's right edge from sm up. %>
+<%= page_header(@contract.title, eyebrow: @contract.number, subtitle: @contract.customer.display_name, size: :md, meta: header_meta) do %>
+  <% if cp.update? %><%= link_to "Alterar condições", edit_contract_path(@contract), class: "sv-btn-secondary" %><% end %>
+  <% if cp.change_status? %>
     <% Contracts::States.targets(@contract.status).each do |target| %>
       <% needs_reason = %w[suspended ended].include?(target) %>
       <% label = { "active" => (@contract.status == "draft" ? "Ativar contrato" : "Retomar contrato"), "suspended" => "Suspender", "ended" => "Encerrar" }.fetch(target) %>
       <% if needs_reason %>
-        <details class="relative">
-          <summary class="<%= target == 'ended' ? 'sv-btn-ghost text-rose-700' : 'sv-btn-ghost' %> cursor-pointer list-none"><%= label %></summary>
-          <%= form_with url: change_status_contract_path(@contract), method: :patch, scope: :status_change, class: "absolute z-10 mt-2 w-72 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
+        <details class="relative max-sm:open:basis-full">
+          <% if target == "ended" %>
+            <summary class="sv-btn-danger cursor-pointer list-none"><%= icon(:alert, size: 16) %><%= label %></summary>
+          <% else %>
+            <summary class="sv-btn-ghost cursor-pointer list-none"><%= label %></summary>
+          <% end %>
+          <%= form_with url: change_status_contract_path(@contract), method: :patch, scope: :status_change, class: "z-10 mt-2 space-y-2 rounded-xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)] sm:absolute sm:right-0 sm:w-72" do |f| %>
             <%= f.hidden_field :to, value: target %>
             <%= f.label :reason, "Motivo", class: "sv-label", for: "motivo-#{target}" %>
             <%= f.text_field :reason, id: "motivo-#{target}", class: "sv-input", required: true %>
             <% if target == "ended" %><p class="text-xs text-ink-500">Os planos preventivos serão desativados.</p><% end %>
-            <%= f.button "Confirmar", type: "submit", class: target == "ended" ? "sv-btn-danger w-full" : "sv-btn-primary w-full" %>
+            <% if target == "ended" %>
+              <%= f.button type: "submit", class: "sv-btn-danger w-full" do %><%= icon(:alert, size: 16) %> Confirmar<% end %>
+            <% else %>
+              <%= f.button "Confirmar", type: "submit", class: "sv-btn-primary w-full" %>
+            <% end %>
           <% end %>
         </details>
       <% else %>
-        <%= button_to label, change_status_contract_path(@contract), method: :patch, params: { status_change: { to: target } }, class: "sv-btn-primary" %>
+        <%# Resuming sits beside the outlined "Encerrar"; only activating a draft gets the ruby fill. %>
+        <%= button_to label, change_status_contract_path(@contract), method: :patch, params: { status_change: { to: target } },
+              class: (@contract.status == "draft" ? "sv-btn-primary" : "sv-btn-secondary") %>
       <% end %>
     <% end %>
-    <% if @contract.status_reason.present? %><p class="text-sm text-ink-500">Último motivo: <%= @contract.status_reason %></p><% end %>
-  </section>
+  <% end %>
 <% end %>
 
 <div class="grid gap-6 lg:grid-cols-3">
   <div class="min-w-0 space-y-6 lg:col-span-2">
     <section class="sv-card p-5" aria-labelledby="condicoes-title">
-      <h2 id="condicoes-title" class="mb-3 font-semibold text-ink-900">Condições (versão <%= @contract.current_version %>)</h2>
+      <h2 id="condicoes-title" class="mb-3 text-[15px] font-semibold text-ink-950">Condições (versão <%= @contract.current_version %>)</h2>
       <dl class="grid gap-4 text-sm sm:grid-cols-3">
         <div><dt class="text-ink-500">Vigência</dt><dd class="text-ink-900"><%= date(@contract.starts_on) %> — <%= @contract.ends_on ? date(@contract.ends_on) : "indeterminado" %></dd></div>
-        <div><dt class="text-ink-500">Mensalidade</dt><dd class="sv-num text-ink-900"><%= money(@contract.monthly_fee) %></dd></div>
+        <div><dt class="text-ink-500">Mensalidade</dt><dd class="sv-num font-medium text-ink-950"><%= money(@contract.monthly_fee) %></dd></div>
         <div><dt class="text-ink-500">Atendimentos no mês</dt><dd class="sv-num text-ink-900"><%= @usage %><%= " de #{@contract.monthly_visit_limit}" if @contract.monthly_visit_limit %></dd></div>
         <div><dt class="text-ink-500">Peças</dt><dd class="text-ink-900"><%= @contract.covers_parts ? "Incluídas" : "Cobradas à parte" %></dd></div>
         <div class="sm:col-span-2"><dt class="text-ink-500">Serviços cobertos</dt>
@@ -45,18 +56,18 @@
     </section>
 
     <section class="sv-card overflow-hidden" aria-labelledby="planos-title">
-      <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
-        <h2 id="planos-title" class="font-semibold text-ink-900">Planos preventivos</h2>
+      <div class="flex items-center justify-between gap-3 border-b border-ink-150 px-5 py-4">
+        <h2 id="planos-title" class="text-[15px] font-semibold text-ink-950">Planos preventivos</h2>
         <% if cp.add_plan? %><%= link_to new_contract_plan_path(@contract), class: "sv-btn-secondary sv-btn-sm" do %><%= icon(:plus, size: 16) %> Novo plano<% end %><% end %>
       </div>
       <% if @plans.empty? %>
         <p class="px-5 py-6 text-sm text-ink-500">Nenhum plano preventivo.</p>
       <% else %>
-        <ul class="divide-y divide-ink-100" role="list">
+        <ul class="divide-y divide-ink-150" role="list">
           <% @plans.each do |plan| %>
             <li class="flex flex-wrap items-center gap-3 px-5 py-3">
               <div class="min-w-0 flex-1">
-                <%= link_to plan.title, contract_plan_path(@contract, plan), class: "sv-link font-medium" %>
+                <%= link_to plan.title, contract_plan_path(@contract, plan), class: "sv-link text-sm font-medium" %>
                 <p class="text-xs text-ink-500"><%= plan.frequency.label %> · <%= plan.service_location.name %> · <%= plan.mode_label %></p>
               </div>
               <% if plan.active? %>
@@ -71,17 +82,17 @@
     </section>
 
     <section class="sv-card overflow-hidden" aria-labelledby="ordens-title">
-      <h2 id="ordens-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Ordens recentes do contrato</h2>
+      <h2 id="ordens-title" class="border-b border-ink-150 px-5 py-4 text-[15px] font-semibold text-ink-950">Ordens recentes do contrato</h2>
       <% if @recent_orders.empty? %>
         <p class="px-5 py-6 text-sm text-ink-500">Nenhuma ordem vinculada.</p>
       <% else %>
-        <ul class="divide-y divide-ink-100" role="list">
+        <ul class="divide-y divide-ink-150" role="list">
           <% @recent_orders.each do |order| %>
             <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
-              <% if policy(order).show? %><%= link_to order.number, work_order_path(order), class: "sv-link font-mono text-xs" %><% else %><span class="font-mono text-xs"><%= order.number %></span><% end %>
+              <% if policy(order).show? %><%= link_to order.number, work_order_path(order), class: "sv-link font-mono text-xs" %><% else %><span class="font-mono text-xs text-ink-700"><%= order.number %></span><% end %>
               <span class="min-w-0 flex-1 truncate text-ink-700"><%= order.title %></span>
-              <span class="text-ink-500"><%= date(order.requested_at) %></span>
-              <%= badge(order.status_label) %>
+              <span class="font-mono text-xs text-ink-600"><%= date(order.requested_at) %></span>
+              <%= render "work_orders/status_badge", work_order: order %>
             </li>
           <% end %>
         </ul>
@@ -91,11 +102,11 @@
 
   <aside class="space-y-6">
     <section class="sv-card p-5 text-sm" aria-labelledby="versoes-title">
-      <h2 id="versoes-title" class="mb-3 font-semibold text-ink-900">Versões</h2>
+      <h2 id="versoes-title" class="mb-3 text-[15px] font-semibold text-ink-950">Versões</h2>
       <ol class="space-y-3 border-l border-ink-200 pl-4" role="list">
         <% @versions.each do |version| %>
           <li>
-            <p class="font-medium text-ink-900">Versão <%= version.version_number %> · <span class="sv-num"><%= money(version.terms["monthly_fee"]) %></span>/mês</p>
+            <p class="font-medium text-ink-950">Versão <%= version.version_number %> · <span class="sv-num"><%= money(version.terms["monthly_fee"]) %></span>/mês</p>
             <p class="text-xs text-ink-500"><%= date_time(version.created_at) %> · <%= version.created_by&.user&.name || "Sistema" %></p>
             <% if version.reason.present? %><p class="text-ink-600"><%= version.reason %></p><% end %>
           </li>
