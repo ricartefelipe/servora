@@ -6,7 +6,7 @@ class WorkOrdersController < TenantController
     :customer, :service_location, :service_type, :created_by, :quote_version,
     { work_order_equipment: :equipment, assignments: { membership: :user },
       items: %i[authorized_by_contact authorized_by_membership], checklist_items: :responded_by,
-      transitions: [], reports: [] }
+      transitions: [], reports: [], visits: { allocations: { membership: :user } } }
   ].freeze
 
   FORM_FIELDS = [:service_location_id, :service_type_id, :title, :problem_description, :origin, :priority,

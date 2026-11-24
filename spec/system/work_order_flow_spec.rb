@@ -20,6 +20,7 @@ RSpec.describe "Execução e conclusão de uma ordem de serviço", :js do
       select "Sim", from: "Limpar filtros"
       click_on "Salvar"
     end
+    within("li", text: "Limpar filtros") { expect(page).to have_text("sim ·") }
     fill_in "Diagnóstico", with: "Filtro obstruído"
     fill_in "Solução aplicada", with: "Limpeza do filtro e teste de funcionamento"
     click_on "Salvar registro técnico"

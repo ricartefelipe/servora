@@ -114,7 +114,19 @@ Rails.application.routes.draw do
         resources :checklist_items, path: "checklist", only: :update
         resources :assignments, path: "tecnicos", only: %i[create destroy]
       end
+      resources :visits, path: "visitas", only: %i[new create edit update] do
+        get :suggestions, on: :collection, path: "sugestoes"
+        member do
+          patch :start, path: "iniciar"
+          patch :finish, path: "finalizar"
+          patch :cancel, path: "cancelar"
+        end
+      end
     end
+    resources :agenda, only: :index, path: "agenda"
+    resources :absences, path: "ausencias", only: %i[index create destroy]
+    resources :technicians, path: "tecnicos", only: %i[index edit update]
+    resources :teams, path: "equipes", only: %i[create destroy]
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

@@ -1,0 +1,40 @@
+<% content_for :title, "Ausências" %>
+<%= page_header("Ausências", subtitle: "Férias, folgas e compromissos bloqueiam a agenda do técnico.") do %>
+  <%= link_to "Voltar à agenda", agenda_index_path, class: "sv-btn-secondary" %>
+<% end %>
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="sv-card min-w-0 overflow-hidden lg:col-span-2" aria-labelledby="proximas-title">
+    <h2 id="proximas-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Próximas ausências</h2>
+    <% if @absences.empty? %>
+      <%= empty_state("Nenhuma ausência registrada", icon_name: :calendar) %>
+    <% else %>
+      <ul class="divide-y divide-ink-100" role="list">
+        <% @absences.each do |absence| %>
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+            <%= avatar(absence.membership.user.name, size: :sm) %>
+            <div class="min-w-0 flex-1">
+              <p class="font-medium text-ink-900"><%= absence.membership.user.name %> · <%= absence.reason %></p>
+              <p class="text-xs text-ink-500"><%= l(absence.starts_at.in_time_zone, format: :short) %> até <%= l(absence.ends_at.in_time_zone, format: :short) %></p>
+            </div>
+            <% if policy(absence).destroy? %>
+              <%= button_to "Remover", absence_path(absence), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700",
+                    form: { data: { turbo_confirm: "Remover esta ausência?" } } %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+  <% if policy(TechnicianAllocation).create? %>
+    <section class="sv-card p-5" aria-labelledby="nova-ausencia-title">
+      <h2 id="nova-ausencia-title" class="mb-3 font-semibold text-ink-900">Registrar ausência</h2>
+      <%= form_with url: absences_path, scope: :absence, class: "space-y-3" do |f| %>
+        <div><%= f.label :membership_id, "Técnico", class: "sv-label" %><%= f.select :membership_id, @technicians.map { |m| [m.user.name, m.id] }, {}, class: "sv-input" %></div>
+        <div><%= f.label :starts_at, "Início", class: "sv-label" %><%= f.datetime_local_field :starts_at, class: "sv-input", required: true %></div>
+        <div><%= f.label :ends_at, "Término", class: "sv-label" %><%= f.datetime_local_field :ends_at, class: "sv-input", required: true %></div>
+        <div><%= f.label :reason, "Motivo", class: "sv-label" %><%= f.text_field :reason, class: "sv-input", required: true, placeholder: "Ex.: férias" %></div>
+        <%= f.button "Registrar", type: "submit", class: "sv-btn-primary w-full" %>
+      <% end %>
+    </section>
+  <% end %>
+</div>
