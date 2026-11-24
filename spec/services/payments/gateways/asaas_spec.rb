@@ -90,6 +90,16 @@ RSpec.describe Payments::Gateways::Asaas do
     expect { gateway.cancel_charge(charge) }.to raise_error(Payments::Gateways::Errors::Rejected, /Credencial/)
   end
 
+  it "requests refunds for the provider charge with our identification" do
+    refund = instance_double(PaymentRefund, id: "0193c000-0000-7000-8000-0000000000ff", amount: BigDecimal("75.50"))
+    stub = stub_request(:post, "#{base}/payments/pay_123/refund")
+      .with(body: hash_including("value" => "75.5", "description" => "Estorno Servora #{refund.id}"))
+      .to_return(status: 200, body: { id: "pay_123", status: "REFUNDED" }.to_json, headers: json)
+
+    expect(gateway.refund_charge(charge, refund)).to have_attributes(external_id: "pay_123", status: "accepted")
+    expect(stub).to have_been_requested.once
+  end
+
   it "requires the customer document to create customers" do
     stub_customer_lookup([])
     allow(customer).to receive(:document).and_return(nil)

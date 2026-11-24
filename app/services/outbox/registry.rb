@@ -22,6 +22,7 @@ module Outbox
       "visit.finished" => [],
       "payment_charge.requested" => ["Payments::Handlers::SubmitCharge"],
       "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"],
+      "payment_refund.requested" => ["Payments::Handlers::SubmitRefund"],
       "sla.warning" => ["Notifications::Handlers::SlaAlert"],
       "sla.breached" => ["Notifications::Handlers::SlaAlert"],
       "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"]

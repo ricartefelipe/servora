@@ -1028,6 +1028,32 @@ CREATE TABLE public.payment_integrations (
 
 
 --
+-- Name: payment_refunds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payment_refunds (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    reason text NOT NULL,
+    status character varying NOT NULL,
+    external_id character varying,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    submitted_at timestamp(6) with time zone,
+    resolved_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    payment_id uuid NOT NULL,
+    receivable_id uuid NOT NULL,
+    requested_by_membership_id uuid,
+    resolved_by_membership_id uuid,
+    CONSTRAINT payment_refunds_status CHECK (((status)::text = ANY (ARRAY['manual'::text, 'pending'::text, 'accepted'::text, 'unknown'::text, 'failed'::text]))),
+    CONSTRAINT payment_refunds_values CHECK (((amount > (0)::numeric) AND (attempts >= 0)))
+);
+
+
+--
 -- Name: payments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2230,6 +2256,14 @@ ALTER TABLE ONLY public.payment_integrations
 
 
 --
+-- Name: payment_refunds payment_refunds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT payment_refunds_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3331,6 +3365,27 @@ CREATE UNIQUE INDEX index_payment_integrations_single ON public.payment_integrat
 
 
 --
+-- Name: index_payment_refunds_on_organization_id_and_payment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payment_refunds_on_organization_id_and_payment_id ON public.payment_refunds USING btree (organization_id, payment_id);
+
+
+--
+-- Name: index_payment_refunds_on_organization_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payment_refunds_on_organization_id_and_status ON public.payment_refunds USING btree (organization_id, status);
+
+
+--
+-- Name: index_payment_refunds_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_refunds_on_tenant_key ON public.payment_refunds USING btree (organization_id, id);
+
+
+--
 -- Name: index_payments_idempotency; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4399,6 +4454,38 @@ ALTER TABLE ONLY public.payment_charges
 
 
 --
+-- Name: payment_refunds fk_payment_refunds_payment_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT fk_payment_refunds_payment_id_tenant FOREIGN KEY (organization_id, payment_id) REFERENCES public.payments(organization_id, id);
+
+
+--
+-- Name: payment_refunds fk_payment_refunds_receivable_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT fk_payment_refunds_receivable_id_tenant FOREIGN KEY (organization_id, receivable_id) REFERENCES public.receivables(organization_id, id);
+
+
+--
+-- Name: payment_refunds fk_payment_refunds_requested_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT fk_payment_refunds_requested_by_membership_id_tenant FOREIGN KEY (organization_id, requested_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: payment_refunds fk_payment_refunds_resolved_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT fk_payment_refunds_resolved_by_membership_id_tenant FOREIGN KEY (organization_id, resolved_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
 -- Name: payments fk_payments_payment_charge_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5092,6 +5179,14 @@ ALTER TABLE ONLY public.catalog_items
 
 ALTER TABLE ONLY public.contract_versions
     ADD CONSTRAINT fk_rails_d7d5b6fcc4 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: payment_refunds fk_rails_dc9b845947; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_refunds
+    ADD CONSTRAINT fk_rails_dc9b845947 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -5831,6 +5926,12 @@ ALTER TABLE public.payment_charges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_integrations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: payment_refunds; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.payment_refunds ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: payments; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -6190,6 +6291,13 @@ CREATE POLICY tenant_isolation ON public.payment_charges USING ((organization_id
 --
 
 CREATE POLICY tenant_isolation ON public.payment_integrations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: payment_refunds tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.payment_refunds USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -6555,6 +6663,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261125010000'),
 ('20261124015000'),
 ('20261124014000'),
 ('20261124013000'),
