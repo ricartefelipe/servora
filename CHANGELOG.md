@@ -5,6 +5,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [0.1.0] - 2026-11-24
+
+Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento com aprovação
+pelo portal, ordem de serviço e agendamento.
+
 ### Adicionado
 
 - Fundação do projeto: Rails 8.1, PostgreSQL 18 com papéis owner/aplicação, Solid Queue/Cache/Cable em
@@ -31,3 +36,6 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - Agenda diária e semanal, técnicos com competências e horários, equipes, ausências, deslocamento configurável,
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
+
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v0.1.0...develop
+[0.1.0]: https://github.com/ricartefelipe/servora/releases/tag/v0.1.0

@@ -12,11 +12,14 @@ require "action_cable/engine"
 
 Bundler.require(*Rails.groups)
 
+require_relative "../lib/servora/version"
+
 module Servora
   class Application < Rails::Application
     config.load_defaults 8.1
 
-    config.autoload_lib(ignore: %w[assets tasks])
+    # lib/servora/version.rb defines Servora::VERSION and is required above.
+    config.autoload_lib(ignore: %w[assets tasks servora/version.rb])
 
     # Product defaults: Portuguese UI, BRL, organization-specific time zones are
     # applied per request from the organization record.

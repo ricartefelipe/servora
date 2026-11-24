@@ -10,7 +10,7 @@ RSpec.describe "Health probes" do
       get "/up"
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body).to eq("status" => "ok")
+      expect(response.parsed_body).to eq("status" => "ok", "version" => Servora::VERSION)
       expect(ActiveRecord::Base).not_to have_received(:connection_pool)
     end
   end

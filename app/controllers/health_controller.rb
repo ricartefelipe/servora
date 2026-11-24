@@ -11,7 +11,7 @@ class HealthController < ActionController::API
   READINESS_TIMEOUT_MS = 2_000
 
   def live
-    render json: { status: "ok" }
+    render json: { status: "ok", version: Servora::VERSION }
   end
 
   def ready
