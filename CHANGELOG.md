@@ -33,6 +33,10 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   organização, pausas por espera de aprovação, cliente ou peças, retomada na reabertura, alertas de risco e de
   estouro sem duplicidade, painel na ordem de serviço e indicador no painel inicial.
 
+- Área do técnico (PWA): agenda dos próximos dias, tela de execução para celular, rascunhos e fila offline de
+  checklist, registro técnico e apontamentos com sincronização idempotente, revalidação de acesso e detecção de
+  conflitos; service worker restrito a assets estáticos.
+
 ### Corrigido
 
 - CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),

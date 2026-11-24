@@ -40,6 +40,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Preventiva | Âncora de fim de mês e bissexto, catch-up limitado, reancoragem, modo após conclusão, suspensão e término, job diário | `spec/unit/preventive/schedule_spec.rb`, `spec/services/preventive_spec.rb`, `spec/system/preventive_flow_spec.rb` |
 | Concorrência preventiva | Três geradores simultâneos produzem cada ocorrência uma única vez | `spec/services/preventive_concurrency_spec.rb` |
 | SLA | Calendário com expediente, feriados e fuso; relógios com pausa, retomada e reabertura; alertas sem duplicidade (inclusive concorrentes); configuração e painel | `spec/unit/sla/business_calendar_spec.rb`, `spec/services/sla_spec.rb`, `spec/services/sla_concurrency_spec.rb`, `spec/requests/sla_settings_spec.rb` |
+| Área do técnico | Agenda e execução móvel, fila offline idempotente, conflitos por versão, revalidação de acesso, rascunho recuperado, service worker restrito | `spec/services/field/sync_spec.rb`, `spec/requests/field_spec.rb`, `spec/system/field_offline_spec.rb` (rede desligada no navegador) |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
