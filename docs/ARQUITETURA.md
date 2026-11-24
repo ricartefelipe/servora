@@ -168,6 +168,31 @@ canceled: a partir de qualquer estado não concluído (motivo obrigatório)
 - Técnicos veem apenas ordens atribuídas (e os equipamentos delas), executam checklist e registro técnico, sem
   ver preços ou custos; a conclusão formal e o cancelamento são ações do escritório.
 
+## Agenda e despacho
+
+- `technician_allocations` é a fonte de verdade do tempo do técnico: visitas e ausências ocupam o intervalo
+  **semiaberto** `[início, término + deslocamento)` (`tstzrange`, checagem de limites no banco).
+- `EXCLUDE USING gist (organization_id WITH =, membership_id WITH =, period WITH &&) WHERE status = 'active'`
+  impede reservas sobrepostas mesmo com dois coordenadores agendando no mesmo instante (spec com duas
+  conexões e espera de lock observada em `pg_stat_activity`).
+- Visita de equipe: todas as reservas são inseridas no mesmo savepoint, em ordem de id; conflito em qualquer
+  integrante desfaz tudo. Reagendamento libera e recria reservas no mesmo savepoint (conflito mantém a original).
+- Horário de trabalho semanal por técnico (fuso da organização) é verificado no caso de uso; ausências usam a
+  mesma constraint das visitas.
+- Sugestão de técnicos: filtra por competências exigidas pelo tipo de serviço, disponibilidade e horário;
+  ordena pela menor carga do dia e pelo nome. Heurística determinística, não otimização de rotas.
+
+### Máquina de estados da visita
+
+```
+scheduled ─▶ in_progress ─▶ completed
+    ├──────▶ canceled
+    └──────▶ no_show
+```
+
+Finalizar visita não conclui a ordem; encerrar antes do previsto libera o restante da reserva (mantendo o
+deslocamento após o término real).
+
 ## Portal do cliente
 
 - Acesso por concessão de uso único enviada por e-mail (72 h, finalidade registrada, revogável). O GET apenas

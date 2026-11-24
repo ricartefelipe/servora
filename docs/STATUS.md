@@ -26,23 +26,25 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Portal do cliente | Link de uso único (GET não consome), sessão restrita revogável, isolamento por cliente | `spec/requests/portal_spec.rb`, `spec/services/portal/**` |
 | Ordens de serviço | Abertura, conversão idempotente (inclusive concorrente), máquina de estados, checklist obrigatório, registro técnico com bloqueio otimista, itens adicionais com autorização, conclusão com relatório versionado, cancelamento e reabertura | `spec/services/work_orders_spec.rb`, `spec/services/work_orders/create_from_quote_spec.rb`, `spec/system/work_order_flow_spec.rb` |
 | Técnicos | Escopo restrito a ordens e equipamentos atribuídos, sem preços e sem conclusão formal | `spec/policies/work_order_policy_spec.rb` |
+| Agenda | Visão diária (linha do tempo) e semanal, técnicos e equipes, horários, ausências, deslocamento, competências | `spec/requests/scheduling_spec.rb`, `spec/system/scheduling_flow_spec.rb` |
+| Despacho | Reserva protegida por exclusion constraint, equipe atômica, reagendamento seguro, cancelamento e ausência do cliente, sugestão determinística | `spec/services/scheduling/**`, `spec/services/visits_spec.rb` |
+| Apontamentos | Minutos e custo de mão de obra com custo/hora vigente; idempotência por operação | `spec/services/time_entries/record_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `ruby bin/test-all` | 44 exemplos (regras puras) + 239 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 99,26%, branches 87,34% |
+| `ruby bin/test-all` | 53 exemplos (regras puras) + 267 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 99,11%, branches 84,79% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
 
 ## Em andamento
 
-- Agenda e despacho: visitas com máquina de estados própria, reservas de técnicos e equipes protegidas por
-  exclusion constraint, horários de trabalho, ausências, deslocamento e sugestão de técnicos.
+- Release 0.1.0 (primeira fatia vertical), seguida do módulo de estoque.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/agenda-e-despacho` a partir de `develop`. `WorkOrders::Complete#visits_in_progress`
-passa a consultar as visitas reais nessa feature.
+Após o merge desta feature: `release/0.1.0` a partir de `develop` → PR para `main` → tag `v0.1.0` →
+PR de reintegração para `develop`. Em seguida, `feature/estoque`.
