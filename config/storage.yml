@@ -1,0 +1,26 @@
+# Attachments are never served by public URLs. Every download goes through
+# AttachmentsController, which authorizes the record and the organization.
+
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+# Development: local disk shared by web and worker processes. In
+# docker-compose.yml the directory is a named volume mounted in both services.
+local:
+  service: Disk
+  root: <%= ENV.fetch("STORAGE_ROOT", Rails.root.join("storage").to_s) %>
+
+# Production: private bucket on an S3-compatible provider. Credentials are
+# injected through the environment and the bucket must block public access.
+object_storage:
+  service: S3
+  access_key_id: <%= ENV.fetch("OBJECT_STORAGE_ACCESS_KEY_ID", "") %>
+  secret_access_key: <%= ENV.fetch("OBJECT_STORAGE_SECRET_ACCESS_KEY", "") %>
+  region: <%= ENV.fetch("OBJECT_STORAGE_REGION", "us-east-1") %>
+  bucket: <%= ENV.fetch("OBJECT_STORAGE_BUCKET", "") %>
+  endpoint: <%= ENV.fetch("OBJECT_STORAGE_ENDPOINT", "") %>
+  force_path_style: <%= ENV.fetch("OBJECT_STORAGE_FORCE_PATH_STYLE", "true") %>
+  public: false
+  upload:
+    server_side_encryption: <%= ENV.fetch("OBJECT_STORAGE_SSE", "AES256") %>

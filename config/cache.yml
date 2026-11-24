@@ -1,0 +1,15 @@
+# Solid Cache backs Rails.cache in development and production. It is used for
+# rate limiting counters shared by every web process; application data is not
+# cached by default (see docs/DECISOES.md).
+default: &default
+  database: cache
+  store_options:
+    max_age: <%= 7.days.to_i %>
+    max_size: <%= 256.megabytes %>
+    namespace: <%= Rails.env %>
+
+development:
+  <<: *default
+
+production:
+  <<: *default
