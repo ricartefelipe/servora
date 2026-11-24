@@ -29,6 +29,7 @@ module NavigationHelper
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),
       NavItem.new("Eventos", :outbox_events_path, :integrations, :outbox_reprocess, %w[outbox_events]),
       NavItem.new("Pagamentos", :edit_payment_integration_path, :finance, :integrations_manage, %w[payment_integrations]),
+      NavItem.new("Nota fiscal", :edit_fiscal_settings_path, :quote, :integrations_manage, %w[fiscal_settings]),
       NavItem.new("Integrações", :integrations_path, :integrations, :integrations_manage, %w[integrations]),
       NavItem.new("Prazos (SLA)", :sla_settings_path, :clock, :organization_manage, %w[sla_settings holidays]),
       NavItem.new("Assinatura", :subscription_path, :key, :subscription_manage, %w[subscriptions]),
@@ -39,7 +40,7 @@ module NavigationHelper
   # Navigation entries that belong to an optional module of the subscription.
   MODULE_ROUTES = {
     stock_balances_path: :inventory, contracts_path: :preventive, receivables_path: :finance,
-    edit_payment_integration_path: :finance, integrations_path: :api
+    edit_payment_integration_path: :finance, edit_fiscal_settings_path: :finance, integrations_path: :api
   }.freeze
 
   def navigation_groups

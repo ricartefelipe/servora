@@ -1,0 +1,17 @@
+<% content_for :title, "Nota fiscal" %>
+<%= page_header("Nota fiscal de serviço (NFS-e)", subtitle: "Emitida pelo provedor de pagamentos. A inscrição municipal e o certificado digital são configurados na conta do provedor.") %>
+
+<section class="sv-card max-w-2xl p-6">
+  <%= form_with model: @setting, url: fiscal_settings_path, method: :patch, class: "space-y-5" do |f| %>
+    <%= f.error_summary %>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= f.field :municipal_service_code, label: "Código do serviço municipal", required: true, wrapper: { class: "sm:col-span-1" } %>
+      <%= f.field :iss_rate, label: "Alíquota de ISS (%)", as: :number_field, step: "0.01", min: 0, max: 5, wrapper: { class: "sm:col-span-1" } %>
+    </div>
+    <%= f.field :municipal_service_name, label: "Descrição do serviço municipal", required: true, hint: "Conforme a lista de serviços do município" %>
+    <%= f.field :default_description, label: "Texto padrão da nota", hint: "Complementado com a descrição da conta a receber" %>
+    <%= f.toggle_field :retain_iss, label: "ISS retido pelo tomador" %>
+    <%= f.toggle_field :auto_issue_on_payment, label: "Emitir automaticamente quando a conta for quitada" %>
+    <div class="flex justify-end"><%= f.submit_button("Salvar dados fiscais") %></div>
+  <% end %>
+</section>

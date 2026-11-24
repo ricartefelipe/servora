@@ -85,6 +85,52 @@
       <% end %>
     </section>
 
+    <section class="sv-card overflow-hidden" aria-labelledby="nfse-title">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+        <h2 id="nfse-title" class="font-semibold text-ink-900">Nota fiscal de serviço</h2>
+        <% if rp.invoice? && @invoices.none? { |invoice| ServiceInvoice::VALID_STATUSES.include?(invoice.status) } %>
+          <% if @fiscal_ready %>
+            <%= button_to "Emitir NFS-e", receivable_invoices_path(@receivable), class: "sv-btn-secondary sv-btn-sm" %>
+          <% else %>
+            <%= link_to "Configurar dados fiscais", edit_fiscal_settings_path, class: "sv-link text-sm" %>
+          <% end %>
+        <% end %>
+      </div>
+      <% if @invoices.empty? %>
+        <p class="px-5 py-6 text-sm text-ink-500">Nenhuma nota emitida para esta conta.</p>
+      <% else %>
+        <ul class="divide-y divide-ink-100" role="list">
+          <% @invoices.each do |invoice| %>
+            <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-ink-900"><%= invoice.number ? "NFS-e nº #{invoice.number}" : "NFS-e" %> · <span class="sv-num"><%= money(invoice.amount) %></span></p>
+                <p class="text-xs text-ink-500"><%= invoice.issued_at ? "Autorizada em #{date_time(invoice.issued_at)}" : "Solicitada em #{date_time(invoice.created_at)}" %>
+                  <% if invoice.verification_code %> · verificação <span class="font-mono"><%= invoice.verification_code %></span><% end %></p>
+                <% if invoice.last_error.present? %><p class="text-xs text-rose-700"><%= invoice.last_error %></p><% end %>
+              </div>
+              <%= badge(invoice.status_label, tone: { "authorized" => :success, "error" => :danger, "canceled" => :neutral, "unknown" => :warning }.fetch(invoice.status, :info)) %>
+              <% if invoice.pdf_url.present? %><%= link_to "PDF", invoice.pdf_url, class: "sv-btn-ghost sv-btn-sm", target: "_blank", rel: "noopener noreferrer" %><% end %>
+              <% if invoice.xml_url.present? %><%= link_to "XML", invoice.xml_url, class: "sv-btn-ghost sv-btn-sm", target: "_blank", rel: "noopener noreferrer" %><% end %>
+              <% if rp.invoice? && %w[scheduled unknown canceling].include?(invoice.status) %>
+                <%= button_to "Consultar", sync_receivable_invoice_path(@receivable, invoice), class: "sv-btn-ghost sv-btn-sm" %>
+              <% end %>
+              <% if rp.invoice? && %w[authorized scheduled pending error].include?(invoice.status) %>
+                <details class="relative">
+                  <summary class="sv-btn-ghost sv-btn-sm cursor-pointer list-none text-rose-700">Cancelar</summary>
+                  <%= form_with url: cancel_receivable_invoice_path(@receivable, invoice), method: :patch, scope: :cancellation,
+                        class: "absolute right-0 z-10 mt-2 w-72 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
+                    <%= f.label :reason, "Motivo", class: "sv-label", for: "nfse-motivo-#{invoice.id}" %>
+                    <%= f.text_field :reason, id: "nfse-motivo-#{invoice.id}", class: "sv-input", required: true %>
+                    <%= f.button "Cancelar nota", type: "submit", class: "sv-btn-danger w-full" %>
+                  <% end %>
+                </details>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
     <section class="sv-card p-5" aria-labelledby="historico-title">
       <h2 id="historico-title" class="mb-3 font-semibold text-ink-900">Histórico</h2>
       <ol class="space-y-3 border-l border-ink-200 pl-4" role="list">

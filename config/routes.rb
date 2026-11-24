@@ -163,6 +163,12 @@ Rails.application.routes.draw do
           patch :refund, on: :member, path: "estornar"
         end
         resources :discounts, path: "descontos", only: %i[new create]
+        resources :invoices, path: "notas-fiscais", only: :create do
+          member do
+            post :sync, path: "consultar"
+            patch :cancel, path: "cancelar"
+          end
+        end
         resources :charges, path: "cobrancas", only: :create do
           member do
             post :simulate, path: "simular-pagamento"
@@ -172,6 +178,7 @@ Rails.application.routes.draw do
       end
     end
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
+    resource :fiscal_settings, path: "configuracoes/nota-fiscal", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
     resource :subscription, path: "configuracoes/assinatura", only: %i[show update]
     resource :integrations, path: "configuracoes/integracoes", only: :show do
