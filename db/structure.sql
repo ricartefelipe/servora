@@ -592,6 +592,25 @@ CREATE TABLE public.expenses (
 
 
 --
+-- Name: field_operations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.field_operations (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    operation_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    status character varying NOT NULL,
+    result jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    work_order_id uuid NOT NULL,
+    membership_id uuid NOT NULL,
+    CONSTRAINT field_operations_kind CHECK (((kind)::text = ANY (ARRAY['time_entry'::text, 'technical_report'::text, 'checklist'::text]))),
+    CONSTRAINT field_operations_status CHECK (((status)::text = ANY (ARRAY['applied'::text, 'conflict'::text, 'rejected'::text])))
+);
+
+
+--
 -- Name: financial_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1862,6 +1881,14 @@ ALTER TABLE ONLY public.expenses
 
 
 --
+-- Name: field_operations field_operations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.field_operations
+    ADD CONSTRAINT field_operations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: financial_events financial_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2691,6 +2718,27 @@ CREATE INDEX index_expenses_on_organization_id_and_work_order_id ON public.expen
 --
 
 CREATE UNIQUE INDEX index_expenses_on_tenant_key ON public.expenses USING btree (organization_id, id);
+
+
+--
+-- Name: index_field_operations_on_organization_id_and_operation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_field_operations_on_organization_id_and_operation_id ON public.field_operations USING btree (organization_id, operation_id);
+
+
+--
+-- Name: index_field_operations_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_field_operations_on_organization_id_and_work_order_id ON public.field_operations USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_field_operations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_field_operations_on_tenant_key ON public.field_operations USING btree (organization_id, id);
 
 
 --
@@ -3785,6 +3833,22 @@ ALTER TABLE ONLY public.expenses
 
 
 --
+-- Name: field_operations fk_field_operations_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.field_operations
+    ADD CONSTRAINT fk_field_operations_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: field_operations fk_field_operations_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.field_operations
+    ADD CONSTRAINT fk_field_operations_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
 -- Name: financial_events fk_financial_events_payment_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4206,6 +4270,14 @@ ALTER TABLE ONLY public.maintenance_plans
 
 ALTER TABLE ONLY public.payment_charges
     ADD CONSTRAINT fk_rails_2b518ebdf9 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: field_operations fk_rails_2e5c7f5ca2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.field_operations
+    ADD CONSTRAINT fk_rails_2e5c7f5ca2 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -5157,6 +5229,12 @@ ALTER TABLE public.equipment_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: field_operations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.field_operations ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: financial_events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -5524,6 +5602,13 @@ CREATE POLICY tenant_isolation ON public.equipment_events USING ((organization_i
 --
 
 CREATE POLICY tenant_isolation ON public.expenses USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: field_operations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.field_operations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -5955,6 +6040,7 @@ SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20261124013000'),
+('20261124012000'),
 ('20261124011000'),
 ('20261124010000'),
 ('20261124009000'),
