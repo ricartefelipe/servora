@@ -31,14 +31,19 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Apontamentos | Minutos e custo de mão de obra com custo/hora vigente; idempotência por operação | `spec/services/time_entries/record_spec.rb` |
 | Estoque | Depósitos, entradas, transferências, ajustes, mínimo, custo médio móvel, histórico; trigger de saldo, append-only, idempotência | `spec/services/inventory_operations_spec.rb`, `spec/database/inventory_integrity_spec.rb`, `spec/requests/inventory_spec.rb` |
 | Concorrência de estoque | Última unidade disputada por duas ordens, transferências cruzadas sem deadlock, consumo duplicado concorrente | `spec/services/inventory_concurrency_spec.rb` |
+| Contas a receber | Parcelas limitadas ao autorizado, pagamentos parciais idempotentes, desconto, estorno, cancelamento, constraints e histórico append-only | `spec/services/receivables_spec.rb`, `spec/database/finance_integrity_spec.rb`, `spec/requests/receivables_spec.rb` |
+| Concorrência financeira | Dois pagamentos simultâneos do saldo total: um aceito, outro recusado | `spec/services/receivables_concurrency_spec.rb` |
+| Cobranças | Simulador determinístico, envio pela outbox, resposta ambígua sem duplicação, recusa, confirmação idempotente, conciliação, cancelamento remoto | `spec/services/payments_spec.rb`, `spec/system/billing_flow_spec.rb` |
+| Asaas (sandbox) | Adapter com timeouts, clientes por referência, consulta por referência externa, classificação de falhas — **somente contra stubs (WebMock)** | `spec/services/payments/gateways/asaas_spec.rb` |
+| Margem | Prevista × realizada com material, mão de obra e despesas | `spec/services/receivables_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 58 exemplos (regras puras) + 315 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,83%, branches 84,91% |
+| `bash bin/test-all` | 65 exemplos (regras puras) + 360 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,64%, branches 84,03% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -49,11 +54,17 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
 
+## Integrações não exercitadas
+
+| Integração | Situação |
+|---|---|
+| Asaas sandbox | Adapter implementado e coberto com WebMock. Não foi executado contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; emitir uma conta e gerar a cobrança. |
+
 ## Em andamento
 
-- Financeiro operacional: contas a receber por ordem, pagamentos parciais, descontos autorizados, custos e
-  margem prevista × realizada (consumos de material e apontamentos já registram o custo histórico).
+- Contratos de manutenção e planos preventivos (periodicidade de calendário, âncora, recuperação sem
+  duplicidade, identidade estável da ocorrência) e SLA.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/financeiro` a partir de `develop`.
+Próxima branch: `feature/contratos-e-preventiva` a partir de `develop`.

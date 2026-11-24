@@ -16,6 +16,13 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   append-only e constraints contra saldo negativo e reserva acima do físico.
 - Idempotência por chave de operação em entradas, transferências, ajustes e consumos.
 
+- Financeiro operacional: contas a receber por ordem (parcelas), pagamentos parciais idempotentes,
+  descontos e estornos com permissões próprias, cancelamento sem valor retido e histórico append-only.
+- Despesas por ordem e margem prevista × realizada com custos históricos de material e mão de obra.
+- Cobranças Pix e boleto por adapter: simulador determinístico e Asaas (sandbox), envio pela outbox fora de
+  transações, consulta pela referência externa após respostas ambíguas, conciliação periódica e cancelamento
+  remoto; chave de API criptografada por organização.
+
 ### Corrigido
 
 - A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).

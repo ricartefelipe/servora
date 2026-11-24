@@ -203,3 +203,22 @@ status atualizado.
   `sessionStorage` (prefixo `servora:`), usada quando a URL não tem fragmento; o expurgo de dados locais na
   troca de contexto também limpa essas chaves.
 
+## DEC-027 — Posição da conta como valor puro com constraints espelhadas
+
+- **Decisão**: contas guardam valor, descontos, pago e estornado; a situação deriva desses valores em
+  `Receivables::Position` e as mesmas regras existem como constraints. Todo uso de caso trava a conta e grava
+  um evento financeiro append-only.
+- **Consequências**: nenhuma combinação inválida (pagamento acima do saldo, cancelamento com dinheiro retido)
+  persiste, mesmo por acesso direto; o histórico explica cada centavo.
+
+## DEC-028 — Integração de pagamentos fora de transações, guiada por referência externa
+
+- **Contexto**: o provedor pode processar uma requisição cuja resposta se perde; repetir cegamente gera
+  cobrança duplicada, e chamadas de rede dentro de transações seguram locks.
+- **Decisão**: a cobrança nasce `pending` com uma referência externa estável, gravada junto com o evento da
+  outbox. O job envia fora de transação; após qualquer tentativa anterior consulta o provedor pela referência
+  antes de criar. Falhas são classificadas em não enviada, ambígua e recusada. Confirmações registram o
+  pagamento com chave de idempotência derivada da cobrança. Conciliação periódica cobre confirmações perdidas.
+- **Consequências**: uma cobrança por referência, sem locks durante I/O; o simulador reproduz os cenários de
+  forma determinística para testes e demonstração.
+

@@ -134,10 +134,13 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
 - **RF-FIN-04** Dinheiro em BRL com `decimal(14,2)`; quantidades `decimal(14,3)`; custos unitários
   `decimal(14,4)`. Nunca `Float`.
 - **RF-FIN-05** Adaptador de pagamentos: simulador determinístico e Asaas (sandbox), com criação de
-  cobrança, consulta, confirmação, falha e estorno.
+  cobrança, consulta, confirmação, falha e cancelamento. Estornos são registrados no Servora (histórico,
+  saldo e auditoria); a devolução no meio de pagamento é uma etapa operacional fora do sistema nesta versão.
 - **RF-FIN-06** Resposta perdida do provedor é resolvida por consulta pela referência externa; a
   cobrança não é repetida cegamente.
 - **RF-FIN-07** Fatura comercial não é apresentada como nota fiscal. Dados de cartão nunca são armazenados.
+- **RF-FIN-08** Chamadas ao provedor nunca ocorrem dentro de transações; o envio é disparado pela outbox
+  após o commit e uma conciliação periódica cobre confirmações perdidas.
 
 ## 10. Campo e funcionamento offline
 
