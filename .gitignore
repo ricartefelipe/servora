@@ -1,0 +1,61 @@
+# Dependencies and Bundler state
+/.bundle
+/vendor/bundle
+
+# Environment files (keep only the documented template)
+/.env
+/.env.*
+!/.env.example
+
+# Secrets and keys
+/config/master.key
+/config/credentials/*.key
+/config/credentials.yml.enc
+*.pem
+*.p12
+*.key
+
+# Logs, temporary files and runtime state
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+
+# Uploaded files (development and test)
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+
+# Compiled assets
+/public/assets
+/app/assets/builds/*
+!/app/assets/builds/.keep
+
+# Test and quality artifacts
+/coverage/
+/spec/examples.txt
+/tmp/capybara/
+/tmp/screenshots/
+/.rspec_status
+
+# Backups and database dumps
+/backups/
+*.dump
+*.sql.gz
+
+# Editors and operating systems
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Node tooling (not used, ignored defensively)
+/node_modules/
