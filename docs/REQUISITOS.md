@@ -94,6 +94,8 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
   feriados e fuso da organização.
 - **RF-SLA-02** Eventos que iniciam, pausam (espera por cliente/peças) e encerram a contagem.
 - **RF-SLA-03** Alertas de vencimento sem duplicidade.
+- **RF-SLA-04** Prazos em contagem mantêm o alvo da política vigente no início; reabertura retoma a resolução
+  com o tempo já consumido.
 
 ## 7. Contratos e manutenção preventiva
 

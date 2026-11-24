@@ -39,14 +39,15 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Contratos | Condições versionadas append-only, ciclo de vida com motivos, cobertura por tipo e limite mensal, vínculo automático das ordens | `spec/services/contracts_spec.rb`, `spec/requests/contracts_spec.rb`, `spec/database/contract_integrity_spec.rb` |
 | Preventiva | Âncora de fim de mês e bissexto, catch-up limitado, reancoragem, modo após conclusão, suspensão e término, job diário | `spec/unit/preventive/schedule_spec.rb`, `spec/services/preventive_spec.rb`, `spec/system/preventive_flow_spec.rb` |
 | Concorrência preventiva | Três geradores simultâneos produzem cada ocorrência uma única vez | `spec/services/preventive_concurrency_spec.rb` |
+| SLA | Calendário com expediente, feriados e fuso; relógios com pausa, retomada e reabertura; alertas sem duplicidade (inclusive concorrentes); configuração e painel | `spec/unit/sla/business_calendar_spec.rb`, `spec/services/sla_spec.rb`, `spec/services/sla_concurrency_spec.rb`, `spec/requests/sla_settings_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 71 exemplos (regras puras) + 388 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,74%, branches 84,98% |
+| `bash bin/test-all` | 79 exemplos (regras puras) + 403 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,76%, branches 85,05% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -65,9 +66,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- SLA: prazos de primeira resposta e resolução por prioridade, calendário de trabalho, feriados, fuso da
-  organização, pausas por espera de cliente/peças e alertas sem duplicidade.
+- Anexos com validação de conteúdo e downloads autenticados; relatórios em PDF de orçamento e de execução.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/sla` a partir de `develop`.
+Próxima branch: `feature/anexos-e-relatorios` a partir de `develop`.

@@ -29,6 +29,10 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   preservada, antecedência, modo "após a conclusão", reancoragem sem alterar ocorrências geradas, geração diária
   idempotente com recuperação gradual e identidade estável (plano, sequência).
 
+- SLA: prazos de primeira resposta e resolução por prioridade, expediente semanal, feriados e fuso da
+  organização, pausas por espera de aprovação, cliente ou peças, retomada na reabertura, alertas de risco e de
+  estouro sem duplicidade, painel na ordem de serviço e indicador no painel inicial.
+
 ### Corrigido
 
 - A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).
