@@ -280,3 +280,18 @@ status atualizado.
 - **Consequências**: a tela precisa ter sido aberta com conexão; o que se registra offline é enviado com
   segurança e sem duplicidade.
 
+## DEC-035 — Webhooks de saída com IP fixado e sem redirecionamentos
+
+- **Contexto**: URLs informadas por clientes podem apontar (diretamente ou por DNS) para redes internas.
+- **Decisão**: validar esquema, porta e todos os endereços resolvidos na gravação e em cada envio; conectar ao IP
+  validado; não seguir redirecionamentos; payload mínimo e assinado.
+- **Consequências**: receptores atrás de portas não padrão ou HTTP simples não são suportados; ataques de
+  revinculação de DNS não alcançam a rede interna.
+
+## DEC-036 — Idempotência da API por chave e digest do corpo
+
+- **Decisão**: gravar status e corpo da resposta sob `(credencial, Idempotency-Key)` na mesma transação da
+  operação, com o digest do corpo da requisição.
+- **Consequências**: reenvios de integrações instáveis não duplicam ordens; reutilizar a chave com outro
+  conteúdo é erro explícito.
+

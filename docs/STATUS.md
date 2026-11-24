@@ -44,6 +44,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | PDFs | Proposta comercial da versão enviada e relatório de execução por versão | `spec/requests/documents_spec.rb` |
 | Área do técnico | Agenda e execução móvel, fila offline idempotente, conflitos por versão, revalidação de acesso, rascunho recuperado, service worker restrito | `spec/services/field/sync_spec.rb`, `spec/requests/field_spec.rb`, `spec/system/field_offline_spec.rb` (rede desligada no navegador) |
 | Portal ampliado | Chamados com triagem e notificação, ordens, visitas, equipamentos e histórico, PDFs, cobranças; isolamento por cliente; uso no celular | `spec/requests/portal_service_spec.rb`, `spec/system/portal_requests_spec.rb` |
+| API v1 | Credenciais com escopo, validade e revogação; isolamento; paginação limitada; filtros; idempotência; OpenAPI conferida contra as rotas | `spec/requests/api_spec.rb` |
+| Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
@@ -51,8 +53,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 82 exemplos (regras puras) + 435 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,70%, branches 84,77% |
+| `bash bin/test-all` | 82 exemplos (regras puras) + 454 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,51%, branches 84,50% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -67,12 +69,12 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 | Integração | Situação |
 |---|---|
-| Asaas sandbox | Adapter implementado e coberto com WebMock. Não foi executado contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; emitir uma conta e gerar a cobrança. |
+| Asaas sandbox | Adapter e webhook de entrada implementados e cobertos com WebMock e payloads gravados. Não foram executados contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; gerar o token em Configurações → Integrações e cadastrá-lo no Asaas com a URL `/webhooks/asaas`; emitir uma conta, gerar a cobrança e pagar no sandbox. |
 
 ## Em andamento
 
-- API v1 com OpenAPI e credenciais revogáveis; webhooks de entrada e de saída.
+- Assinaturas da plataforma (planos, trial, limites e módulos).
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/api-e-webhooks` a partir de `develop`.
+Próxima branch: `feature/assinaturas` a partir de `develop`.
