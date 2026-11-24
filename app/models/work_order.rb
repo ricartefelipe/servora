@@ -22,6 +22,8 @@ class WorkOrder < TenantRecord
     inverse_of: :work_order
   has_many :transitions, -> { order(created_at: :desc) }, class_name: "WorkOrderTransition", dependent: nil,
     inverse_of: :work_order
+  has_many :visits, -> { order(:scheduled_start) }, dependent: nil, inverse_of: :work_order
+  has_many :time_entries, -> { order(:started_at) }, dependent: nil, inverse_of: :work_order
   has_many :reports, -> { order(version_number: :desc) }, class_name: "WorkOrderReport", dependent: nil, inverse_of: :work_order
 
   enum :status, WorkOrders::States.states.index_by(&:itself), validate: true

@@ -39,9 +39,7 @@ module WorkOrders
       raise RequirementsMissing, "Para concluir: #{missing.join("; ")}." if missing.any?
     end
 
-    # Visits are introduced by the scheduling module; until a work order has
-    # visits there is nothing in progress to wait for.
-    def visits_in_progress = 0
+    def visits_in_progress = @work_order.visits.where(status: "in_progress").count
 
     def store_report
       data = ReportBuilder.new(@work_order).call

@@ -399,6 +399,20 @@ CREATE TABLE public.invitations (
 
 
 --
+-- Name: membership_skills; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.membership_skills (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    membership_id uuid NOT NULL,
+    skill_id uuid NOT NULL
+);
+
+
+--
 -- Name: memberships; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -717,6 +731,20 @@ CREATE TABLE public.service_type_checklist_items (
 
 
 --
+-- Name: service_type_skills; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.service_type_skills (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    service_type_id uuid NOT NULL,
+    skill_id uuid NOT NULL
+);
+
+
+--
 -- Name: service_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -728,6 +756,95 @@ CREATE TABLE public.service_types (
     active boolean DEFAULT true NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
+-- Name: skills; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.skills (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
+-- Name: team_members; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.team_members (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    team_id uuid NOT NULL,
+    membership_id uuid NOT NULL
+);
+
+
+--
+-- Name: teams; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.teams (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
+-- Name: technician_allocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.technician_allocations (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    status character varying DEFAULT 'active'::character varying NOT NULL,
+    period tstzrange NOT NULL,
+    reason character varying,
+    released_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    membership_id uuid NOT NULL,
+    visit_id uuid,
+    CONSTRAINT technician_allocations_half_open_period CHECK (((NOT isempty(period)) AND lower_inc(period) AND (NOT upper_inc(period)) AND (NOT lower_inf(period)) AND (NOT upper_inf(period)))),
+    CONSTRAINT technician_allocations_kind CHECK (((kind)::text = ANY (ARRAY['visit'::text, 'absence'::text]))),
+    CONSTRAINT technician_allocations_status CHECK (((status)::text = ANY (ARRAY['active'::text, 'released'::text]))),
+    CONSTRAINT technician_allocations_visit_link CHECK ((((kind)::text = 'visit'::text) = (visit_id IS NOT NULL)))
+);
+
+
+--
+-- Name: time_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.time_entries (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    started_at timestamp(6) with time zone NOT NULL,
+    ended_at timestamp(6) with time zone NOT NULL,
+    minutes integer NOT NULL,
+    hourly_cost numeric(14,4),
+    labor_cost numeric(14,2),
+    source character varying DEFAULT 'manual'::character varying NOT NULL,
+    notes text,
+    client_operation_id uuid,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    visit_id uuid,
+    membership_id uuid NOT NULL,
+    CONSTRAINT time_entries_period CHECK (((started_at < ended_at) AND (minutes > 0))),
+    CONSTRAINT time_entries_source CHECK (((source)::text = ANY (ARRAY['manual'::text, 'field'::text, 'offline'::text])))
 );
 
 
@@ -779,6 +896,52 @@ CREATE TABLE public.users (
     updated_at timestamp(6) with time zone NOT NULL,
     CONSTRAINT users_email_lowercase CHECK (((email)::text = lower((email)::text))),
     CONSTRAINT users_name_length CHECK (((char_length((name)::text) >= 1) AND (char_length((name)::text) <= 120)))
+);
+
+
+--
+-- Name: visit_transitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.visit_transitions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    from_status character varying,
+    to_status character varying NOT NULL,
+    reason text,
+    actor_label character varying,
+    actor_membership_id uuid,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    visit_id uuid NOT NULL
+);
+
+
+--
+-- Name: visits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.visits (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    status character varying DEFAULT 'scheduled'::character varying NOT NULL,
+    scheduled_start timestamp(6) with time zone NOT NULL,
+    scheduled_end timestamp(6) with time zone NOT NULL,
+    travel_minutes integer DEFAULT 0 NOT NULL,
+    started_at timestamp(6) with time zone,
+    finished_at timestamp(6) with time zone,
+    needs_return boolean DEFAULT false NOT NULL,
+    notes text,
+    outcome_note text,
+    cancel_reason text,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    team_id uuid,
+    scheduled_by_membership_id uuid NOT NULL,
+    CONSTRAINT visits_period CHECK ((scheduled_start < scheduled_end)),
+    CONSTRAINT visits_status CHECK (((status)::text = ANY (ARRAY['scheduled'::text, 'in_progress'::text, 'completed'::text, 'canceled'::text, 'no_show'::text]))),
+    CONSTRAINT visits_travel CHECK (((travel_minutes >= 0) AND (travel_minutes <= 480)))
 );
 
 
@@ -941,6 +1104,24 @@ CREATE TABLE public.work_orders (
 
 
 --
+-- Name: work_schedules; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_schedules (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    weekday integer NOT NULL,
+    start_minute integer NOT NULL,
+    end_minute integer NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    membership_id uuid NOT NULL,
+    CONSTRAINT work_schedules_interval CHECK (((start_minute >= 0) AND (end_minute <= 1440) AND (start_minute < end_minute))),
+    CONSTRAINT work_schedules_weekday CHECK (((weekday >= 0) AND (weekday <= 6)))
+);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1002,6 +1183,14 @@ ALTER TABLE ONLY public.equipment
 
 ALTER TABLE ONLY public.invitations
     ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: membership_skills membership_skills_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_skills
+    ADD CONSTRAINT membership_skills_pkey PRIMARY KEY (id);
 
 
 --
@@ -1125,11 +1314,67 @@ ALTER TABLE ONLY public.service_type_checklist_items
 
 
 --
+-- Name: service_type_skills service_type_skills_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_skills
+    ADD CONSTRAINT service_type_skills_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: service_types service_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.service_types
     ADD CONSTRAINT service_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: skills skills_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.skills
+    ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_members team_members_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_members
+    ADD CONSTRAINT team_members_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: teams teams_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT teams_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: technician_allocations technician_allocations_no_overlap; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technician_allocations
+    ADD CONSTRAINT technician_allocations_no_overlap EXCLUDE USING gist (organization_id WITH =, membership_id WITH =, period WITH &&) WHERE (((status)::text = 'active'::text));
+
+
+--
+-- Name: technician_allocations technician_allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technician_allocations
+    ADD CONSTRAINT technician_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: time_entries time_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_pkey PRIMARY KEY (id);
 
 
 --
@@ -1146,6 +1391,22 @@ ALTER TABLE ONLY public.user_sessions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: visit_transitions visit_transitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visit_transitions
+    ADD CONSTRAINT visit_transitions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: visits visits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visits
+    ADD CONSTRAINT visits_pkey PRIMARY KEY (id);
 
 
 --
@@ -1202,6 +1463,14 @@ ALTER TABLE ONLY public.work_order_transitions
 
 ALTER TABLE ONLY public.work_orders
     ADD CONSTRAINT work_orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_schedules work_schedules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_schedules
+    ADD CONSTRAINT work_schedules_pkey PRIMARY KEY (id);
 
 
 --
@@ -1286,6 +1555,13 @@ CREATE INDEX idx_on_organization_id_work_order_id_8b9dd6799b ON public.work_orde
 --
 
 CREATE INDEX idx_on_organization_id_work_order_id_abfa99dc1a ON public.work_order_checklist_items USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_allocations_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_allocations_lookup ON public.technician_allocations USING btree (organization_id, membership_id, status);
 
 
 --
@@ -1447,6 +1723,27 @@ CREATE UNIQUE INDEX index_invitations_on_token_digest ON public.invitations USIN
 --
 
 CREATE UNIQUE INDEX index_invitations_pending_email ON public.invitations USING btree (organization_id, email) WHERE ((accepted_at IS NULL) AND (revoked_at IS NULL));
+
+
+--
+-- Name: index_membership_skills_on_organization_id_and_skill_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_membership_skills_on_organization_id_and_skill_id ON public.membership_skills USING btree (organization_id, skill_id);
+
+
+--
+-- Name: index_membership_skills_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_membership_skills_on_tenant_key ON public.membership_skills USING btree (organization_id, id);
+
+
+--
+-- Name: index_membership_skills_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_membership_skills_unique ON public.membership_skills USING btree (organization_id, membership_id, skill_id);
 
 
 --
@@ -1695,6 +1992,27 @@ CREATE UNIQUE INDEX index_service_type_checklist_items_on_tenant_key ON public.s
 
 
 --
+-- Name: index_service_type_skills_on_organization_id_and_skill_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_service_type_skills_on_organization_id_and_skill_id ON public.service_type_skills USING btree (organization_id, skill_id);
+
+
+--
+-- Name: index_service_type_skills_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_type_skills_on_tenant_key ON public.service_type_skills USING btree (organization_id, id);
+
+
+--
+-- Name: index_service_type_skills_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_type_skills_unique ON public.service_type_skills USING btree (organization_id, service_type_id, skill_id);
+
+
+--
 -- Name: index_service_types_on_organization_id_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1706,6 +2024,97 @@ CREATE UNIQUE INDEX index_service_types_on_organization_id_and_name ON public.se
 --
 
 CREATE UNIQUE INDEX index_service_types_on_tenant_key ON public.service_types USING btree (organization_id, id);
+
+
+--
+-- Name: index_skills_on_organization_id_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_skills_on_organization_id_and_name ON public.skills USING btree (organization_id, name);
+
+
+--
+-- Name: index_skills_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_skills_on_tenant_key ON public.skills USING btree (organization_id, id);
+
+
+--
+-- Name: index_team_members_on_organization_id_and_membership_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_members_on_organization_id_and_membership_id ON public.team_members USING btree (organization_id, membership_id);
+
+
+--
+-- Name: index_team_members_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_team_members_on_tenant_key ON public.team_members USING btree (organization_id, id);
+
+
+--
+-- Name: index_team_members_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_team_members_unique ON public.team_members USING btree (organization_id, team_id, membership_id);
+
+
+--
+-- Name: index_teams_on_organization_id_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_teams_on_organization_id_and_name ON public.teams USING btree (organization_id, name);
+
+
+--
+-- Name: index_teams_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_teams_on_tenant_key ON public.teams USING btree (organization_id, id);
+
+
+--
+-- Name: index_technician_allocations_on_organization_id_and_visit_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_technician_allocations_on_organization_id_and_visit_id ON public.technician_allocations USING btree (organization_id, visit_id);
+
+
+--
+-- Name: index_technician_allocations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_technician_allocations_on_tenant_key ON public.technician_allocations USING btree (organization_id, id);
+
+
+--
+-- Name: index_time_entries_on_organization_id_and_membership_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_time_entries_on_organization_id_and_membership_id ON public.time_entries USING btree (organization_id, membership_id);
+
+
+--
+-- Name: index_time_entries_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_time_entries_on_organization_id_and_work_order_id ON public.time_entries USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_time_entries_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_time_entries_on_tenant_key ON public.time_entries USING btree (organization_id, id);
+
+
+--
+-- Name: index_time_entries_operation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_time_entries_operation ON public.time_entries USING btree (organization_id, client_operation_id) WHERE (client_operation_id IS NOT NULL);
 
 
 --
@@ -1748,6 +2157,41 @@ CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING bt
 --
 
 CREATE UNIQUE INDEX index_users_on_unlock_token ON public.users USING btree (unlock_token);
+
+
+--
+-- Name: index_visit_transitions_on_organization_id_and_visit_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_visit_transitions_on_organization_id_and_visit_id ON public.visit_transitions USING btree (organization_id, visit_id);
+
+
+--
+-- Name: index_visit_transitions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_visit_transitions_on_tenant_key ON public.visit_transitions USING btree (organization_id, id);
+
+
+--
+-- Name: index_visits_on_organization_id_and_status_and_scheduled_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_visits_on_organization_id_and_status_and_scheduled_start ON public.visits USING btree (organization_id, status, scheduled_start);
+
+
+--
+-- Name: index_visits_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_visits_on_organization_id_and_work_order_id ON public.visits USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_visits_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_visits_on_tenant_key ON public.visits USING btree (organization_id, id);
 
 
 --
@@ -1849,6 +2293,20 @@ CREATE UNIQUE INDEX index_work_orders_one_per_quote_version ON public.work_order
 
 
 --
+-- Name: index_work_schedules_on_organization_id_and_membership_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_work_schedules_on_organization_id_and_membership_id ON public.work_schedules USING btree (organization_id, membership_id);
+
+
+--
+-- Name: index_work_schedules_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_schedules_on_tenant_key ON public.work_schedules USING btree (organization_id, id);
+
+
+--
 -- Name: quote_items quote_items_frozen; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1907,6 +2365,22 @@ ALTER TABLE ONLY public.equipment
 
 ALTER TABLE ONLY public.invitations
     ADD CONSTRAINT fk_invitations_invited_by_membership_id_tenant FOREIGN KEY (organization_id, invited_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: membership_skills fk_membership_skills_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_skills
+    ADD CONSTRAINT fk_membership_skills_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: membership_skills fk_membership_skills_skill_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_skills
+    ADD CONSTRAINT fk_membership_skills_skill_id_tenant FOREIGN KEY (organization_id, skill_id) REFERENCES public.skills(organization_id, id) ON DELETE CASCADE;
 
 
 --
@@ -2078,6 +2552,22 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: service_type_skills fk_rails_11c672af69; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_skills
+    ADD CONSTRAINT fk_rails_11c672af69 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: visit_transitions fk_rails_19b8aa9e8e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visit_transitions
+    ADD CONSTRAINT fk_rails_19b8aa9e8e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: work_order_assignments fk_rails_1b8a8a53ac; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2166,6 +2656,30 @@ ALTER TABLE ONLY public.quote_items
 
 
 --
+-- Name: visits fk_rails_6efda2cfb2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visits
+    ADD CONSTRAINT fk_rails_6efda2cfb2 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: membership_skills fk_rails_6f0cf5e81b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_skills
+    ADD CONSTRAINT fk_rails_6f0cf5e81b FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: time_entries fk_rails_6fa304b886; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT fk_rails_6fa304b886 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: portal_access_grants fk_rails_721b04c463; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2206,11 +2720,27 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: team_members fk_rails_99fbd57ee0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_members
+    ADD CONSTRAINT fk_rails_99fbd57ee0 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: user_sessions fk_rails_9fa262d742; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT fk_rails_9fa262d742 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: technician_allocations fk_rails_a8356d52fc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technician_allocations
+    ADD CONSTRAINT fk_rails_a8356d52fc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -2246,11 +2776,27 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: skills fk_rails_befcd0faff; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.skills
+    ADD CONSTRAINT fk_rails_befcd0faff FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: customer_contacts fk_rails_c2c8ebb3b1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.customer_contacts
     ADD CONSTRAINT fk_rails_c2c8ebb3b1 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_schedules fk_rails_cd24788784; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_schedules
+    ADD CONSTRAINT fk_rails_cd24788784 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -2302,6 +2848,14 @@ ALTER TABLE ONLY public.service_types
 
 
 --
+-- Name: teams fk_rails_f07f0bd66d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT fk_rails_f07f0bd66d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: service_locations fk_service_locations_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2315,6 +2869,110 @@ ALTER TABLE ONLY public.service_locations
 
 ALTER TABLE ONLY public.service_type_checklist_items
     ADD CONSTRAINT fk_service_type_checklist_items_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: service_type_skills fk_service_type_skills_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_skills
+    ADD CONSTRAINT fk_service_type_skills_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: service_type_skills fk_service_type_skills_skill_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_skills
+    ADD CONSTRAINT fk_service_type_skills_skill_id_tenant FOREIGN KEY (organization_id, skill_id) REFERENCES public.skills(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_members fk_team_members_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_members
+    ADD CONSTRAINT fk_team_members_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_members fk_team_members_team_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_members
+    ADD CONSTRAINT fk_team_members_team_id_tenant FOREIGN KEY (organization_id, team_id) REFERENCES public.teams(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: technician_allocations fk_technician_allocations_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technician_allocations
+    ADD CONSTRAINT fk_technician_allocations_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: technician_allocations fk_technician_allocations_visit_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technician_allocations
+    ADD CONSTRAINT fk_technician_allocations_visit_id_tenant FOREIGN KEY (organization_id, visit_id) REFERENCES public.visits(organization_id, id);
+
+
+--
+-- Name: time_entries fk_time_entries_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT fk_time_entries_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: time_entries fk_time_entries_visit_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT fk_time_entries_visit_id_tenant FOREIGN KEY (organization_id, visit_id) REFERENCES public.visits(organization_id, id);
+
+
+--
+-- Name: time_entries fk_time_entries_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT fk_time_entries_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: visit_transitions fk_visit_transitions_visit_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visit_transitions
+    ADD CONSTRAINT fk_visit_transitions_visit_id_tenant FOREIGN KEY (organization_id, visit_id) REFERENCES public.visits(organization_id, id);
+
+
+--
+-- Name: visits fk_visits_scheduled_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visits
+    ADD CONSTRAINT fk_visits_scheduled_by_membership_id_tenant FOREIGN KEY (organization_id, scheduled_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: visits fk_visits_team_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visits
+    ADD CONSTRAINT fk_visits_team_id_tenant FOREIGN KEY (organization_id, team_id) REFERENCES public.teams(organization_id, id);
+
+
+--
+-- Name: visits fk_visits_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.visits
+    ADD CONSTRAINT fk_visits_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
 
 
 --
@@ -2454,6 +3112,14 @@ ALTER TABLE ONLY public.work_orders
 
 
 --
+-- Name: work_schedules fk_work_schedules_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_schedules
+    ADD CONSTRAINT fk_work_schedules_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id) ON DELETE CASCADE;
+
+
+--
 -- Name: audit_events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2494,6 +3160,12 @@ ALTER TABLE public.equipment_events ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: membership_skills; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.membership_skills ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: memberships; Type: ROW SECURITY; Schema: public; Owner: -
@@ -2624,10 +3296,40 @@ ALTER TABLE public.service_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_type_checklist_items ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: service_type_skills; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.service_type_skills ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: service_types; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.service_types ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: skills; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: team_members; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: teams; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: technician_allocations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.technician_allocations ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
@@ -2676,6 +3378,13 @@ CREATE POLICY tenant_isolation ON public.equipment_events USING ((organization_i
 --
 
 CREATE POLICY tenant_isolation ON public.invitations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: membership_skills tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.membership_skills USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -2763,10 +3472,66 @@ CREATE POLICY tenant_isolation ON public.service_type_checklist_items USING ((or
 
 
 --
+-- Name: service_type_skills tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.service_type_skills USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: service_types tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY tenant_isolation ON public.service_types USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: skills tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.skills USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: team_members tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.team_members USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: teams tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.teams USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: technician_allocations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.technician_allocations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: time_entries tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.time_entries USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: visit_transitions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.visit_transitions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: visits tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.visits USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -2819,6 +3584,31 @@ CREATE POLICY tenant_isolation ON public.work_orders USING ((organization_id = p
 
 
 --
+-- Name: work_schedules tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_schedules USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: time_entries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: visit_transitions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.visit_transitions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: visits; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: work_order_assignments; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2861,12 +3651,20 @@ ALTER TABLE public.work_order_transitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: work_schedules; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124006100'),
+('20261124006000'),
 ('20261124005100'),
 ('20261124005000'),
 ('20261124004300'),

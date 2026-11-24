@@ -9,7 +9,15 @@ module Outbox
       "invitation.accepted" => ["Notifications::Handlers::InvitationAccepted"],
       "quote.sent" => ["Quotes::Handlers::NotifyApprovers"],
       "quote.approved" => ["Notifications::Handlers::QuoteDecided"],
-      "quote.rejected" => ["Notifications::Handlers::QuoteDecided"]
+      "quote.rejected" => ["Notifications::Handlers::QuoteDecided"],
+      "work_order.created" => [],
+      "work_order.completed" => [],
+      "work_order.canceled" => ["Scheduling::Handlers::ReleaseCanceledWorkOrder"],
+      "work_order.reopened" => [],
+      "work_order.status_changed" => [],
+      "visit.scheduled" => ["Notifications::Handlers::VisitScheduled"],
+      "visit.started" => [],
+      "visit.finished" => []
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

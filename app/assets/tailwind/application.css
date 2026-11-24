@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Agenda timeline: 64 columns of 15 minutes (06:00–22:00). Positions are
+   classes (not inline styles) to comply with the Content Security Policy. */
+@source inline("col-start-{1..65}");
+@source inline("col-span-{1..64}");
+
 /*
  * Servora design tokens.
  *

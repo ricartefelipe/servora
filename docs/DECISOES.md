@@ -168,3 +168,16 @@ status atualizado.
   (suspeita de N+1), mesmo em buscas de um único registro.
 - **Decisão**: listagens partem das associações da organização (detecção de N+1 ativa); buscas de um registro
   usam `tenant_relation(Model)` (`where(organization_id: …)`) combinado com `policy_scope`.
+
+## DEC-023 — Reservas por técnico com exclusion constraint
+
+- **Decisão**: uma linha por técnico e visita (ou ausência) com `tstzrange` semiaberto e
+  `EXCLUDE USING gist` filtrado por `status = 'active'`. O deslocamento compõe o intervalo bloqueado.
+- **Consequências**: proteção contra reserva dupla independe da aplicação; equipes são reservadas em uma única
+  transação; a interface explica o conflito consultando as reservas que colidem.
+
+## DEC-024 — Linha do tempo sem estilos inline
+
+- **Decisão**: a agenda diária usa CSS Grid de 64 colunas (15 min) com classes `col-start-*`/`col-span-*`
+  geradas pelo Tailwind (`@source inline`), em vez de `style` com porcentagens, preservando a CSP sem
+  `unsafe-inline`. Reagendamento é feito por formulário (alternativa acessível a arrastar e soltar).

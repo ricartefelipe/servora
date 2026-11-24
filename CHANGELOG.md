@@ -28,3 +28,6 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - Ordens de serviço com máquina de estados, conversão idempotente de orçamentos aprovados, tipos de serviço com
   checklist obrigatório, registro técnico, itens adicionais com autorização, conclusão com relatório versionado,
   cancelamento e reabertura auditados; escopo restrito para técnicos.
+- Agenda diária e semanal, técnicos com competências e horários, equipes, ausências, deslocamento configurável,
+  agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
+  cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.

@@ -1,0 +1,8 @@
+<% if allocation.kind == "absence" %>
+  <p class="mb-1 rounded-lg bg-ink-100 px-2 py-1 text-xs text-ink-600">Ausência · <%= allocation.reason %></p>
+<% else %>
+  <%= link_to work_order_path(allocation.visit.work_order), class: "mb-1 block rounded-lg bg-brand-50 px-2 py-1 text-xs text-brand-800 hover:bg-brand-100" do %>
+    <span class="font-semibold"><%= l(allocation.visit.scheduled_start, format: "%H:%M") %></span> <%= allocation.visit.work_order.number %>
+    <span class="block truncate text-brand-700"><%= allocation.visit.work_order.customer.display_name %></span>
+  <% end %>
+<% end %>

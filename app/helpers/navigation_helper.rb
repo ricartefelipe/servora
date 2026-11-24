@@ -8,7 +8,8 @@ module NavigationHelper
   NAVIGATION = [
     ["Operação", [
       NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards]),
-      NavItem.new("Ordens de serviço", :work_orders_path, :orders, nil, %w[work_orders checklist_items assignments]),
+      NavItem.new("Ordens de serviço", :work_orders_path, :orders, nil, %w[work_orders checklist_items assignments visits]),
+      NavItem.new("Agenda", :agenda_index_path, :calendar, :schedule_view, %w[agenda absences]),
       NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes decisions])
     ]],
     ["Cadastros", [
@@ -19,6 +20,7 @@ module NavigationHelper
     ]],
     ["Gestão", [
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),
+      NavItem.new("Técnicos e equipes", :technicians_path, :wrench, :schedule_manage, %w[technicians teams]),
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),
       NavItem.new("Eventos", :outbox_events_path, :integrations, :outbox_reprocess, %w[outbox_events]),
       NavItem.new("Configurações", :edit_settings_path, :settings, :organization_manage, %w[settings])
