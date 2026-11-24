@@ -85,7 +85,7 @@ CREATE TABLE public.audit_events (
     changeset jsonb DEFAULT '{}'::jsonb NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT audit_events_actor_type CHECK (((actor_type)::text = ANY ((ARRAY['user'::character varying, 'portal_contact'::character varying, 'api_credential'::character varying, 'system'::character varying])::text[])))
+    CONSTRAINT audit_events_actor_type CHECK (((actor_type)::text = ANY (ARRAY[('user'::character varying)::text, ('portal_contact'::character varying)::text, ('api_credential'::character varying)::text, ('system'::character varying)::text])))
 );
 
 
@@ -129,8 +129,8 @@ CREATE TABLE public.memberships (
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
     CONSTRAINT memberships_hourly_cost CHECK (((hourly_cost IS NULL) OR (hourly_cost >= (0)::numeric))),
-    CONSTRAINT memberships_role CHECK (((role)::text = ANY ((ARRAY['owner'::character varying, 'admin'::character varying, 'coordinator'::character varying, 'attendant'::character varying, 'technician'::character varying, 'finance'::character varying, 'auditor'::character varying])::text[]))),
-    CONSTRAINT memberships_status CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'deactivated'::character varying])::text[])))
+    CONSTRAINT memberships_role CHECK (((role)::text = ANY (ARRAY[('owner'::character varying)::text, ('admin'::character varying)::text, ('coordinator'::character varying)::text, ('attendant'::character varying)::text, ('technician'::character varying)::text, ('finance'::character varying)::text, ('auditor'::character varying)::text]))),
+    CONSTRAINT memberships_status CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('deactivated'::character varying)::text])))
 );
 
 
@@ -152,7 +152,7 @@ CREATE TABLE public.organizations (
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
     CONSTRAINT organizations_document_digits CHECK (((document IS NULL) OR ((document)::text ~ '^([0-9]{11}|[0-9A-Z]{12}[0-9]{2})$'::text))),
-    CONSTRAINT organizations_status CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'suspended'::character varying])::text[]))),
+    CONSTRAINT organizations_status CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('suspended'::character varying)::text]))),
     CONSTRAINT organizations_travel_buffer CHECK (((travel_buffer_minutes >= 0) AND (travel_buffer_minutes <= 480)))
 );
 

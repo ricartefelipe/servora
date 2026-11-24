@@ -21,7 +21,7 @@ class CreateAuditEvents < ActiveRecord::Migration[8.1]
     add_index :audit_events, %i[organization_id created_at], order: { created_at: :desc }
     add_index :audit_events, %i[organization_id auditable_type auditable_id]
     add_index :audit_events, %i[organization_id action]
-    add_check_constraint :audit_events, "actor_type IN ('user', 'portal_contact', 'api_credential', 'system')",
+    add_inclusion_constraint :audit_events, :actor_type, %w[user portal_contact api_credential system],
       name: "audit_events_actor_type"
   end
 end

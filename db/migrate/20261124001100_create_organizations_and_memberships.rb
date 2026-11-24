@@ -19,7 +19,7 @@ class CreateOrganizationsAndMemberships < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_check_constraint :organizations, "status IN ('active', 'suspended')", name: "organizations_status"
+    add_inclusion_constraint :organizations, :status, %w[active suspended], name: "organizations_status"
     add_check_constraint :organizations, "travel_buffer_minutes BETWEEN 0 AND 480", name: "organizations_travel_buffer"
     add_check_constraint :organizations, "document IS NULL OR document ~ '^([0-9]{11}|[0-9A-Z]{12}[0-9]{2})$'",
       name: "organizations_document_digits"
@@ -37,8 +37,8 @@ class CreateOrganizationsAndMemberships < ActiveRecord::Migration[8.1]
     end
 
     add_index :memberships, %i[organization_id user_id], unique: true
-    add_check_constraint :memberships, "role IN (#{ROLES.map { |r| quote(r) }.join(", ")})", name: "memberships_role"
-    add_check_constraint :memberships, "status IN ('active', 'deactivated')", name: "memberships_status"
+    add_inclusion_constraint :memberships, :role, ROLES, name: "memberships_role"
+    add_inclusion_constraint :memberships, :status, %w[active deactivated], name: "memberships_status"
     add_check_constraint :memberships, "hourly_cost IS NULL OR hourly_cost >= 0", name: "memberships_hourly_cost"
 
     # Organizations: a row is visible inside its own context or to a user who

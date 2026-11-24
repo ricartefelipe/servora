@@ -45,6 +45,14 @@ module Servora
         on_delete:
     end
 
+    # CHECK (column IN values) written in PostgreSQL's canonical form, so the
+    # text in db/structure.sql is identical whether the constraint was created
+    # by a migration or by loading the dump.
+    def add_inclusion_constraint(table_name, column, values, name:)
+      list = values.map { |value| "#{connection.quote(value.to_s)}::text" }.join(", ")
+      add_check_constraint table_name, "(#{connection.quote_column_name(column)})::text = ANY (ARRAY[#{list}])", name:
+    end
+
     def enable_tenant_isolation(table_name)
       reversible do |dir|
         dir.up do

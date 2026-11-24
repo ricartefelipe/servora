@@ -19,6 +19,9 @@ Rails.application.configure do
 
   config.active_support.deprecation = :raise
   config.active_record.verbose_query_logs = false
+  # db/structure.sql is only ever dumped from databases built by migrations
+  # (development, or the CI migration check with an explicit db:schema:dump).
+  config.active_record.dump_schema_after_migration = false
   config.action_controller.raise_on_missing_callback_actions = true
   config.i18n.raise_on_missing_translations = true
 end

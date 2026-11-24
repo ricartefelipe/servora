@@ -113,10 +113,12 @@ jobs:
           DB_TEST_NAME: servora_migration_check
           SERVORA_DB_ROLE: owner
         run: |
-          ruby bin/rails db:create db:migrate
+          ruby bin/rails db:create db:migrate db:schema:dump
           git diff --exit-code db/structure.sql
           ruby bin/rails db:rollback STEP=1000 VERBOSE=false
-          ruby bin/rails db:migrate VERBOSE=false
+          ruby bin/rails db:migrate db:schema:dump VERBOSE=false
+          git diff --exit-code db/structure.sql
+          ruby bin/rails db:drop db:create db:schema:load db:schema:dump
           git diff --exit-code db/structure.sql
       - name: Build dos assets
         run: ruby bin/rails tailwindcss:build
