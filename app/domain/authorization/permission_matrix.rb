@@ -50,11 +50,11 @@ module Authorization
     module_function
 
     def markdown
-      header = "| Permissão | #{Permissions::ROLES.map { |role| ROLE_HEADERS.fetch(role) }.join(' | ')} |"
-      divider = "|---|#{Permissions::ROLES.map { ':-:' }.join('|')}|"
+      header = "| Permissão | #{Permissions::ROLES.map { |role| ROLE_HEADERS.fetch(role) }.join(" | ")} |"
+      divider = "|---|#{Permissions::ROLES.map { ":-:" }.join("|")}|"
       rows = Permissions::ALL.map do |permission|
         marks = Permissions::ROLES.map { |role| Permissions.granted?(role, permission) ? "✔" : "—" }
-        "| #{LABELS.fetch(permission)} | #{marks.join(' | ')} |"
+        "| #{LABELS.fetch(permission)} | #{marks.join(" | ")} |"
       end
       [header, divider, *rows].join("\n")
     end
