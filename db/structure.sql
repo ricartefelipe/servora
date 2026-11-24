@@ -450,6 +450,46 @@ CREATE TABLE public.equipment_events (
 
 
 --
+-- Name: expenses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.expenses (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    category character varying NOT NULL,
+    description character varying NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    incurred_on date NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    recorded_by_membership_id uuid,
+    CONSTRAINT expenses_amount CHECK ((amount > (0)::numeric)),
+    CONSTRAINT expenses_category CHECK (((category)::text = ANY (ARRAY['travel'::text, 'toll'::text, 'parking'::text, 'meals'::text, 'outsourced'::text, 'materials'::text, 'other'::text])))
+);
+
+
+--
+-- Name: financial_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.financial_events (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    amount numeric(14,2),
+    details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    actor_membership_id uuid,
+    actor_label character varying,
+    occurred_at timestamp(6) with time zone NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    receivable_id uuid NOT NULL,
+    payment_id uuid,
+    CONSTRAINT financial_events_kind CHECK (((kind)::text = ANY (ARRAY['issued'::text, 'payment'::text, 'discount'::text, 'refund'::text, 'canceled'::text, 'charge_requested'::text, 'charge_submitted'::text, 'charge_confirmed'::text, 'charge_failed'::text, 'charge_unknown'::text, 'charge_canceled'::text])))
+);
+
+
+--
 -- Name: invitations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -634,6 +674,79 @@ CREATE TABLE public.outbox_events (
 
 
 --
+-- Name: payment_charges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payment_charges (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    external_reference character varying NOT NULL,
+    external_id character varying,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    billing_type character varying NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    due_on date NOT NULL,
+    payment_url character varying,
+    last_error text,
+    attempts integer DEFAULT 0 NOT NULL,
+    submitted_at timestamp(6) with time zone,
+    confirmed_at timestamp(6) with time zone,
+    last_synced_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    receivable_id uuid NOT NULL,
+    CONSTRAINT payment_charges_billing_type CHECK (((billing_type)::text = ANY (ARRAY['pix'::text, 'boleto'::text]))),
+    CONSTRAINT payment_charges_provider CHECK (((provider)::text = ANY (ARRAY['simulator'::text, 'asaas'::text]))),
+    CONSTRAINT payment_charges_status CHECK (((status)::text = ANY (ARRAY['pending'::text, 'submitted'::text, 'unknown'::text, 'confirmed'::text, 'failed'::text, 'canceled'::text]))),
+    CONSTRAINT payment_charges_values CHECK (((amount > (0)::numeric) AND (attempts >= 0)))
+);
+
+
+--
+-- Name: payment_integrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payment_integrations (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    provider character varying DEFAULT 'simulator'::character varying NOT NULL,
+    api_key text,
+    default_billing_type character varying DEFAULT 'pix'::character varying NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT payment_integrations_billing_type CHECK (((default_billing_type)::text = ANY (ARRAY['pix'::text, 'boleto'::text]))),
+    CONSTRAINT payment_integrations_credentials CHECK ((((provider)::text = 'simulator'::text) OR (api_key IS NOT NULL))),
+    CONSTRAINT payment_integrations_provider CHECK (((provider)::text = ANY (ARRAY['simulator'::text, 'asaas'::text])))
+);
+
+
+--
+-- Name: payments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payments (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    refunded_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    payment_method character varying NOT NULL,
+    paid_at timestamp(6) with time zone NOT NULL,
+    idempotency_key character varying,
+    notes text,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    receivable_id uuid NOT NULL,
+    payment_charge_id uuid,
+    recorded_by_membership_id uuid,
+    CONSTRAINT payments_method CHECK (((payment_method)::text = ANY (ARRAY['pix'::text, 'boleto'::text, 'transfer'::text, 'cash'::text, 'card_gateway'::text, 'other'::text]))),
+    CONSTRAINT payments_values CHECK (((amount > (0)::numeric) AND (refunded_amount >= (0)::numeric) AND (refunded_amount <= amount)))
+);
+
+
+--
 -- Name: portal_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -772,6 +885,36 @@ CREATE TABLE public.quotes (
     updated_at timestamp(6) with time zone NOT NULL,
     created_by_membership_id uuid NOT NULL,
     CONSTRAINT quotes_status CHECK (((status)::text = ANY (ARRAY['draft'::text, 'sent'::text, 'approved'::text, 'rejected'::text, 'expired'::text, 'converted'::text, 'canceled'::text])))
+);
+
+
+--
+-- Name: receivables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.receivables (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    number character varying NOT NULL,
+    description character varying NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    discount_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    paid_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    refunded_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    status character varying DEFAULT 'open'::character varying NOT NULL,
+    due_on date NOT NULL,
+    settled_at timestamp(6) with time zone,
+    canceled_at timestamp(6) with time zone,
+    cancel_reason text,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    created_by_membership_id uuid,
+    CONSTRAINT receivables_status CHECK (((status)::text = ANY (ARRAY['open'::text, 'partially_paid'::text, 'paid'::text, 'canceled'::text]))),
+    CONSTRAINT receivables_status_consistency CHECK (((((status)::text = 'canceled'::text) = (canceled_at IS NOT NULL)) AND (((status)::text <> 'canceled'::text) OR (paid_amount = refunded_amount)) AND (((status)::text <> 'paid'::text) OR ((paid_amount - refunded_amount) = (amount - discount_amount))))),
+    CONSTRAINT receivables_values CHECK (((amount > (0)::numeric) AND (discount_amount >= (0)::numeric) AND (paid_amount >= (0)::numeric) AND (refunded_amount >= (0)::numeric) AND (refunded_amount <= paid_amount) AND (discount_amount <= amount) AND ((paid_amount - refunded_amount) <= (amount - discount_amount))))
 );
 
 
@@ -1364,6 +1507,22 @@ ALTER TABLE ONLY public.equipment
 
 
 --
+-- Name: expenses expenses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT expenses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: financial_events financial_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_events
+    ADD CONSTRAINT financial_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1436,6 +1595,30 @@ ALTER TABLE ONLY public.outbox_events
 
 
 --
+-- Name: payment_charges payment_charges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_charges
+    ADD CONSTRAINT payment_charges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: payment_integrations payment_integrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_integrations
+    ADD CONSTRAINT payment_integrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT payments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: portal_access_grants portal_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1481,6 +1664,14 @@ ALTER TABLE ONLY public.quote_versions
 
 ALTER TABLE ONLY public.quotes
     ADD CONSTRAINT quotes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: receivables receivables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT receivables_pkey PRIMARY KEY (id);
 
 
 --
@@ -1721,6 +1912,13 @@ CREATE INDEX idx_on_organization_id_equipment_id_occurred_at_c8e2c7ae7c ON publi
 
 
 --
+-- Name: idx_on_organization_id_external_reference_564cb051a0; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_organization_id_external_reference_564cb051a0 ON public.payment_charges USING btree (organization_id, external_reference);
+
+
+--
 -- Name: idx_on_organization_id_invited_by_membership_id_24eab2f90c; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1945,6 +2143,34 @@ CREATE UNIQUE INDEX index_equipment_unique_serial ON public.equipment USING btre
 
 
 --
+-- Name: index_expenses_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_expenses_on_organization_id_and_work_order_id ON public.expenses USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_expenses_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_expenses_on_tenant_key ON public.expenses USING btree (organization_id, id);
+
+
+--
+-- Name: index_financial_events_on_organization_id_and_receivable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_financial_events_on_organization_id_and_receivable_id ON public.financial_events USING btree (organization_id, receivable_id);
+
+
+--
+-- Name: index_financial_events_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_financial_events_on_tenant_key ON public.financial_events USING btree (organization_id, id);
+
+
+--
 -- Name: index_invitations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2092,6 +2318,83 @@ CREATE UNIQUE INDEX index_outbox_events_on_tenant_key ON public.outbox_events US
 
 
 --
+-- Name: index_payment_charges_external_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_charges_external_id ON public.payment_charges USING btree (organization_id, provider, external_id) WHERE (external_id IS NOT NULL);
+
+
+--
+-- Name: index_payment_charges_on_organization_id_and_receivable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payment_charges_on_organization_id_and_receivable_id ON public.payment_charges USING btree (organization_id, receivable_id);
+
+
+--
+-- Name: index_payment_charges_on_status_and_last_synced_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payment_charges_on_status_and_last_synced_at ON public.payment_charges USING btree (status, last_synced_at);
+
+
+--
+-- Name: index_payment_charges_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_charges_on_tenant_key ON public.payment_charges USING btree (organization_id, id);
+
+
+--
+-- Name: index_payment_charges_single_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_charges_single_active ON public.payment_charges USING btree (receivable_id) WHERE ((status)::text = ANY (ARRAY['pending'::text, 'submitted'::text, 'unknown'::text]));
+
+
+--
+-- Name: index_payment_integrations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_integrations_on_tenant_key ON public.payment_integrations USING btree (organization_id, id);
+
+
+--
+-- Name: index_payment_integrations_single; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_integrations_single ON public.payment_integrations USING btree (organization_id);
+
+
+--
+-- Name: index_payments_idempotency; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payments_idempotency ON public.payments USING btree (organization_id, idempotency_key) WHERE (idempotency_key IS NOT NULL);
+
+
+--
+-- Name: index_payments_on_organization_id_and_payment_charge_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payments_on_organization_id_and_payment_charge_id ON public.payments USING btree (organization_id, payment_charge_id);
+
+
+--
+-- Name: index_payments_on_organization_id_and_receivable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_payments_on_organization_id_and_receivable_id ON public.payments USING btree (organization_id, receivable_id);
+
+
+--
+-- Name: index_payments_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payments_on_tenant_key ON public.payments USING btree (organization_id, id);
+
+
+--
 -- Name: index_portal_access_grants_on_organization_id_and_contact_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2215,6 +2518,41 @@ CREATE INDEX index_quotes_on_organization_id_and_status_and_created_at ON public
 --
 
 CREATE UNIQUE INDEX index_quotes_on_tenant_key ON public.quotes USING btree (organization_id, id);
+
+
+--
+-- Name: index_receivables_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_receivables_on_organization_id_and_customer_id ON public.receivables USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_receivables_on_organization_id_and_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_receivables_on_organization_id_and_number ON public.receivables USING btree (organization_id, number);
+
+
+--
+-- Name: index_receivables_on_organization_id_and_status_and_due_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_receivables_on_organization_id_and_status_and_due_on ON public.receivables USING btree (organization_id, status, due_on);
+
+
+--
+-- Name: index_receivables_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_receivables_on_organization_id_and_work_order_id ON public.receivables USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_receivables_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_receivables_on_tenant_key ON public.receivables USING btree (organization_id, id);
 
 
 --
@@ -2596,6 +2934,13 @@ CREATE UNIQUE INDEX index_work_order_transitions_on_tenant_key ON public.work_or
 
 
 --
+-- Name: index_work_orders_on_customer_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_orders_on_customer_key ON public.work_orders USING btree (organization_id, id, customer_id);
+
+
+--
 -- Name: index_work_orders_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2698,6 +3043,38 @@ ALTER TABLE ONLY public.equipment
 
 
 --
+-- Name: expenses fk_expenses_recorded_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT fk_expenses_recorded_by_membership_id_tenant FOREIGN KEY (organization_id, recorded_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: expenses fk_expenses_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT fk_expenses_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: financial_events fk_financial_events_payment_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_events
+    ADD CONSTRAINT fk_financial_events_payment_id_tenant FOREIGN KEY (organization_id, payment_id) REFERENCES public.payments(organization_id, id);
+
+
+--
+-- Name: financial_events fk_financial_events_receivable_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_events
+    ADD CONSTRAINT fk_financial_events_receivable_id_tenant FOREIGN KEY (organization_id, receivable_id) REFERENCES public.receivables(organization_id, id);
+
+
+--
 -- Name: invitations fk_invitations_invited_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2775,6 +3152,38 @@ ALTER TABLE ONLY public.notifications
 
 ALTER TABLE ONLY public.outbox_event_failures
     ADD CONSTRAINT fk_outbox_event_failures_outbox_event_id_tenant FOREIGN KEY (organization_id, outbox_event_id) REFERENCES public.outbox_events(organization_id, id);
+
+
+--
+-- Name: payment_charges fk_payment_charges_receivable_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_charges
+    ADD CONSTRAINT fk_payment_charges_receivable_id_tenant FOREIGN KEY (organization_id, receivable_id) REFERENCES public.receivables(organization_id, id);
+
+
+--
+-- Name: payments fk_payments_payment_charge_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT fk_payments_payment_charge_id_tenant FOREIGN KEY (organization_id, payment_charge_id) REFERENCES public.payment_charges(organization_id, id);
+
+
+--
+-- Name: payments fk_payments_receivable_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT fk_payments_receivable_id_tenant FOREIGN KEY (organization_id, receivable_id) REFERENCES public.receivables(organization_id, id);
+
+
+--
+-- Name: payments fk_payments_recorded_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT fk_payments_recorded_by_membership_id_tenant FOREIGN KEY (organization_id, recorded_by_membership_id) REFERENCES public.memberships(organization_id, id);
 
 
 --
@@ -2970,6 +3379,14 @@ ALTER TABLE ONLY public.work_order_assignments
 
 
 --
+-- Name: payment_charges fk_rails_2b518ebdf9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_charges
+    ADD CONSTRAINT fk_rails_2b518ebdf9 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: service_locations fk_rails_2f359873f8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2986,6 +3403,14 @@ ALTER TABLE ONLY public.stock_balances
 
 
 --
+-- Name: financial_events fk_rails_376b99903d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_events
+    ADD CONSTRAINT fk_rails_376b99903d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: notifications fk_rails_394d9847aa; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2999,6 +3424,14 @@ ALTER TABLE ONLY public.notifications
 
 ALTER TABLE ONLY public.service_type_checklist_items
     ADD CONSTRAINT fk_rails_3a0232caa8 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: payments fk_rails_3ab959bfc4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT fk_rails_3ab959bfc4 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3047,6 +3480,14 @@ ALTER TABLE ONLY public.customers
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT fk_rails_64267aab58 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: expenses fk_rails_69a027cec6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT fk_rails_69a027cec6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3170,11 +3611,27 @@ ALTER TABLE ONLY public.quote_events
 
 
 --
+-- Name: receivables fk_rails_b43dab699d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT fk_rails_b43dab699d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: outbox_events fk_rails_b6cb24ddb3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.outbox_events
     ADD CONSTRAINT fk_rails_b6cb24ddb3 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: payment_integrations fk_rails_b9b437da45; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_integrations
+    ADD CONSTRAINT fk_rails_b9b437da45 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3271,6 +3728,38 @@ ALTER TABLE ONLY public.service_types
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT fk_rails_f07f0bd66d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: receivables fk_receivables_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT fk_receivables_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: receivables fk_receivables_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT fk_receivables_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: receivables fk_receivables_work_order_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT fk_receivables_work_order_customer FOREIGN KEY (organization_id, work_order_id, customer_id) REFERENCES public.work_orders(organization_id, id, customer_id);
+
+
+--
+-- Name: receivables fk_receivables_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.receivables
+    ADD CONSTRAINT fk_receivables_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
 
 
 --
@@ -3654,6 +4143,18 @@ ALTER TABLE public.equipment ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.equipment_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: expenses; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: financial_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.financial_events ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -3752,6 +4253,24 @@ ALTER TABLE public.outbox_event_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbox_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: payment_charges; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.payment_charges ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: payment_integrations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.payment_integrations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: payments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: portal_access_grants; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -3786,6 +4305,12 @@ ALTER TABLE public.quote_versions ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: receivables; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.receivables ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: service_locations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -3896,6 +4421,20 @@ CREATE POLICY tenant_isolation ON public.equipment_events USING ((organization_i
 
 
 --
+-- Name: expenses tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.expenses USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: financial_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.financial_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: invitations tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -3945,6 +4484,27 @@ CREATE POLICY tenant_isolation ON public.outbox_events USING ((organization_id =
 
 
 --
+-- Name: payment_charges tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.payment_charges USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: payment_integrations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.payment_integrations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: payments tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.payments USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: portal_access_grants tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -3984,6 +4544,13 @@ CREATE POLICY tenant_isolation ON public.quote_versions USING ((organization_id 
 --
 
 CREATE POLICY tenant_isolation ON public.quotes USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: receivables tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.receivables USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -4226,6 +4793,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124008000'),
 ('20261124007000'),
 ('20261124006100'),
 ('20261124006000'),
