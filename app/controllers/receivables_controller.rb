@@ -20,7 +20,8 @@ class ReceivablesController < TenantController
 
   def show
     authorize @receivable
-    @payments = tenant_relation(Payment).where(receivable_id: @receivable.id).includes(recorded_by: :user).order(:paid_at)
+    @payments = tenant_relation(Payment).where(receivable_id: @receivable.id).includes(:refunds,
+      recorded_by: :user).order(:paid_at)
     @charges = tenant_relation(PaymentCharge).where(receivable_id: @receivable.id).order(created_at: :desc).to_a
     @events = tenant_relation(FinancialEvent).where(receivable_id: @receivable.id).order(:occurred_at, :id)
     @integration = PaymentIntegration.for(current_organization.id)

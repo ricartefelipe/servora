@@ -68,6 +68,14 @@ module Payments
         remote_invoice(request(:post, "/invoices/#{URI.encode_www_form_component(invoice.external_id)}/cancel"))
       end
 
+      # POST /payments/{id}/refund (full or partial). The response is the payment;
+      # a 2xx means the provider accepted the refund.
+      def refund_charge(charge, refund)
+        body = request(:post, "/payments/#{URI.encode_www_form_component(charge.external_id)}/refund",
+          { value: refund.amount.to_s("F"), description: "Estorno Servora #{refund.id}".first(500) })
+        RemoteRefund.new(external_id: body["id"] || charge.external_id, status: "accepted")
+      end
+
       def cancel_charge(charge)
         request(:delete, "/payments/#{URI.encode_www_form_component(charge.external_id)}")
         nil

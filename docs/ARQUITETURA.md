@@ -365,6 +365,17 @@ ReconcileJob (a cada 5 min) ─▶ SyncChargeJob para cobranças aguardando paga
   sandbox real** por falta de credencial neste ambiente. Confirmação por webhook será adicionada junto com o
   módulo de webhooks de entrada; até lá, a conciliação periódica confirma os pagamentos.
 
+### Estornos
+
+- `Receivables::RefundPayment` registra o estorno (saldo, histórico, auditoria) e cria um `payment_refunds`:
+  pagamentos de cobranças do provedor geram o envio ao provedor após o commit (`payment_refund.requested`);
+  pagamentos manuais ficam como "executar manualmente".
+- O envio (`Payments::SubmitRefund`) ocorre fora de transações. Não entregue → nova tentativa automática; resposta
+  ambígua → "em verificação" **sem reenvio automático**, porque estornos (inclusive parciais) não são idempotentes
+  no provedor; recusa → "recusado" com a mensagem do provedor.
+- A equipe financeira resolve os casos pendentes: "confirmado no provedor" (ou executado manualmente) ou
+  "reenviar ao provedor" após verificar que ele não processou o pedido. Tudo auditado.
+- Asaas: `POST /payments/{id}/refund` com valor e descrição; coberto com WebMock, não exercitado no sandbox real.
 ### Nota fiscal de serviço (NFS-e)
 
 - Emitida pelo provedor de pagamentos (Asaas: `POST /invoices` vinculada ao pagamento da cobrança, ou ao cliente,

@@ -311,6 +311,14 @@ status atualizado.
 - **Consequências**: nenhum dado fica inacessível ao cliente; a decisão comercial não interrompe consultas
   operacionais.
 
+## DEC-039 — Estornos no provedor sem reenvio automático em caso de dúvida
+
+- **Contexto**: diferentemente da criação de cobranças (deduplicada pela referência externa), um estorno parcial
+  pode ser executado duas vezes pelo provedor.
+- **Decisão**: reenviar automaticamente apenas quando a requisição comprovadamente não chegou; respostas
+  ambíguas ficam "em verificação" até uma pessoa confirmar no provedor ou autorizar o reenvio.
+- **Consequências**: nenhum estorno em dobro por falha de rede; casos raros exigem uma ação explícita, auditada.
+
 ## DEC-040 — NFS-e pelo provedor de pagamentos
 
 - **Contexto**: a emissão de NFS-e depende da integração com cada prefeitura; o provedor de pagamentos já mantém

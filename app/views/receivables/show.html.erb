@@ -35,6 +35,25 @@
                   <%= date_time(payment.paid_at) %> · <%= payment.recorded_by&.user&.name || "Provedor de pagamento" %>
                   <% if payment.refunded_amount.positive? %> · estornado <%= money(payment.refunded_amount) %><% end %>
                 </p>
+                <% payment.refunds.each do |refund| %>
+                  <div class="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-ink-50 px-3 py-2 text-xs">
+                    <span class="sv-num font-medium text-ink-800">Estorno <%= money(refund.amount) %></span>
+                    <%= badge(refund.status_label, tone: { "accepted" => :success, "pending" => :info, "unknown" => :warning, "failed" => :danger, "manual" => :warning }.fetch(refund.status)) %>
+                    <% if refund.last_error.present? %><span class="text-rose-700"><%= refund.last_error %></span><% end %>
+                    <% if rp.refund? && refund.needs_attention? %>
+                      <span class="ml-auto flex gap-2">
+                        <%= button_to (refund.status == "manual" ? "Marcar como executado" : "Confirmado no provedor"), receivable_resolve_refund_path(@receivable, refund),
+                              method: :patch, params: { resolution: { action: "confirm" } }, class: "sv-btn-ghost sv-btn-sm",
+                              form: { data: { turbo_confirm: "Confirmar que o estorno foi executado?" } } %>
+                        <% if refund.status == "unknown" || refund.status == "failed" %>
+                          <%= button_to "Reenviar ao provedor", receivable_resolve_refund_path(@receivable, refund), method: :patch,
+                                params: { resolution: { action: "retry" } }, class: "sv-btn-ghost sv-btn-sm",
+                                form: { data: { turbo_confirm: "Reenviar somente se o estorno NÃO aparece no provedor. Continuar?" } } %>
+                        <% end %>
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
               <% if rp.refund? && payment.refundable.positive? %>
                 <details class="relative">
@@ -43,7 +62,7 @@
                         class: "absolute right-0 z-10 mt-2 w-72 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
                     <div><%= f.label :amount, "Valor do estorno (R$)", class: "sv-label", for: "estorno-#{payment.id}" %><%= f.number_field :amount, id: "estorno-#{payment.id}", value: payment.refundable.to_s("F"), step: "0.01", min: "0.01", max: payment.refundable.to_s("F"), class: "sv-input", required: true %></div>
                     <div><%= f.label :reason, "Motivo", class: "sv-label", for: "estorno-motivo-#{payment.id}" %><%= f.text_field :reason, id: "estorno-motivo-#{payment.id}", class: "sv-input", required: true %></div>
-                    <p class="text-xs text-ink-500">O estorno é registrado no Servora; a devolução no meio de pagamento é feita pela equipe financeira.</p>
+                    <p class="text-xs text-ink-500"><%= payment.payment_charge_id ? "O estorno será enviado ao provedor de pagamento." : "Pagamento manual: a devolução é feita pela equipe financeira." %></p>
                     <%= f.button "Registrar estorno", type: "submit", class: "sv-btn-danger w-full" %>
                   <% end %>
                 </details>
@@ -112,12 +131,12 @@
               <% if invoice.pdf_url.present? %><%= link_to "PDF", invoice.pdf_url, class: "sv-btn-ghost sv-btn-sm", target: "_blank", rel: "noopener noreferrer" %><% end %>
               <% if invoice.xml_url.present? %><%= link_to "XML", invoice.xml_url, class: "sv-btn-ghost sv-btn-sm", target: "_blank", rel: "noopener noreferrer" %><% end %>
               <% if rp.invoice? && %w[scheduled unknown canceling].include?(invoice.status) %>
-                <%= button_to "Consultar", sync_receivable_invoice_path(@receivable, invoice), class: "sv-btn-ghost sv-btn-sm" %>
+                <%= button_to "Consultar", receivable_sync_invoice_path(@receivable, invoice), class: "sv-btn-ghost sv-btn-sm" %>
               <% end %>
               <% if rp.invoice? && %w[authorized scheduled pending error].include?(invoice.status) %>
                 <details class="relative">
                   <summary class="sv-btn-ghost sv-btn-sm cursor-pointer list-none text-rose-700">Cancelar</summary>
-                  <%= form_with url: cancel_receivable_invoice_path(@receivable, invoice), method: :patch, scope: :cancellation,
+                  <%= form_with url: receivable_cancel_invoice_path(@receivable, invoice), method: :patch, scope: :cancellation,
                         class: "absolute right-0 z-10 mt-2 w-72 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
                     <%= f.label :reason, "Motivo", class: "sv-label", for: "nfse-motivo-#{invoice.id}" %>
                     <%= f.text_field :reason, id: "nfse-motivo-#{invoice.id}", class: "sv-input", required: true %>

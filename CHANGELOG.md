@@ -7,6 +7,8 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ### Adicionado
 
+- Estornos executados no provedor de pagamento: envio após o commit, situação por estorno, verificação humana
+  obrigatória quando a resposta é ambígua e sinalização dos estornos de pagamentos manuais.
 - Nota fiscal de serviço (NFS-e) emitida pelo provedor de pagamentos: dados fiscais, emissão manual ou automática
   na quitação, acompanhamento da prefeitura, cancelamento e link da nota no portal do cliente.
 

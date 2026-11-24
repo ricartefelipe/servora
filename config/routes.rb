@@ -162,13 +162,11 @@ Rails.application.routes.draw do
         resources :payments, path: "pagamentos", only: %i[new create] do
           patch :refund, on: :member, path: "estornar"
         end
+        patch "estornos/:id/resolver", to: "refunds#resolve", as: :resolve_refund
         resources :discounts, path: "descontos", only: %i[new create]
-        resources :invoices, path: "notas-fiscais", only: :create do
-          member do
-            post :sync, path: "consultar"
-            patch :cancel, path: "cancelar"
-          end
-        end
+        resources :invoices, path: "notas-fiscais", only: :create
+        post "notas-fiscais/:id/consultar", to: "invoices#sync", as: :sync_invoice
+        patch "notas-fiscais/:id/cancelar", to: "invoices#cancel", as: :cancel_invoice
         resources :charges, path: "cobrancas", only: :create do
           member do
             post :simulate, path: "simular-pagamento"

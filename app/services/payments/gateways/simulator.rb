@@ -56,6 +56,18 @@ module Payments
 
       def cancel_invoice(invoice) = remote_invoice(invoice, "canceled")
 
+      # Same cents rule applied to the refund amount.
+      def refund_charge(_charge, refund)
+        cents = ((refund.amount * 100) % 100).to_i
+        raise Errors::Rejected, "Estorno recusado pelo simulador (valor terminado em ,66)." if cents == REJECTED_CENTS
+        if cents == AMBIGUOUS_CENTS
+          raise Errors::AmbiguousResponse,
+            "Tempo esgotado aguardando o simulador (valor terminado em ,13)."
+        end
+
+        RemoteRefund.new(external_id: "sim_refund_#{refund.id}", status: "accepted")
+      end
+
       private
 
       def cents(charge) = ((charge.amount * 100) % 100).to_i
