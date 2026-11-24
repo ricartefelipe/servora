@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Rebuilds db/structure.sql from the migrations in a scratch database.
+#
+# Rails 8 loads an existing schema file when migrating an empty database, so
+# the committed dump is moved aside first; every migration really runs.
+#
+#   bin/db-structure            regenerate db/structure.sql
+#   bin/db-structure --check    fail if the committed dump differs from the
+#                               migrations, if rollback/migrate changes it, or
+#                               if loading the dump and dumping again changes it
+require "fileutils"
+require "rbconfig"
+require "tmpdir"
+
+ROOT = File.expand_path("..", __dir__)
+STRUCTURE = File.join(ROOT, "db/structure.sql")
+ENV_VARS = {
+  "RAILS_ENV" => "test", "SERVORA_DB_ROLE" => "owner",
+  "DB_TEST_NAME" => ENV.fetch("SCRATCH_DB_NAME", "servora_structure_scratch")
+}.freeze
+
+def rails(*tasks)
+  system(ENV_VARS, RbConfig.ruby, File.join(ROOT, "bin/rails"), *tasks, chdir: ROOT, exception: true)
+end
+
+def same_file?(first, second) = File.read(first) == File.read(second)
+
+check = ARGV.include?("--check")
+committed = File.join(Dir.tmpdir, "servora-structure-committed-#{Process.pid}.sql")
+FileUtils.mv(STRUCTURE, committed)
+
+begin
+  rails("db:drop", "db:create", "db:migrate", "db:schema:dump")
+  migrated = File.read(STRUCTURE)
+  abort "db/structure.sql difere das migrations (execute bin/db-structure)." if check && !same_file?(committed, STRUCTURE)
+
+  if check
+    rails("db:rollback", "STEP=10000", "VERBOSE=false")
+    rails("db:migrate", "db:schema:dump", "VERBOSE=false")
+    abort "rollback seguido de migrate altera o schema." unless File.read(STRUCTURE) == migrated
+  end
+
+  rails("db:drop", "db:create", "db:schema:load", "db:schema:dump")
+  abort "Carregar o structure.sql e gerar o dump novamente altera o arquivo." unless File.read(STRUCTURE) == migrated
+  puts(check ? "db/structure.sql confere com as migrations." : "db/structure.sql regenerado a partir das migrations.")
+ensure
+  # Best-effort cleanup of the scratch database; failures here are reported by
+  # the system call output and do not mask the original result.
+  system(ENV_VARS, RbConfig.ruby, File.join(ROOT, "bin/rails"), "db:drop", chdir: ROOT)
+  FileUtils.mv(committed, STRUCTURE) if check && File.exist?(committed)
+  FileUtils.rm_f(committed)
+end
