@@ -1,0 +1,12 @@
+<%# Fields shared by every stock operation form. %>
+<%= f.hidden_field :operation_key %>
+<% if items.empty? %>
+  <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+    Nenhuma peça controla estoque. Marque “Controla estoque” no cadastro da peça no catálogo.
+  </div>
+<% end %>
+<div class="grid gap-5 sm:grid-cols-2">
+  <%= f.select_field :warehouse_id, warehouses.map { |w| [w.name, w.id] }, label: warehouse_label, include_blank: "Selecione", required: true %>
+  <%= f.select_field :catalog_item_id, items.map { |i| [[i.name, i.sku].compact.join(" · "), i.id] }, label: "Peça",
+        include_blank: "Selecione", required: true %>
+</div>

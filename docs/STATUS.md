@@ -29,13 +29,16 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Agenda | Visão diária (linha do tempo) e semanal, técnicos e equipes, horários, ausências, deslocamento, competências | `spec/requests/scheduling_spec.rb`, `spec/system/scheduling_flow_spec.rb` |
 | Despacho | Reserva protegida por exclusion constraint, equipe atômica, reagendamento seguro, cancelamento e ausência do cliente, sugestão determinística | `spec/services/scheduling/**`, `spec/services/visits_spec.rb` |
 | Apontamentos | Minutos e custo de mão de obra com custo/hora vigente; idempotência por operação | `spec/services/time_entries/record_spec.rb` |
+| Estoque | Depósitos, entradas, transferências, ajustes, mínimo, custo médio móvel, histórico; trigger de saldo, append-only, idempotência | `spec/services/inventory_operations_spec.rb`, `spec/database/inventory_integrity_spec.rb`, `spec/requests/inventory_spec.rb` |
+| Concorrência de estoque | Última unidade disputada por duas ordens, transferências cruzadas sem deadlock, consumo duplicado concorrente | `spec/services/inventory_concurrency_spec.rb` |
+| Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `ruby bin/test-all` | 53 exemplos (regras puras) + 267 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 99,11%, branches 84,79% |
+| `bash bin/test-all` | 58 exemplos (regras puras) + 315 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,83%, branches 84,91% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -48,8 +51,9 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Estoque (depósitos, reservas, consumo com custo histórico, devoluções, transferências e ajustes).
+- Financeiro operacional: contas a receber por ordem, pagamentos parciais, descontos autorizados, custos e
+  margem prevista × realizada (consumos de material e apontamentos já registram o custo histórico).
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/estoque` a partir de `develop`.
+Próxima branch: `feature/financeiro` a partir de `develop`.

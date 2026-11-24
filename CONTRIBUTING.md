@@ -72,7 +72,7 @@ Interfaces locais: aplicação em `http://localhost:3000`, Mailpit em `http://lo
 
 | Comando | O que faz |
 |---|---|
-| `ruby bin/test-all` | Regras puras + specs Rails + system specs + metas de cobertura |
+| `bash bin/test-all` | Regras puras + specs Rails + system specs + metas de cobertura |
 | `ruby bin/rspec-unit` | Apenas regras puras (sem Rails, banco, navegador ou rede) |
 | `bundle exec rspec` | Specs com Rails (use `--seed <n>` para reproduzir uma ordem) |
 | `ruby bin/coverage-check` | Consolida a cobertura e aplica as metas |

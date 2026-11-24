@@ -1,0 +1,11 @@
+<%= form_with model: form, url: stock_receipts_path, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <%= render "stock/operation_fields", f:, warehouses:, items:, warehouse_label: "Depósito de entrada" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.field :quantity, label: "Quantidade", as: :number_field, step: "0.001", min: "0.001", required: true %>
+    <%= f.field :unit_cost, label: "Custo unitário (R$)", as: :number_field, step: "0.0001", min: 0, required: true,
+          hint: "Recalcula o custo médio do item no depósito" %>
+  </div>
+  <%= f.field :reason, label: "Documento ou observação", hint: "Ex.: NF de compra 4521, fornecedor" %>
+  <div class="flex justify-end"><%= f.submit_button("Registrar entrada") %></div>
+<% end %>

@@ -1,0 +1,4 @@
+<% content_for :title, "Entrada de estoque" %>
+<%= render layout: "shared/modal", locals: { title: "Entrada de estoque", subtitle: "Compra, devolução de fornecedor ou carga inicial" } do %>
+  <%= render "stock/receipts/form", form: @form, warehouses: @warehouses, items: @items %>
+<% end %>

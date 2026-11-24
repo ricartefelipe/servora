@@ -1,0 +1,59 @@
+<% content_for :title, "Movimentações de estoque" %>
+<% show_costs = policy(StockMovement).view_costs? %>
+<%= render "stock/header" %>
+
+<%= form_with url: stock_movements_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
+  <div>
+    <%= f.label :deposito, "Depósito", class: "sv-label" %>
+    <%= f.select :deposito, @warehouses.map { |w| [w.name, w.id] }, { include_blank: "Todos", selected: @warehouse&.id }, class: "sv-input" %>
+  </div>
+  <div>
+    <%= f.label :tipo, "Tipo", class: "sv-label" %>
+    <%= f.select :tipo, StockMovement::KIND_LABELS.map { |value, label| [label, value] }, { include_blank: "Todos", selected: @kind }, class: "sv-input" %>
+  </div>
+  <% if params[:item].present? %><%= f.hidden_field :item, value: params[:item] %><% end %>
+  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
+  <% if params[:item].present? %><%= link_to "Remover filtro de item", stock_movements_path(deposito: @warehouse&.id, tipo: @kind), class: "sv-btn-ghost" %><% end %>
+<% end %>
+
+<section class="sv-card overflow-hidden" aria-label="Movimentações">
+  <% if @pagination.records.empty? %>
+    <%= empty_state("Nenhuma movimentação", description: "Entradas, reservas, consumos, transferências e ajustes aparecem aqui em ordem cronológica.", icon_name: :stock) %>
+  <% else %>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead>
+          <tr>
+            <th scope="col">Quando</th><th scope="col">Movimentação</th><th scope="col">Item</th><th scope="col">Depósito</th>
+            <th scope="col" class="text-right">Quantidade</th><th scope="col" class="text-right">Físico após</th>
+            <th scope="col" class="text-right">Reservado após</th>
+            <% if show_costs %><th scope="col" class="text-right">Custo</th><% end %>
+            <th scope="col">Origem</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100">
+          <% @pagination.records.each do |movement| %>
+            <tr>
+              <td class="whitespace-nowrap text-xs text-ink-600"><%= date_time(movement.occurred_at) %></td>
+              <td><%= badge(movement.kind_label, tone: movement.inbound? ? :success : (movement.outbound? ? :ember : :info)) %></td>
+              <td class="font-medium text-ink-900"><%= movement.catalog_item.name %></td>
+              <td><%= movement.warehouse.name %></td>
+              <td class="sv-num text-right"><%= movement.outbound? ? "−" : (movement.inbound? ? "+" : "") %><%= quantity(movement.quantity, movement.catalog_item.unit) %></td>
+              <td class="sv-num text-right"><%= quantity(movement.on_hand_after) %></td>
+              <td class="sv-num text-right text-ink-600"><%= quantity(movement.reserved_after) %></td>
+              <% if show_costs %>
+                <td class="sv-num text-right text-ink-600"><%= money(movement.total_cost) %><span class="block text-xs"><%= unit_cost(movement.unit_cost) %>/un</span></td>
+              <% end %>
+              <td class="text-xs text-ink-600">
+                <% if movement.work_order %><%= link_to movement.work_order.number, work_order_path(movement.work_order), class: "sv-link font-mono" %><% end %>
+                <span class="block"><%= movement.actor&.user&.name || "Sistema" %></span>
+                <% if movement.reason.present? %><span class="block text-ink-500"><%= movement.reason %></span><% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</section>
+<%= render "shared/pagination", pagination: @pagination %>

@@ -116,9 +116,12 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
 - **RF-EST-04** Proteção contra saldo negativo, reserva acima do disponível, consumo duplicado,
   devolução acima do consumido, transferência parcial e disputa pela última unidade.
   - CA: spec concorrente com duas ordens reservando a última unidade resulta em uma reserva.
-- **RF-EST-05** Custo médio móvel com 4 casas decimais (arredondamento half-even); o custo aplicado
-  ao consumo fica registrado e não muda com compras posteriores.
-- **RF-EST-06** Cancelamento libera reservas não consumidas.
+- **RF-EST-05** Custo médio móvel com 4 casas decimais (arredondamento comercial, metade para cima, igual ao
+  `round` do PostgreSQL); quantidades com 3 casas e valores com 2. O custo aplicado ao consumo fica registrado
+  e não muda com compras posteriores; devoluções voltam ao custo do consumo original.
+- **RF-EST-06** Cancelamento e conclusão da ordem liberam reservas não consumidas (via outbox).
+- **RF-EST-07** Técnicos veem apenas os depósitos sob sua responsabilidade e registram consumo nas ordens em
+  que atuam; ajustes e estoque mínimo exigem permissão própria; custos só com `costs_view`.
 
 ## 9. Financeiro operacional
 

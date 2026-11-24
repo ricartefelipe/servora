@@ -24,6 +24,7 @@ class CatalogItem < TenantRecord
 
   scope :active, -> { where(active: true) }
   scope :alphabetical, -> { order(:name) }
+  scope :stockable, -> { where(kind: "part", tracks_inventory: true) }
 
   def kind_label = KINDS.fetch(kind)
   def unit_label = UNITS.fetch(unit)

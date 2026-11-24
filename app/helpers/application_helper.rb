@@ -14,6 +14,11 @@ module ApplicationHelper
     number_to_currency(value || 0, unit: "R$", separator: ",", delimiter: ".", format: "%u %n")
   end
 
+  # Unit costs keep 4 decimals (moving average precision).
+  def unit_cost(value)
+    number_to_currency(value || 0, unit: "R$", separator: ",", delimiter: ".", precision: 4, format: "%u %n")
+  end
+
   def quantity(value, unit = nil)
     formatted = number_with_precision(value || 0, precision: 3, strip_insignificant_zeros: true, separator: ",", delimiter: ".")
     [formatted, unit].compact_blank.join(" ")

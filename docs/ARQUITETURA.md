@@ -193,6 +193,49 @@ scheduled ─▶ in_progress ─▶ completed
 Finalizar visita não conclui a ordem; encerrar antes do previsto libera o restante da reserva (mantendo o
 deslocamento após o término real).
 
+## Estoque
+
+Razão (ledger) de movimentações com saldo materializado:
+
+- `stock_movements` é **append-only** para o papel de aplicação e guarda, em cada linha, o saldo resultante
+  (físico, reservado e custo médio). Tipos: entrada, reserva, liberação de reserva, consumo, devolução,
+  transferência (saída/entrada, ligadas por `transfer_group_id`) e ajuste (entrada/saída).
+- `stock_balances` (uma linha por depósito e item) só muda junto com uma **nova** movimentação: o trigger
+  `servora_guard_stock_balance` exige que `last_movement_id` aponte para uma movimentação diferente, do mesmo
+  depósito e item, cujos valores "após" coincidam com o novo saldo e cuja quantidade explique exatamente a
+  variação conforme o tipo. Saldos nascem zerados; só o estoque mínimo pode mudar sem movimentação.
+- Constraints garantem físico ≥ 0, reservado ≥ 0 e reservado ≤ físico (disponível = físico − reservado).
+- `Inventory::Balance` (domínio puro) calcula cada operação; `Inventory::Ledger` é a única porta de escrita.
+
+### Ordem de locks
+
+Toda operação trava na mesma ordem: **ordem de serviço → reserva ou consumo → saldos** (ordenados por depósito
+e item, `SELECT … FOR UPDATE`). Assim:
+
+- duas ordens disputando a última unidade: a segunda espera o lock do saldo e recebe "saldo disponível
+  insuficiente" (spec concorrente com espera observada em `pg_stat_activity`);
+- transferências em sentidos opostos não entram em deadlock (spec com quatro conexões simultâneas);
+- reserva ou consumo nunca sobrevivem a um cancelamento concorrente (a ordem é travada e revalidada).
+
+### Idempotência
+
+Entradas, transferências, ajustes e consumos aceitam uma chave de operação (UUID gerado ao abrir o formulário).
+A chave é consultada antes da operação e protegida por índice único parcial; uma duplicata concorrente perde o
+savepoint e devolve o registro vencedor. Reutilizar a chave com outros dados é recusado.
+
+### Custos
+
+- Custo médio móvel recalculado em entradas, devoluções, transferências recebidas e ajustes de entrada
+  (4 casas, metade para cima). Saídas usam o médio vigente e não o alteram.
+- O consumo grava custo unitário e total do momento (`material_consumptions`), base da margem realizada;
+  devoluções retornam ao custo do consumo original e nunca superam o consumido.
+
+### Integração com a ordem de serviço
+
+Aba "Materiais": reservas (com liberação manual), consumo a partir de reserva ou de depósito permitido,
+devolução. `work_order.canceled` e `work_order.completed` acionam
+`Inventory::Handlers::ReleaseWorkOrderReservations` pela outbox.
+
 ## Portal do cliente
 
 - Acesso por concessão de uso único enviada por e-mail (72 h, finalidade registrada, revogável). O GET apenas

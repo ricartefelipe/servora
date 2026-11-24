@@ -1,0 +1,12 @@
+<%= form_with model: form, url: stock_adjustments_path, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <%= render "stock/operation_fields", f:, warehouses:, items:, warehouse_label: "Depósito" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.select_field :direction, StockAdjustmentForm::DIRECTIONS.map { |value, label| [label, value] }, label: "Direção" %>
+    <%= f.field :quantity, label: "Quantidade", as: :number_field, step: "0.001", min: "0.001", required: true %>
+  </div>
+  <%= f.field :unit_cost, label: "Custo unitário da sobra (R$)", as: :number_field, step: "0.0001", min: 0,
+        hint: "Somente para entradas; em branco usa o custo médio atual" %>
+  <%= f.text_area_field :reason, label: "Motivo", rows: 2, required: true, hint: "Registrado na auditoria com o seu nome" %>
+  <div class="flex justify-end"><%= f.submit_button("Registrar ajuste") %></div>
+<% end %>

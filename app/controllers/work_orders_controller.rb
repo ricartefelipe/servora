@@ -26,6 +26,7 @@ class WorkOrdersController < TenantController
     authorize @work_order
     @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if policy(@work_order).add_item?
     @technicians = current_organization.memberships.technicians.includes(:user).ordered if policy(@work_order).assign?
+    load_materials if policy(@work_order).view_materials?
     return unless policy(@work_order).decide_item?
 
     @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)
@@ -91,6 +92,17 @@ class WorkOrdersController < TenantController
   end
 
   private
+
+  def load_materials
+    @reservations = tenant_relation(StockReservation).where(work_order_id: @work_order.id)
+      .includes(:warehouse, :catalog_item).order(:created_at)
+    @consumptions = tenant_relation(MaterialConsumption).where(work_order_id: @work_order.id)
+      .includes(:warehouse, :catalog_item).order(:created_at)
+    return unless policy(@work_order).consume_material? || policy(@work_order).reserve_material?
+
+    @stock_warehouses = policy_scope(tenant_relation(Warehouse)).active.alphabetical
+    @stock_items = tenant_relation(CatalogItem).stockable.active.alphabetical
+  end
 
   def load_work_order
     @work_order = policy_scope(tenant_relation(WorkOrder)).includes(*ORDER_INCLUDES).find(params.expect(:id))
