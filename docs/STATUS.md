@@ -40,11 +40,16 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
 
+## Versões
+
+| Versão | Conteúdo |
+|---|---|
+| 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+
 ## Em andamento
 
-- Release 0.1.0 (primeira fatia vertical), seguida do módulo de estoque.
+- Estoque (depósitos, reservas, consumo com custo histórico, devoluções, transferências e ajustes).
 
 ## Ponto de continuidade
 
-Após o merge desta feature: `release/0.1.0` a partir de `develop` → PR para `main` → tag `v0.1.0` →
-PR de reintegração para `develop`. Em seguida, `feature/estoque`.
+Próxima branch: `feature/estoque` a partir de `develop`.
