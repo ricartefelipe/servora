@@ -1,0 +1,9 @@
+<% content_for :title, "Nova senha" %>
+<%= render "shared/auth_heading", title: "Defina uma nova senha", subtitle: "Ao concluir, todas as sessões abertas serão encerradas." %>
+<%= form_for resource, as: resource_name, url: password_path(resource_name), html: { method: :put, class: "space-y-5" } do |f| %>
+  <%= f.error_summary %>
+  <%= f.hidden_field :reset_password_token %>
+  <%= f.field :password, label: "Nova senha", as: :password_field, autocomplete: "new-password", autofocus: true, required: true %>
+  <%= f.field :password_confirmation, label: "Confirme a nova senha", as: :password_field, autocomplete: "new-password", required: true %>
+  <%= f.submit_button "Salvar nova senha", class: "w-full" %>
+<% end %>

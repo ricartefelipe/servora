@@ -1,0 +1,8 @@
+<% content_for :title, "Confirmação de e-mail" %>
+<%= render "shared/auth_heading", title: "Reenviar confirmação", subtitle: "Informe o e-mail cadastrado para receber um novo link." %>
+<%= form_for resource, as: resource_name, url: confirmation_path(resource_name), html: { method: :post, class: "space-y-5" } do |f| %>
+  <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "email", autofocus: true, required: true,
+        value: (resource.pending_reconfirmation? ? resource.unconfirmed_email : resource.email) %>
+  <%= f.submit_button "Reenviar link", class: "w-full" %>
+<% end %>
+<p class="mt-6 text-sm"><%= link_to "Voltar ao login", new_session_path(resource_name), class: "sv-link" %></p>
