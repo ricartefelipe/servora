@@ -87,6 +87,13 @@ LABEL org.opencontainers.image.title="servora" \
       org.opencontainers.image.description="Servora - gestão de serviços de campo e manutenção" \
       org.opencontainers.image.source="https://github.com/ricartefelipe/servora" \
       org.opencontainers.image.licenses="UNLICENSED"
+# Ruby 4.0.10 ships json 2.18.3 as a default gem (CVE-2026-33210). The
+# application loads json >= 3.1 from the bundle, so the vulnerable default copy
+# is removed from the runtime image instead of being ignored by the scanner.
+RUN rm -rf "$(ruby -e 'print Gem.default_specifications_dir')"/json-2.*.gemspec \
+           "$(ruby -e 'print RbConfig::CONFIG["rubylibdir"]')/json.rb" \
+           "$(ruby -e 'print RbConfig::CONFIG["rubylibdir"]')/json" \
+           "$(ruby -e 'print RbConfig::CONFIG["archdir"]')/json"
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 USER 1000:1000
