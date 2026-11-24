@@ -5,6 +5,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.0.0] - 2026-11-24
+
+Ciclo completo da operação de serviços de campo: da solicitação à execução e ao resultado financeiro, com
+integrações, operação e assinatura da plataforma.
+
 ### Adicionado
 
 - Estoque: depósitos (central, técnico, veículo), entradas, transferências, ajustes auditados, estoque
@@ -99,5 +104,6 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v0.1.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.0.0...develop
+[1.0.0]: https://github.com/ricartefelipe/servora/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/ricartefelipe/servora/releases/tag/v0.1.0
