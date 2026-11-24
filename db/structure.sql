@@ -257,6 +257,20 @@ CREATE FUNCTION public.servora_outbox_backlog() RETURNS TABLE(status text, total
 
 
 --
+-- Name: servora_resolve_api_credential(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_resolve_api_credential(p_token_digest text) RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+    SELECT organization_id FROM api_credentials
+    WHERE token_digest = p_token_digest AND revoked_at IS NULL
+      AND (expires_at IS NULL OR expires_at > clock_timestamp())
+  $$;
+
+
+--
 -- Name: servora_resolve_invitation(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -264,6 +278,18 @@ CREATE FUNCTION public.servora_resolve_invitation(p_token_digest text) RETURNS u
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
     AS $$ SELECT organization_id FROM invitations WHERE token_digest = p_token_digest $$;
+
+
+--
+-- Name: servora_resolve_payment_webhook(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_resolve_payment_webhook(p_token_digest text) RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+    SELECT organization_id FROM payment_integrations WHERE webhook_token_digest = p_token_digest
+  $$;
 
 
 --
@@ -335,6 +361,43 @@ CREATE TABLE public.active_storage_variant_records (
     organization_id uuid DEFAULT public.servora_current_organization_id() NOT NULL,
     blob_id uuid NOT NULL,
     variation_digest character varying NOT NULL
+);
+
+
+--
+-- Name: api_credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.api_credentials (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    token_prefix character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    scopes character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    last_used_at timestamp(6) with time zone,
+    expires_at timestamp(6) with time zone,
+    revoked_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    created_by_membership_id uuid NOT NULL,
+    CONSTRAINT api_credentials_scopes CHECK ((cardinality(scopes) > 0))
+);
+
+
+--
+-- Name: api_idempotency_keys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.api_idempotency_keys (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    key character varying NOT NULL,
+    request_digest character varying NOT NULL,
+    response_status integer NOT NULL,
+    response_body jsonb NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    api_credential_id uuid NOT NULL
 );
 
 
@@ -645,6 +708,27 @@ CREATE TABLE public.holidays (
 
 
 --
+-- Name: inbound_webhooks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.inbound_webhooks (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    external_event_id character varying NOT NULL,
+    event_type character varying NOT NULL,
+    payload jsonb NOT NULL,
+    status character varying DEFAULT 'received'::character varying NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    processed_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT inbound_webhooks_status CHECK (((status)::text = ANY (ARRAY['received'::text, 'processed'::text, 'ignored'::text, 'failed'::text])))
+);
+
+
+--
 -- Name: invitations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -936,6 +1020,7 @@ CREATE TABLE public.payment_integrations (
     default_billing_type character varying DEFAULT 'pix'::character varying NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
+    webhook_token_digest character varying,
     CONSTRAINT payment_integrations_billing_type CHECK (((default_billing_type)::text = ANY (ARRAY['pix'::text, 'boleto'::text]))),
     CONSTRAINT payment_integrations_credentials CHECK ((((provider)::text = 'simulator'::text) OR (api_key IS NOT NULL))),
     CONSTRAINT payment_integrations_provider CHECK (((provider)::text = ANY (ARRAY['simulator'::text, 'asaas'::text])))
@@ -1561,6 +1646,47 @@ CREATE TABLE public.warehouses (
 
 
 --
+-- Name: webhook_deliveries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webhook_deliveries (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    event_id uuid NOT NULL,
+    event_type character varying NOT NULL,
+    payload jsonb NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_response_code integer,
+    last_error text,
+    delivered_at timestamp(6) with time zone,
+    last_attempt_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    webhook_endpoint_id uuid NOT NULL,
+    CONSTRAINT webhook_deliveries_status CHECK (((status)::text = ANY (ARRAY['pending'::text, 'delivered'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: webhook_endpoints; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webhook_endpoints (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    url character varying NOT NULL,
+    description character varying,
+    secret text NOT NULL,
+    events character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT webhook_endpoints_events CHECK ((cardinality(events) > 0))
+);
+
+
+--
 -- Name: work_order_assignments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1783,6 +1909,22 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: api_credentials api_credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_credentials
+    ADD CONSTRAINT api_credentials_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: api_idempotency_keys api_idempotency_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_idempotency_keys
+    ADD CONSTRAINT api_idempotency_keys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1900,6 +2042,14 @@ ALTER TABLE ONLY public.financial_events
 
 ALTER TABLE ONLY public.holidays
     ADD CONSTRAINT holidays_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: inbound_webhooks inbound_webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.inbound_webhooks
+    ADD CONSTRAINT inbound_webhooks_pkey PRIMARY KEY (id);
 
 
 --
@@ -2255,6 +2405,22 @@ ALTER TABLE ONLY public.warehouses
 
 
 --
+-- Name: webhook_deliveries webhook_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT webhook_deliveries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webhook_endpoints webhook_endpoints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_endpoints
+    ADD CONSTRAINT webhook_endpoints_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: work_order_assignments work_order_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2411,6 +2577,13 @@ CREATE INDEX idx_on_organization_id_status_created_at_1118c31bba ON public.outbo
 
 
 --
+-- Name: idx_on_organization_id_status_created_at_7c7e187d71; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_status_created_at_7c7e187d71 ON public.webhook_deliveries USING btree (organization_id, status, created_at);
+
+
+--
 -- Name: idx_on_organization_id_status_priority_requested_at_20346fbe18; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2499,6 +2672,34 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 --
 
 CREATE INDEX index_allocations_lookup ON public.technician_allocations USING btree (organization_id, membership_id, status);
+
+
+--
+-- Name: index_api_credentials_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_credentials_on_tenant_key ON public.api_credentials USING btree (organization_id, id);
+
+
+--
+-- Name: index_api_credentials_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_credentials_on_token_digest ON public.api_credentials USING btree (token_digest);
+
+
+--
+-- Name: index_api_idempotency_keys_on_api_credential_id_and_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_idempotency_keys_on_api_credential_id_and_key ON public.api_idempotency_keys USING btree (api_credential_id, key);
+
+
+--
+-- Name: index_api_idempotency_keys_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_idempotency_keys_on_tenant_key ON public.api_idempotency_keys USING btree (organization_id, id);
 
 
 --
@@ -2761,6 +2962,20 @@ CREATE UNIQUE INDEX index_holidays_on_tenant_key ON public.holidays USING btree 
 
 
 --
+-- Name: index_inbound_webhooks_dedup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_inbound_webhooks_dedup ON public.inbound_webhooks USING btree (organization_id, provider, external_event_id);
+
+
+--
+-- Name: index_inbound_webhooks_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_inbound_webhooks_on_tenant_key ON public.inbound_webhooks USING btree (organization_id, id);
+
+
+--
 -- Name: index_invitations_on_tenant_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3003,6 +3218,13 @@ CREATE UNIQUE INDEX index_payment_charges_single_active ON public.payment_charge
 --
 
 CREATE UNIQUE INDEX index_payment_integrations_on_tenant_key ON public.payment_integrations USING btree (organization_id, id);
+
+
+--
+-- Name: index_payment_integrations_on_webhook_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_payment_integrations_on_webhook_token_digest ON public.payment_integrations USING btree (webhook_token_digest) WHERE (webhook_token_digest IS NOT NULL);
 
 
 --
@@ -3559,6 +3781,27 @@ CREATE UNIQUE INDEX index_warehouses_on_tenant_key ON public.warehouses USING bt
 
 
 --
+-- Name: index_webhook_deliveries_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_webhook_deliveries_on_tenant_key ON public.webhook_deliveries USING btree (organization_id, id);
+
+
+--
+-- Name: index_webhook_deliveries_on_webhook_endpoint_id_and_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_webhook_deliveries_on_webhook_endpoint_id_and_event_id ON public.webhook_deliveries USING btree (webhook_endpoint_id, event_id);
+
+
+--
+-- Name: index_webhook_endpoints_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_webhook_endpoints_on_tenant_key ON public.webhook_endpoints USING btree (organization_id, id);
+
+
+--
 -- Name: index_work_order_assignments_on_tenant_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3733,6 +3976,22 @@ ALTER TABLE ONLY public.active_storage_attachments
 
 ALTER TABLE ONLY public.active_storage_variant_records
     ADD CONSTRAINT fk_active_storage_variant_records_blob_tenant FOREIGN KEY (organization_id, blob_id) REFERENCES public.active_storage_blobs(organization_id, id);
+
+
+--
+-- Name: api_credentials fk_api_credentials_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_credentials
+    ADD CONSTRAINT fk_api_credentials_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: api_idempotency_keys fk_api_idempotency_keys_api_credential_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_idempotency_keys
+    ADD CONSTRAINT fk_api_idempotency_keys_api_credential_id_tenant FOREIGN KEY (organization_id, api_credential_id) REFERENCES public.api_credentials(organization_id, id);
 
 
 --
@@ -4240,6 +4499,14 @@ ALTER TABLE ONLY public.work_order_assignments
 
 
 --
+-- Name: webhook_endpoints fk_rails_21808fa528; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_endpoints
+    ADD CONSTRAINT fk_rails_21808fa528 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: maintenance_plan_equipment fk_rails_22cbc11974; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4293,6 +4560,14 @@ ALTER TABLE ONLY public.stock_balances
 
 ALTER TABLE ONLY public.business_hours
     ADD CONSTRAINT fk_rails_35acd7f354 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: inbound_webhooks fk_rails_36cda06530; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.inbound_webhooks
+    ADD CONSTRAINT fk_rails_36cda06530 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4608,6 +4883,14 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: api_credentials fk_rails_be4b4015d9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_credentials
+    ADD CONSTRAINT fk_rails_be4b4015d9 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: skills fk_rails_befcd0faff; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4696,6 +4979,14 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: webhook_deliveries fk_rails_ea5a0897ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT fk_rails_ea5a0897ac FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: service_types fk_rails_eeff69bade; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4709,6 +5000,14 @@ ALTER TABLE ONLY public.service_types
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT fk_rails_f07f0bd66d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: api_idempotency_keys fk_rails_fc344f108a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_idempotency_keys
+    ADD CONSTRAINT fk_rails_fc344f108a FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4960,6 +5259,14 @@ ALTER TABLE ONLY public.warehouses
 
 
 --
+-- Name: webhook_deliveries fk_webhook_deliveries_webhook_endpoint_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT fk_webhook_deliveries_webhook_endpoint_id_tenant FOREIGN KEY (organization_id, webhook_endpoint_id) REFERENCES public.webhook_endpoints(organization_id, id);
+
+
+--
 -- Name: work_order_assignments fk_work_order_assignments_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5146,6 +5453,18 @@ ALTER TABLE public.active_storage_blobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.active_storage_variant_records ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: api_credentials; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.api_credentials ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: api_idempotency_keys; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.api_idempotency_keys ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: audit_events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -5228,6 +5547,12 @@ ALTER TABLE public.financial_events ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: inbound_webhooks; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.inbound_webhooks ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -5511,6 +5836,20 @@ CREATE POLICY tenant_isolation ON public.active_storage_variant_records USING ((
 
 
 --
+-- Name: api_credentials tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.api_credentials USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: api_idempotency_keys tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.api_idempotency_keys USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -5606,6 +5945,13 @@ CREATE POLICY tenant_isolation ON public.financial_events USING ((organization_i
 --
 
 CREATE POLICY tenant_isolation ON public.holidays USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: inbound_webhooks tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.inbound_webhooks USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -5875,6 +6221,20 @@ CREATE POLICY tenant_isolation ON public.warehouses USING ((organization_id = pu
 
 
 --
+-- Name: webhook_deliveries tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.webhook_deliveries USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: webhook_endpoints tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.webhook_endpoints USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: work_order_assignments tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -5962,6 +6322,18 @@ ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.warehouses ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: webhook_deliveries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: webhook_endpoints; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.webhook_endpoints ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: work_order_assignments; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -6022,6 +6394,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124014000'),
 ('20261124012000'),
 ('20261124011000'),
 ('20261124010000'),

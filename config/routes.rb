@@ -172,6 +172,14 @@ Rails.application.routes.draw do
     end
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
+    resource :integrations, path: "configuracoes/integracoes", only: :show do
+      post :create_credential, path: "credenciais"
+      patch "credenciais/:id/revogar", action: :revoke_credential, as: :revoke_credential
+      post :create_endpoint, path: "webhooks"
+      patch "webhooks/:id/alternar", action: :toggle_endpoint, as: :toggle_endpoint
+      post "entregas/:id/reenviar", action: :redeliver, as: :redeliver
+      post :rotate_payment_token, path: "token-pagamentos"
+    end
     resources :holidays, path: "configuracoes/sla/feriados", only: %i[create destroy]
     namespace :field, path: "campo" do
       root "agenda#show"
@@ -197,6 +205,20 @@ Rails.application.routes.draw do
       post :decide, on: :member, path: "decisao"
     end
   end
+
+  # Public API (token authentication, JSON only).
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get "openapi", to: "docs#show", defaults: { format: :yaml }
+      resources :customers, only: %i[index show]
+      resources :equipment, only: :index
+      resources :work_orders, only: %i[index show create]
+      resources :receivables, only: :index
+    end
+  end
+
+  # Provider notifications (authenticated by provider token).
+  post "webhooks/asaas", to: "webhooks/asaas#create", as: :asaas_webhook
 
   root "pages#home"
 end
