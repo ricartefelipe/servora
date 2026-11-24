@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Visits
-  # Cancels a scheduled visit (or records a customer no-show) and releases the
-  # reservations. A work order left without upcoming visits returns to
-  # "approved" (cancel) or "waiting customer" (no-show).
+  # Cancels a scheduled visit or one on the way (or records a customer
+  # no-show) and releases the reservations. A work order left without upcoming
+  # visits returns to "approved" (cancel) or "waiting customer" (no-show).
   class Cancel
     class ReasonRequired < Servora::RuleViolation; end
 
@@ -33,7 +33,7 @@ module Visits
 
     def adjust_work_order(work_order)
       return unless work_order.scheduled?
-      return if work_order.visits.exists?(status: %w[scheduled in_progress])
+      return if work_order.visits.exists?(status: Visits::OPEN)
 
       target = @no_show ? "waiting_customer" : "approved"
       WorkOrders::Transition.new(work_order:, to: target, actor: @actor, reason: @reason).call

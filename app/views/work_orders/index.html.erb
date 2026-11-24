@@ -20,39 +20,106 @@
   <% end %>
 </nav>
 
-<%= form_with url: work_orders_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
-  <div class="min-w-64 flex-1">
-    <%= f.label :q, "Buscar", class: "sv-label" %>
-    <%= f.search_field :q, value: params[:q], placeholder: "Número, título ou cliente", class: "sv-input" %>
-  </div>
-  <div>
-    <%= f.label :situacao, "Situação", class: "sv-label" %>
-    <%= f.select :situacao, WorkOrders::LABELS.map { |value, label| [label, value] }, { include_blank: "Em aberto", selected: @filters[:status] }, class: "sv-input" %>
-  </div>
-  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
-<% end %>
-
-<section class="sv-card overflow-hidden">
-  <% if @pagination.records.empty? %>
-    <%= empty_state("Nenhuma ordem encontrada", description: "Ordens nascem de solicitações, orçamentos aprovados ou planos preventivos.", icon_name: :orders) %>
-  <% else %>
-    <ul class="divide-y divide-ink-150" role="list">
-      <% @pagination.records.each do |work_order| %>
-        <li>
-          <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-5 py-3.5 transition-colors hover:bg-ink-25" do %>
-            <div class="min-w-0 flex-1">
-              <p class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs text-ink-700"><%= work_order.number %></span>
-                <span class="text-sm font-medium text-ink-950"><%= work_order.title %></span>
-              </p>
-              <p class="truncate text-xs text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
-            </div>
-            <%= render "work_orders/priority_badge", work_order: %>
-            <%= render "work_orders/status_badge", work_order: %>
-          <% end %>
-        </li>
-      <% end %>
-    </ul>
+<% bulk = policy(WorkOrder).bulk_change_status? %>
+<div class="mb-4 flex flex-wrap items-end gap-3">
+  <%= form_with url: work_orders_path, method: :get, class: "flex min-w-0 flex-1 flex-wrap items-end gap-3" do |f| %>
+    <div class="min-w-64 flex-1">
+      <%= f.label :q, "Buscar", class: "sv-label" %>
+      <%= f.search_field :q, value: params[:q], placeholder: "Número, título ou cliente", class: "sv-input" %>
+    </div>
+    <div>
+      <%= f.label :situacao, "Situação", class: "sv-label" %>
+      <%= f.select :situacao, WorkOrders::LABELS.map { |value, label| [label, value] }, { include_blank: "Em aberto", selected: @filters[:status] }, class: "sv-input" %>
+    </div>
+    <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
   <% end %>
-</section>
-<%= render "shared/pagination", pagination: @pagination %>
+  <%# Row density for every list table, kept in localStorage by the density controller on <body>. %>
+  <fieldset class="hidden sm:block">
+    <legend class="sr-only">Densidade da lista</legend>
+    <div class="flex h-9 items-center rounded-lg bg-ink-100 p-0.5">
+      <% [["confortavel", "comfortable", "Confortável"], ["compacta", "compact", "Compacta"]].each do |slug, value, label| %>
+        <label class="flex h-8 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium text-ink-600 transition-colors hover:text-ink-900 has-[:checked]:bg-white has-[:checked]:text-ink-950 has-[:checked]:shadow-[var(--shadow-xs)] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink-950">
+          <input type="radio" name="densidade" value="<%= value %>" id="densidade-<%= slug %>" class="sr-only" <%= "checked" if value == "comfortable" %>
+                 data-density-target="option" data-action="density#choose">
+          <%= label %>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+</div>
+
+<div <%= tag.attributes(class: ("sm:pb-20" if bulk), data: (bulk ? { controller: "table-select", table_select_reason_required_value: WorkOrders::ChangeStatus::REASON_REQUIRED.to_json } : {})) %>>
+  <section class="sv-card overflow-hidden">
+    <% if @pagination.records.empty? %>
+      <%= empty_state("Nenhuma ordem encontrada", description: "Ordens nascem de solicitações, orçamentos aprovados ou planos preventivos.", icon_name: :orders) %>
+    <% else %>
+      <%# Below sm the table becomes a stacked list with the same data (bulk selection is a desktop task). %>
+      <ul class="divide-y divide-ink-150 sm:hidden" role="list" aria-label="Ordens de serviço">
+        <% @pagination.records.each do |work_order| %>
+          <li>
+            <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-4 py-3.5 transition-colors hover:bg-ink-25" do %>
+              <div class="min-w-0 flex-1">
+                <p class="flex flex-wrap items-center gap-2">
+                  <span class="font-mono text-xs text-ink-700"><%= work_order.number %></span>
+                  <span class="text-sm font-medium text-ink-950"><%= work_order.title %></span>
+                </p>
+                <p class="truncate text-xs text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
+              </div>
+              <%= render "work_orders/priority_badge", work_order: %>
+              <%= render "work_orders/status_badge", work_order: %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+      <div class="hidden overflow-x-auto sm:block">
+        <table class="sv-table">
+          <caption class="sr-only">Ordens de serviço<%= " — #{WorkOrders::LABELS[@filters[:status]]}" if @filters[:status] %></caption>
+          <thead>
+            <tr>
+              <% if bulk %>
+                <th scope="col" class="w-10 pr-0">
+                  <input type="checkbox" class="size-4 cursor-pointer align-middle" aria-label="Selecionar todas as ordens desta página"
+                         data-table-select-target="all" data-action="table-select#toggleAll">
+                </th>
+              <% end %>
+              <th scope="col">OS</th>
+              <th scope="col">Ordem / cliente</th>
+              <th scope="col">Prioridade</th>
+              <th scope="col">Situação</th>
+              <th scope="col">Solicitada</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-ink-150">
+            <% @pagination.records.each do |work_order| %>
+              <% targets = WorkOrders::States.targets(work_order.status) & WorkOrders::ChangeStatus::ALLOWED_TARGETS %>
+              <tr>
+                <% if bulk %>
+                  <td class="w-10 pr-0">
+                    <% if targets.any? %>
+                      <input type="checkbox" name="work_order_ids[]" value="<%= work_order.id %>" form="ordens-em-lote"
+                             class="size-4 cursor-pointer align-middle" aria-label="Selecionar <%= work_order.number %>"
+                             data-table-select-target="row" data-targets="<%= targets.join(" ") %>" data-action="table-select#toggle">
+                    <% end %>
+                  </td>
+                <% end %>
+                <td class="whitespace-nowrap font-mono text-xs text-ink-700"><%= work_order.number %></td>
+                <td class="min-w-0">
+                  <%= link_to work_order.title, work_order_path(work_order), class: "sv-link" %>
+                  <span class="block text-xs text-ink-500 in-data-[density=compact]:hidden"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %></span>
+                </td>
+                <td><%= render "work_orders/priority_badge", work_order: %></td>
+                <td><%= render "work_orders/status_badge", work_order: %></td>
+                <td class="whitespace-nowrap font-mono text-xs text-ink-600"><%= l(work_order.requested_at, format: :short) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </section>
+  <%= render "shared/pagination", pagination: @pagination %>
+  <% if bulk && @pagination.records.any? %>
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-table-select-target="announcer"></p>
+    <%= render "work_orders/bulk_bar" %>
+  <% end %>
+</div>

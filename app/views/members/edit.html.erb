@@ -1,38 +1,48 @@
 <% content_for :title, "Editar membro" %>
 <%= page_header(@membership.user.name, eyebrow: "Gestão · Equipe", subtitle: @membership.user.email, size: :md) %>
 
-<div class="grid gap-6 lg:grid-cols-3">
-  <section class="sv-card p-6 lg:col-span-2">
-    <%= form_with model: @membership, url: member_path(@membership), scope: :membership, class: "space-y-5" do |f| %>
-      <%= f.error_summary %>
-      <%= f.select_field :role, policy(@membership).assignable_roles.map { |role| [Membership::ROLE_LABELS[role], role] }, label: "Perfil de acesso" %>
-      <div class="grid gap-5 sm:grid-cols-2">
+<div class="max-w-5xl space-y-6">
+  <%= form_with model: @membership, url: member_path(@membership), scope: :membership, class: "sv-card p-6" do |f| %>
+    <%= f.error_summary %>
+    <%= render "shared/form_section", title: "Permissões",
+          description: "Define o que o membro pode ver e fazer na organização." do %>
+      <%= f.select_field :role, policy(@membership).assignable_roles.map { |role| [Membership::ROLE_LABELS[role], role] }, label: "Perfil de acesso",
+            wrapper: { class: "max-w-sm" } %>
+    <% end %>
+    <%= render "shared/form_section", title: "Dados profissionais",
+          description: "Cargo e telefone de contato do membro na organização." do %>
+      <div class="grid gap-5 @sm:grid-cols-2">
         <%= f.field :job_title, label: "Cargo" %>
         <%= f.field :phone, label: "Telefone", as: :telephone_field %>
       </div>
       <% if policy(@membership).view_costs? %>
-        <%= f.field :hourly_cost, label: "Custo interno por hora (R$)", as: :number_field, step: "0.01", min: 0,
+        <%= f.field :hourly_cost, label: "Custo interno por hora (R$)", as: :number_field, step: "0.01", min: 0, wrapper: { class: "max-w-sm" },
               hint: "Usado no custo de mão de obra dos apontamentos. Visível apenas para perfis com acesso a custos." %>
       <% end %>
-      <%= render "shared/form_footer", f:, submit: "Salvar", cancel_url: members_path %>
     <% end %>
-  </section>
+    <%= render "shared/form_footer", f:, submit: "Salvar", cancel_url: members_path %>
+  <% end %>
 
-  <aside class="sv-card p-6">
-    <h2 class="text-[15px] font-semibold text-ink-950">Acesso</h2>
+  <div class="sv-card p-6">
     <% if @membership.active? %>
-      <p class="mt-1 text-[13px] text-ink-600">Desativar remove o acesso imediatamente, inclusive de sessões abertas.</p>
-      <% if policy(@membership).deactivate? %>
-        <%= button_to deactivate_member_path(@membership), method: :patch, class: "sv-btn-danger mt-4 w-full",
-              form: { data: { turbo_confirm: "Desativar o acesso de #{@membership.user.name}?" } } do %>
-          <%= icon(:alert, size: 16) %> Desativar acesso
+      <%= render "shared/form_section", title: "Acesso",
+            description: "Desativar remove o acesso imediatamente, inclusive de sessões abertas." do %>
+        <% if policy(@membership).deactivate? %>
+          <div>
+            <%= button_to deactivate_member_path(@membership), method: :patch, class: "sv-btn-danger",
+                  form: { data: { turbo_confirm: "Desativar o acesso de #{@membership.user.name}?" } } do %>
+              <%= icon(:alert, size: 16) %> Desativar acesso
+            <% end %>
+          </div>
         <% end %>
       <% end %>
     <% else %>
-      <p class="mt-1 text-[13px] text-ink-600">Acesso desativado em <%= l(@membership.deactivated_at, format: :short) %>.</p>
-      <% if policy(@membership).reactivate? %>
-        <%= button_to "Reativar acesso", reactivate_member_path(@membership), method: :patch, class: "sv-btn-secondary mt-4 w-full" %>
+      <%= render "shared/form_section", title: "Acesso",
+            description: "Acesso desativado em #{l(@membership.deactivated_at, format: :short)}." do %>
+        <% if policy(@membership).reactivate? %>
+          <div><%= button_to "Reativar acesso", reactivate_member_path(@membership), method: :patch, class: "sv-btn-secondary" %></div>
+        <% end %>
       <% end %>
     <% end %>
-  </aside>
+  </div>
 </div>

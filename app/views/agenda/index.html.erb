@@ -113,14 +113,14 @@
                     </div>
                   <% else %>
                     <% visit = block.visit %>
-                    <% tone = if visit.in_progress?
+                    <% tone = if visit.in_field?
                                 "border-ember-600 bg-ember-50 hover:bg-ember-100"
                               elsif visit.completed?
                                 "border-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                               else
                                 "border-indigo-500 bg-indigo-50 hover:bg-indigo-100"
                               end %>
-                    <% state_icon = visit.in_progress? ? :clock : (visit.completed? ? :check : :calendar) %>
+                    <% state_icon = { "traveling" => :pin, "in_progress" => :clock, "completed" => :check }.fetch(visit.status, :calendar) %>
                     <%= link_to work_order_path(visit.work_order),
                           class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors focus-visible:outline-2 #{tone}",
                           aria: { label: "#{visit.work_order.number}, #{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{visit.work_order.customer.display_name}, #{visit.status_label}" } do %>

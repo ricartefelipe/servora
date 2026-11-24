@@ -39,7 +39,8 @@ module WorkOrders
       raise RequirementsMissing, "Para concluir: #{missing.join("; ")}." if missing.any?
     end
 
-    def visits_in_progress = @work_order.visits.where(status: "in_progress").count
+    # A technician on the way or on site keeps the order open.
+    def visits_in_progress = @work_order.visits.where(status: Visits::IN_FIELD).count
 
     def store_report
       data = ReportBuilder.new(@work_order).call

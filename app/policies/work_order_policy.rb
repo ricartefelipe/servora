@@ -9,6 +9,9 @@ class WorkOrderPolicy < ApplicationPolicy
   def create? = can?(:work_orders_manage)
   def update_execution? = !record.finished? && (can?(:work_orders_manage) || executor?)
   def change_status? = update_execution?
+  # Collection gate for the list's bulk status change (record is the class);
+  # each selected order is still checked with change_status?.
+  def bulk_change_status? = can?(:work_orders_manage) || can?(:work_orders_execute)
   def complete? = can?(:work_orders_manage) && !record.finished?
   def cancel? = can?(:work_orders_cancel) && !record.finished?
   def reopen? = can?(:work_orders_reopen) && record.completed?

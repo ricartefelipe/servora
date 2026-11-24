@@ -3,7 +3,7 @@
 # Outcome of an operation sent by the field app, keyed by the id generated on
 # the device.
 class FieldOperation < TenantRecord
-  KINDS = %w[time_entry technical_report checklist].freeze
+  KINDS = %w[time_entry technical_report checklist visit_travel visit_no_show].freeze
 
   belongs_to :work_order
   belongs_to :membership

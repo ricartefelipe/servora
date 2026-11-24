@@ -48,6 +48,79 @@ RSpec.describe Field::Sync do
     expect(outcome).to include("status" => "conflict", "result" => include("response" => "nao"))
   end
 
+  describe "visit operations" do
+    let(:technician) { create_technician(organization, name: "Diego") }
+    let!(:visit) { schedule(scenario, work_order, [technician], from: tuesday_at(9), to: tuesday_at(11)) }
+
+    def visit_version = in_tenant(organization) { visit.reload.lock_version }
+
+    it "records the trip once with the device time, however many times it is resent" do
+      id = SecureRandom.uuid
+      version = visit_version
+      travel(15.minutes) do
+        tapped_at = 10.minutes.ago.change(usec: 0)
+        payload = { "visit_id" => visit.id, "at" => tapped_at.iso8601 }
+
+        first = sync("visit_travel", payload, id:, version:)
+        second = sync("visit_travel", payload, id:, version:)
+
+        expect(first).to eq(second)
+        expect(first).to include("status" => "applied",
+          "result" => include("status" => "traveling", "status_label" => "Em deslocamento"))
+        expect(in_tenant(organization) { visit.reload }).to have_attributes(status: "traveling", travel_started_at: tapped_at)
+      end
+      transitions = in_tenant(organization) { VisitTransition.where(visit_id: visit.id, to_status: "traveling").count }
+      expect([transitions, in_tenant(organization) { FieldOperation.count }]).to eq([1, 1])
+    end
+
+    it "returns the server state when the visit changed after the screen was loaded" do
+      seen = visit_version
+      in_tenant(organization) { Visits::Travel.new(visit: visit.reload, actor: technician).call }
+
+      outcome = sync("visit_no_show", { "visit_id" => visit.id, "reason" => "Portão fechado" }, version: seen)
+
+      expect(outcome).to include("status" => "conflict", "result" => include("status" => "traveling", "version" => visit_version))
+      applied = sync("visit_no_show", { "visit_id" => visit.id, "reason" => "Portão fechado" },
+        version: outcome.dig("result", "version"))
+      expect(applied).to include("status" => "applied", "result" => include("status" => "no_show"))
+      expect(in_tenant(organization) { work_order.reload.status }).to eq("waiting_customer")
+    end
+
+    it "requires the reason of a no-show" do
+      outcome = sync("visit_no_show", { "visit_id" => visit.id, "reason" => " " }, version: visit_version)
+
+      expect(outcome).to include("status" => "rejected", "result" => { "error" => "Informe o motivo." })
+      expect(in_tenant(organization) { visit.reload.status }).to eq("scheduled")
+    end
+
+    it "accepts visit changes only from a technician reserved on that visit" do
+      assigned_elsewhere = scenario[:technician]
+      in_tenant(organization) { WorkOrders::Assign.new(work_order:, membership: assigned_elsewhere).call }
+
+      outcome = sync("visit_travel", { "visit_id" => visit.id }, membership: assigned_elsewhere)
+
+      expect(outcome).to include("status" => "rejected", "result" => include("error" => /técnico alocado/))
+      expect(sync("visit_travel", { "visit_id" => visit.id }, membership: scenario[:coordinator])["status"]).to eq("rejected")
+      expect(in_tenant(organization) { visit.reload.status }).to eq("scheduled")
+    end
+
+    it "refuses a visit of another work order and invalid moves" do
+      other = open_work_order(scenario, title: "Outra")
+
+      expect(sync("visit_travel", { "visit_id" => visit.id }, order: other)["status"]).to eq("rejected")
+      sync("visit_travel", { "visit_id" => visit.id }, version: visit_version)
+      expect(sync("visit_travel", { "visit_id" => visit.id }, version: visit_version)).to include("status" => "rejected",
+        "result" => include("error" => /em deslocamento/))
+    end
+
+    it "rejects visit changes that do not carry the version they were based on" do
+      outcome = sync("visit_travel", { "visit_id" => visit.id })
+
+      expect(outcome).to include("status" => "rejected", "result" => include("error" => /Versão da visita ausente/))
+      expect(in_tenant(organization) { visit.reload.status }).to eq("scheduled")
+    end
+  end
+
   it "rejects invalid data and operations of another member with the same id" do
     id = SecureRandom.uuid
     rejected = sync("time_entry", { "started_at" => "2026-11-24T13:00:00Z", "ended_at" => "2026-11-24T12:00:00Z" }, id:)

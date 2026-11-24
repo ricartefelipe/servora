@@ -9,6 +9,27 @@ pt-BR:
       long: "%d de %B de %Y"
   activemodel:
     attributes:
+      customer:
+        kind: "Tipo"
+        name: "Nome"
+        trade_name: "Nome fantasia"
+        document: "CPF/CNPJ"
+        email: "E-mail"
+        phone: "Telefone"
+        notes: "Observações"
+        location_name: "Identificação do local"
+        street: "Logradouro"
+        number: "Número"
+        complement: "Complemento"
+        district: "Bairro"
+        city: "Cidade"
+        state: "UF"
+        postal_code: "CEP"
+        contact_name: "Nome do contato"
+        contact_email: "E-mail do contato"
+        contact_phone: "Telefone do contato"
+        service_locations: "Locais de atendimento"
+        contacts: "Contatos"
       receivable:
         work_order_id: "Ordem de serviço"
         amount: "Valor"
