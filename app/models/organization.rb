@@ -32,6 +32,8 @@ class Organization < ApplicationRecord
   has_many :quotes, dependent: :restrict_with_exception
   has_many :quote_versions, dependent: :restrict_with_exception
   has_many :portal_access_grants, dependent: :restrict_with_exception
+  has_many :service_types, dependent: :restrict_with_exception
+  has_many :work_orders, dependent: :restrict_with_exception
 
   enum :status, { active: "active", suspended: "suspended" }, validate: true
 
