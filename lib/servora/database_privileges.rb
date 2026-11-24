@@ -23,6 +23,7 @@ module Servora
       sla_clock_events
       stock_movements
       visit_transitions
+      work_order_reports
       work_order_transitions
     ].freeze
 
