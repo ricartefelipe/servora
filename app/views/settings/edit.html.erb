@@ -1,19 +1,28 @@
 <% content_for :title, "Configurações" %>
 <%= page_header("Configurações da organização", eyebrow: "Gestão · Configurações", subtitle: "Dados cadastrais e parâmetros operacionais.", size: :md) %>
 
-<section class="sv-card max-w-3xl p-6">
-  <%= form_with model: @organization, url: settings_path, method: :patch, class: "space-y-5" do |f| %>
-    <%= f.error_summary %>
-    <div class="grid gap-5 sm:grid-cols-2">
+<%= form_with model: @organization, url: settings_path, method: :patch, class: "sv-card max-w-5xl p-6" do |f| %>
+  <%= f.error_summary %>
+  <%= render "shared/form_section", title: "Dados cadastrais",
+        description: "Nome, razão social, documento e segmento de atuação da empresa." do %>
+    <div class="grid gap-5 @sm:grid-cols-2">
       <%= f.field :name, label: "Nome da empresa", required: true %>
       <%= f.field :legal_name, label: "Razão social" %>
       <%= f.field :document, label: "CNPJ ou CPF", value: format_document(@organization.document) %>
       <%= f.select_field :segment, Organization::SEGMENTS.map { |key, label| [label, key] }, label: "Segmento" %>
+    </div>
+  <% end %>
+  <%= render "shared/form_section", title: "Operação",
+        description: "Fuso horário usado na agenda e nos prazos, e o intervalo reservado entre visitas." do %>
+    <div class="grid gap-5 @sm:grid-cols-2">
       <%= f.select_field :time_zone, Organization::TIME_ZONES.map { |zone, label| [label, zone] }, label: "Fuso horário" %>
       <%= f.field :travel_buffer_minutes, label: "Deslocamento padrão entre visitas (min)", as: :number_field, min: 0, max: 480 %>
     </div>
+  <% end %>
+  <%= render "shared/form_section", title: "Segurança",
+        description: "Regras de acesso aplicadas a todos os membros da organização." do %>
     <%= f.toggle_field :mfa_required_for_privileged, label: "Exigir verificação em duas etapas para perfis privilegiados",
           hint: "Proprietários, administradores e financeiro têm #{Authentication::MfaRequirement.grace_period.in_days.to_i} dias para ativar." %>
-    <%= render "shared/form_footer", f:, submit: "Salvar configurações", cancel_url: edit_settings_path %>
   <% end %>
-</section>
+  <%= render "shared/form_footer", f:, submit: "Salvar configurações", cancel_url: edit_settings_path %>
+<% end %>

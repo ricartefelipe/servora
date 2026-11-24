@@ -61,6 +61,7 @@ RSpec.describe Dashboards::Today do
           scheduled: visit_at(tuesday_at(10), tuesday_at(11)),
           canceled: visit_at(tuesday_at(11), tuesday_at(12)),
           no_show: visit_at(tuesday_at(13), tuesday_at(14)),
+          on_the_way: visit_at(tuesday_at(15), tuesday_at(16)),
           tomorrow: visit_at(tuesday_at(9) + 1.day, tuesday_at(10) + 1.day),
           left_running: visit_at(tuesday_at(9) - 1.day, tuesday_at(10) - 1.day)
         }.tap do |all|
@@ -70,14 +71,16 @@ RSpec.describe Dashboards::Today do
           start(all[:left_running], at: tuesday_at(9, 5) - 1.day)
           cancel(all[:canceled])
           cancel(all[:no_show], no_show: true)
+          in_tenant(organization) { Visits::Travel.new(visit: all[:on_the_way].reload, actor: technician).call }
         end
       end
 
       it "counts today's visits (without canceled or no-show), the completed ones and who is in the field" do
         cover = on_dashboard(coordinator, &:cover)
 
-        expect(cover).to have_attributes(visits_total: 3, visits_done: 1, in_field: 2, open_orders: visits.size)
-        expect(cover.progress).to eq(33)
+        # In the field: on site (today and the one left running yesterday) and on the way.
+        expect(cover).to have_attributes(visits_total: 4, visits_done: 1, in_field: 3, open_orders: visits.size)
+        expect(cover.progress).to eq(25)
       end
 
       it "honours the visits scope handed in by the caller" do

@@ -1,16 +1,24 @@
 <% content_for :title, "Editar cliente" %>
 <%= page_header("Editar cliente", eyebrow: "Cadastros · Clientes", subtitle: @customer.display_name, size: :md) %>
-<%= form_with model: @customer, url: customer_path(@customer), class: "sv-card max-w-3xl space-y-5 p-6" do |f| %>
+<%= form_with model: @customer, url: customer_path(@customer), class: "sv-card max-w-5xl p-6" do |f| %>
   <%= f.error_summary %>
   <%= f.hidden_field :lock_version %>
-  <%= f.select_field :kind, Customer::KINDS.map { |value, label| [label, value] }, label: "Tipo" %>
-  <div class="grid gap-5 sm:grid-cols-2">
-    <%= f.field :name, label: "Nome ou razão social", required: true %>
-    <%= f.field :trade_name, label: "Nome fantasia" %>
-    <%= f.field :document, label: "CPF ou CNPJ", value: format_document(@customer.document) %>
-    <%= f.field :email, label: "E-mail", as: :email_field %>
-    <%= f.field :phone, label: "Telefone", as: :telephone_field %>
-  </div>
-  <%= f.text_area_field :notes, label: "Observações", rows: 3 %>
-  <%= render "shared/form_footer", f:, submit: "Salvar", cancel_url: customer_path(@customer) %>
+  <%= render "shared/form_section", title: "Identificação",
+        description: "Tipo, nome e documento do cliente. Locais e contatos são mantidos na página do cliente." do %>
+    <%= f.select_field :kind, Customer::KINDS.map { |value, label| [label, value] }, label: "Tipo", wrapper: { class: "max-w-xs" } %>
+    <div class="grid gap-5 @sm:grid-cols-2">
+      <%= f.field :name, label: "Nome ou razão social", required: true %>
+      <%= f.field :trade_name, label: "Nome fantasia" %>
+      <%= f.field :document, label: "CPF ou CNPJ", value: format_document(@customer.document) %>
+    </div>
+  <% end %>
+  <%= render "shared/form_section", title: "Contato e observações",
+        description: "Canais gerais do cliente e observações para a equipe." do %>
+    <div class="grid gap-5 @sm:grid-cols-2">
+      <%= f.field :email, label: "E-mail", as: :email_field %>
+      <%= f.field :phone, label: "Telefone", as: :telephone_field %>
+    </div>
+    <%= f.text_area_field :notes, label: "Observações", rows: 3 %>
+  <% end %>
+  <%= render "shared/form_footer", f:, submit: "Salvar", cancel_url: customer_path(@customer), sticky: true %>
 <% end %>

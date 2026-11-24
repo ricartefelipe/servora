@@ -1,23 +1,22 @@
 <% content_for :title, "Perfil do técnico" %>
 <%= page_header(@technician.user.name, eyebrow: "Gestão · Técnicos e equipes", size: :md, subtitle: "Competências e horário semanal de trabalho.") %>
-<%= form_with url: technician_path(@technician), method: :patch, scope: :technician, class: "max-w-3xl space-y-6" do |f| %>
-  <section class="sv-card p-5 sm:p-6">
-    <h2 class="mb-3 text-[15px] font-semibold text-ink-950">Competências</h2>
-    <div class="grid gap-2 sm:grid-cols-2">
+<%= form_with url: technician_path(@technician), method: :patch, scope: :technician, class: "sv-card max-w-5xl p-6" do |f| %>
+  <%= render "shared/form_section", title: "Competências",
+        description: "Usadas para sugerir técnicos ao agendar visitas que exigem uma competência." do %>
+    <div class="grid gap-2 @sm:grid-cols-2">
       <% @skills.each do |skill| %>
         <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ink-900 transition-colors hover:bg-ink-25 has-[:checked]:bg-select"><%= check_box_tag "technician[skill_ids][]", skill.id, @technician.skills.include?(skill), id: "skill_#{skill.id}", class: "rounded border-ink-400" %><%= skill.name %></label>
       <% end %>
     </div>
-    <div class="mt-4 max-w-sm"><%= f.label :new_skill, "Nova competência", class: "sv-label" %><%= f.text_field :new_skill, class: "sv-input", placeholder: "Ex.: Refrigeração comercial" %></div>
-  </section>
-  <section class="sv-card p-5 sm:p-6">
-    <h2 class="mb-1 text-[15px] font-semibold text-ink-950">Horário de trabalho</h2>
-    <p class="mb-4 text-sm text-ink-500">Até dois turnos por dia (ex.: 08:00–12:00 e 13:00–18:00). Deixe em branco nos dias sem expediente.</p>
-    <div class="space-y-2">
+    <div class="max-w-sm"><%= f.label :new_skill, "Nova competência", class: "sv-label" %><%= f.text_field :new_skill, class: "sv-input", placeholder: "Ex.: Refrigeração comercial" %></div>
+  <% end %>
+  <%= render "shared/form_section", title: "Horário de trabalho",
+        description: "Até dois turnos por dia (ex.: 08:00–12:00 e 13:00–18:00). Deixe em branco nos dias sem expediente." do %>
+    <div class="space-y-3 @xl:space-y-2">
       <% WorkSchedule::WEEKDAYS.each_with_index do |label, weekday| %>
         <% shifts = @technician.work_schedules.select { |s| s.weekday == weekday } %>
-        <div class="grid grid-cols-[6rem_repeat(4,minmax(0,1fr))] items-center gap-2 text-sm">
-          <span class="font-medium text-ink-700"><%= label %></span>
+        <div class="grid grid-cols-2 items-center gap-2 text-sm @sm:grid-cols-4 @xl:grid-cols-[6rem_repeat(4,minmax(0,1fr))]">
+          <span class="col-span-2 font-medium text-ink-700 @sm:col-span-4 @xl:col-span-1"><%= label %></span>
           <% 2.times do |shift| %>
             <% schedule = shifts[shift] %>
             <% index = (weekday * 2) + shift %>
@@ -28,6 +27,6 @@
         </div>
       <% end %>
     </div>
-  </section>
-  <%= render "shared/form_footer", f:, submit: "Salvar perfil", cancel_url: technicians_path, submits_with: false, sticky: true, within: :stacked %>
+  <% end %>
+  <%= render "shared/form_footer", f:, submit: "Salvar perfil", cancel_url: technicians_path, submits_with: false, sticky: true %>
 <% end %>

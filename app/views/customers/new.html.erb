@@ -1,13 +1,13 @@
 <% content_for :title, "Novo cliente" %>
 <%= page_header("Novo cliente", eyebrow: "Cadastros · Clientes", size: :md, subtitle: "Dados cadastrais, primeiro local de atendimento e contato principal.") %>
 
-<%= form_with model: @registration, url: customers_path, class: "max-w-3xl space-y-6" do |f| %>
+<%= form_with model: @registration, url: customers_path, class: "sv-card max-w-5xl p-6" do |f| %>
   <%= f.error_summary %>
-  <section class="sv-card p-6" aria-labelledby="dados-title">
-    <h2 id="dados-title" class="mb-4 text-[15px] font-semibold text-ink-950">Dados do cliente</h2>
-    <fieldset class="mb-5">
+  <%= render "shared/form_section", title: "Dados do cliente", heading_id: "dados-title",
+        description: "Identificação e canais de contato da empresa ou pessoa atendida." do %>
+    <fieldset>
       <legend class="sv-label">Tipo</legend>
-      <div class="flex gap-3">
+      <div class="flex flex-wrap gap-3">
         <% Customer::KINDS.each do |value, label| %>
           <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-white px-3.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-300 transition-colors duration-150 hover:bg-ink-25 has-[:checked]:bg-select has-[:checked]:font-medium has-[:checked]:text-ink-950 has-[:checked]:ring-ink-400 has-[:checked]:shadow-[inset_2px_0_0_var(--color-brand-600)]">
             <%= f.radio_button :kind, value, class: "size-4" %> <%= label %>
@@ -15,45 +15,43 @@
         <% end %>
       </div>
     </fieldset>
-    <div class="grid gap-5 sm:grid-cols-2">
+    <div class="grid gap-5 @sm:grid-cols-2">
       <%= f.field :name, label: "Nome ou razão social", required: true, autofocus: true %>
       <%= f.field :trade_name, label: "Nome fantasia" %>
       <%= f.field :document, label: "CPF ou CNPJ", autocomplete: "off" %>
       <%= f.field :email, label: "E-mail", as: :email_field %>
       <%= f.field :phone, label: "Telefone", as: :telephone_field %>
     </div>
-    <%= f.text_area_field :notes, label: "Observações", rows: 3, wrapper: { class: "mt-5" } %>
-  </section>
+    <%= f.text_area_field :notes, label: "Observações", rows: 3 %>
+  <% end %>
 
-  <section class="sv-card p-6" aria-labelledby="local-title">
-    <h2 id="local-title" class="mb-1 text-[15px] font-semibold text-ink-950">Primeiro local de atendimento</h2>
-    <p class="mb-4 text-[13px] text-ink-600">Outros locais podem ser adicionados depois.</p>
-    <div class="grid gap-5 sm:grid-cols-6">
-      <%= f.field :location_name, label: "Identificação", required: true, wrapper: { class: "sm:col-span-2" } %>
-      <%= f.field :postal_code, label: "CEP", wrapper: { class: "sm:col-span-2" }, inputmode: "numeric" %>
+  <%= render "shared/form_section", title: "Primeiro local de atendimento", heading_id: "local-title",
+        description: "Endereço onde os serviços são executados. Outros locais podem ser adicionados depois." do %>
+    <div class="grid gap-5 @sm:grid-cols-2 @xl:grid-cols-6">
+      <%= f.field :location_name, label: "Identificação", required: true, wrapper: { class: "@xl:col-span-2" } %>
+      <%= f.field :postal_code, label: "CEP", wrapper: { class: "@xl:col-span-2" }, inputmode: "numeric" %>
       <%= f.select_field :state, Addresses::BrazilianStates::STATES.map { |code, name| [name, code] }, label: "UF",
-            include_blank: "Selecione", wrapper: { class: "sm:col-span-2" } %>
-      <%= f.field :street, label: "Logradouro", required: true, wrapper: { class: "sm:col-span-4" } %>
-      <%= f.field :number, label: "Número", wrapper: { class: "sm:col-span-2" } %>
-      <%= f.field :complement, label: "Complemento", wrapper: { class: "sm:col-span-2" } %>
-      <%= f.field :district, label: "Bairro", wrapper: { class: "sm:col-span-2" } %>
-      <%= f.field :city, label: "Cidade", required: true, wrapper: { class: "sm:col-span-2" } %>
+            include_blank: "Selecione", wrapper: { class: "@xl:col-span-2" } %>
+      <%= f.field :street, label: "Logradouro", required: true, wrapper: { class: "@xl:col-span-4" } %>
+      <%= f.field :number, label: "Número", wrapper: { class: "@xl:col-span-2" } %>
+      <%= f.field :complement, label: "Complemento", wrapper: { class: "@xl:col-span-2" } %>
+      <%= f.field :district, label: "Bairro", wrapper: { class: "@xl:col-span-2" } %>
+      <%= f.field :city, label: "Cidade", required: true, wrapper: { class: "@xl:col-span-2" } %>
     </div>
-    <%= f.text_area_field :access_instructions, label: "Instruções de acesso", rows: 2, wrapper: { class: "mt-5" },
+    <%= f.text_area_field :access_instructions, label: "Instruções de acesso", rows: 2,
           hint: "Portaria, horários, responsável pelo acompanhamento." %>
-  </section>
+  <% end %>
 
-  <section class="sv-card p-6" aria-labelledby="contato-title">
-    <h2 id="contato-title" class="mb-1 text-[15px] font-semibold text-ink-950">Contato principal</h2>
-    <p class="mb-4 text-[13px] text-ink-600">Opcional.</p>
-    <div class="grid gap-5 sm:grid-cols-2">
+  <%= render "shared/form_section", title: "Contato principal", heading_id: "contato-title",
+        description: "Opcional. Pessoa de referência do cliente nos atendimentos." do %>
+    <div class="grid gap-5 @sm:grid-cols-2">
       <%= f.field :contact_name, label: "Nome" %>
       <%= f.field :contact_position, label: "Cargo" %>
       <%= f.field :contact_email, label: "E-mail", as: :email_field %>
       <%= f.field :contact_phone, label: "Telefone", as: :telephone_field %>
     </div>
-    <div class="mt-5"><%= f.toggle_field :contact_can_approve, label: "Pode aprovar orçamentos" %></div>
-  </section>
+    <%= f.toggle_field :contact_can_approve, label: "Pode aprovar orçamentos" %>
+  <% end %>
 
-  <%= render "shared/form_footer", f:, submit: "Cadastrar cliente", cancel_url: customers_path, sticky: true, within: :stacked %>
+  <%= render "shared/form_footer", f:, submit: "Cadastrar cliente", cancel_url: customers_path, sticky: true %>
 <% end %>

@@ -86,5 +86,25 @@ RSpec.describe Scheduling do
       expect(described_class.allowed?(:in_progress, :completed)).to be(true)
       expect(Visits::LABELS.keys).to match_array(described_class.states)
     end
+
+    it "puts the trip between scheduled and in progress without making it mandatory" do
+      expect(described_class.targets(:scheduled)).to eq(%w[traveling in_progress canceled no_show])
+      expect(described_class.targets(:traveling)).to eq(%w[in_progress canceled no_show])
+      expect(Visits::LABELS.fetch("traveling")).to eq("Em deslocamento")
+    end
+
+    it "never takes a visit on the way back to scheduled nor ends it without starting" do
+      expect(described_class.allowed?(:traveling, :scheduled)).to be(false)
+      expect(described_class.allowed?(:traveling, :completed)).to be(false)
+      expect(described_class.allowed?(:in_progress, :traveling)).to be(false)
+    end
+
+    it "gives every state a tone and counts the trip as time in the field" do
+      expect(Visits::TONES.keys).to match_array(described_class.states)
+      expect(Visits::TONES.values_at("traveling", "in_progress")).to eq(%i[ember ember])
+      expect(Visits::IN_FIELD).to contain_exactly("traveling", "in_progress")
+      expect(Visits::OPEN).to contain_exactly("scheduled", "traveling", "in_progress")
+      expect(Visits::OPEN.reject { |state| described_class.terminal?(state) }).to eq(Visits::OPEN)
+    end
   end
 end

@@ -13,7 +13,7 @@ module WorkOrders
         checklist_problem(checklist),
         ("Registrar o diagnóstico" if blank?(diagnosis)),
         ("Registrar a solução aplicada" if blank?(solution)),
-        ("Finalizar a visita em andamento" if visits_in_progress.positive?),
+        ("Finalizar a visita em deslocamento ou em andamento" if visits_in_progress.positive?),
         ("Decidir os serviços adicionais pendentes de autorização" if pending_authorizations.positive?)
       ].compact
     end

@@ -77,7 +77,7 @@ module Audit
       "technician" => ["Técnico", { "profile_updated" => "perfil alterado" }],
       "visit" => ["Visita", {
         "scheduled" => "agendada", "rescheduled" => "reagendada", "canceled" => "cancelada",
-        "no_show" => "cliente ausente"
+        "no_show" => "cliente ausente", "travel_started" => "deslocamento iniciado"
       }],
       "warehouse" => ["Depósito", { "created" => "criado", "updated" => "alterado" }],
       "webhook_delivery" => ["Entrega de webhook", { "redelivered" => "reenvio solicitado" }],
@@ -106,6 +106,7 @@ module Audit
 
     # Generic field names, used when the record type has no translated attribute.
     FIELDS = {
+      "travel_started_at" => "Saída para o local",
       "access_instructions" => "Instruções de acesso", "active" => "Ativo", "amount" => "Valor",
       "anchor_date" => "Data base", "api_key" => "Chave de API", "archived_at" => "Arquivado em",
       "asset_tag" => "Patrimônio", "auto_issue_on_payment" => "Emitir ao receber pagamento",

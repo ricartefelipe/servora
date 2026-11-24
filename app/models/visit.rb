@@ -11,10 +11,12 @@ class Visit < TenantRecord
 
   validate :period_is_valid
 
-  scope :upcoming, -> { where(status: %w[scheduled in_progress]).order(:scheduled_start) }
+  scope :upcoming, -> { where(status: Visits::OPEN).order(:scheduled_start) }
   scope :active_allocations, -> { where(technician_allocations: { status: "active" }) }
 
   def status_label = Visits::LABELS.fetch(status)
+  def status_tone = Visits::TONES.fetch(status, :neutral)
+  def in_field? = Visits::IN_FIELD.include?(status)
   def duration_minutes = ((scheduled_end - scheduled_start) / 60).round
   def blocked_interval = Scheduling::Interval.for_visit(starts_at: scheduled_start, ends_at: scheduled_end, travel_minutes:)
 
