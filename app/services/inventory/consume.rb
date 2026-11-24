@@ -18,7 +18,7 @@ module Inventory
 
     def call
       Errors.ensure_stockable!(@item)
-      Idempotency.perform(@idempotency_key, find: -> { MaterialConsumption.find_by(idempotency_key: @idempotency_key) },
+      IdempotentOperation.perform(@idempotency_key, find: -> { MaterialConsumption.find_by(idempotency_key: @idempotency_key) },
         same: ->(consumption) { same_consumption?(consumption) }) do
         ActiveRecord::Base.transaction(requires_new: true) { consume }
       end

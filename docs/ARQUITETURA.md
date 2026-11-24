@@ -236,6 +236,57 @@ Aba "Materiais": reservas (com liberação manual), consumo a partir de reserva 
 devolução. `work_order.canceled` e `work_order.completed` acionam
 `Inventory::Handlers::ReleaseWorkOrderReservations` pela outbox.
 
+## Financeiro operacional
+
+### Contas a receber
+
+- Uma ordem pode ter várias contas (parcelas); a soma das contas ativas nunca supera o total autorizado pelo
+  cliente (itens autorizados). A emissão trava a linha da ordem.
+- `Receivables::Position` (domínio puro) define as regras: saldo = (valor − descontos) − (pago − estornado);
+  sem pagamento acima do saldo, sem desconto acima do saldo, sem estorno acima do pago, cancelamento apenas sem
+  valor retido. Situações: em aberto, parcialmente paga, quitada, cancelada.
+- Constraints repetem as regras no banco (`receivables_values`, `receivables_status_consistency`) e uma FK
+  composta garante que o cliente da conta é o cliente da ordem.
+- `financial_events` é append-only (pagamento, desconto, estorno, cancelamento e cada etapa da cobrança).
+- Contas são travadas com `FOR NO KEY UPDATE`: inserir eventos e cobranças referenciando a conta usa
+  `KEY SHARE`, que não conflita com esse lock (evita deadlock entre envio de cobrança e cancelamento).
+- Pagamentos aceitam chave de operação (formulário reenviado, confirmação repetida do provedor).
+
+### Cobranças e provedores
+
+```
+RequestCharge ──(transação: cobrança pending + evento outbox)──▶ commit
+   outbox ─▶ SubmitChargeJob:
+     1. claim (transação curta, lock, tentativa + 1)
+     2. provedor, fora de transação:
+          tentativa anterior ou situação "unknown" → consulta pela referência externa
+          não encontrada → cria a cobrança com a referência
+     3. registra o resultado (transação curta)
+        recusa → failed · resposta perdida → unknown + nova tentativa · confirmada → ConfirmCharge
+ConfirmCharge (idempotente: chave "charge:<id>") ─▶ RegisterPayment
+ReconcileJob (a cada 5 min) ─▶ SyncChargeJob para cobranças aguardando pagamento ou em verificação
+```
+
+- Classificação de falhas do adapter: **não enviado** (conexão recusada, timeout de conexão, 429: repetir é
+  seguro), **ambíguo** (timeout de leitura, 5xx: consultar antes de repetir) e **recusado** (4xx: definitivo).
+- No máximo uma cobrança em andamento por conta (índice único parcial). Cancelar a conta cancela a cobrança
+  localmente e, após o commit, no provedor.
+- **Simulador** (padrão): sem rede; valores terminados em ,66 são recusados; em ,13 a primeira resposta se
+  perde, mas o provedor simulado guardou a cobrança, que é encontrada pela referência na nova tentativa; a
+  confirmação é acionada por "Simular pagamento".
+- **Asaas (sandbox)**: `ASAAS_BASE_URL` (padrão `https://api-sandbox.asaas.com/v3`), chave por organização
+  criptografada com Active Record Encryption e nunca devolvida à interface. Clientes são associados pela
+  referência externa (id do cliente no Servora). Coberto por specs com WebMock; **não exercitado contra o
+  sandbox real** por falta de credencial neste ambiente. Confirmação por webhook será adicionada junto com o
+  módulo de webhooks de entrada; até lá, a conciliação periódica confirma os pagamentos.
+
+### Margem
+
+`WorkOrderFinancialsQuery`: prevista = itens autorizados × custo unitário estimado; realizada = faturado
+(contas ativas, líquido de descontos) − material ao custo do consumo − mão de obra ao custo/hora do
+apontamento − despesas. Faturado, recebido e margem são exibidos separadamente; margens apenas com
+`costs_view`.
+
 ## Portal do cliente
 
 - Acesso por concessão de uso único enviada por e-mail (72 h, finalidade registrada, revogável). O GET apenas

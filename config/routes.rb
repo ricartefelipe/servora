@@ -119,6 +119,7 @@ Rails.application.routes.draw do
         resources :material_consumptions, path: "consumos", only: :create do
           patch :restock, on: :member, path: "devolver"
         end
+        resources :expenses, path: "despesas", only: :create
       end
       resources :visits, path: "visitas", only: %i[new create edit update] do
         get :suggestions, on: :collection, path: "sugestoes"
@@ -145,6 +146,22 @@ Rails.application.routes.draw do
     resources :stock_balances, path: "estoque", only: :index do
       patch :minimum, on: :collection, path: "minimo"
     end
+    resources :receivables, path: "financeiro", only: %i[index show new create] do
+      patch :cancel, on: :member, path: "cancelar"
+      scope module: :receivables do
+        resources :payments, path: "pagamentos", only: %i[new create] do
+          patch :refund, on: :member, path: "estornar"
+        end
+        resources :discounts, path: "descontos", only: %i[new create]
+        resources :charges, path: "cobrancas", only: :create do
+          member do
+            post :simulate, path: "simular-pagamento"
+            post :sync, path: "consultar"
+          end
+        end
+      end
+    end
+    resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

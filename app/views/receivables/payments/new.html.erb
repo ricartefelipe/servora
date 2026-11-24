@@ -1,0 +1,4 @@
+<% content_for :title, "Registrar pagamento" %>
+<%= render layout: "shared/modal", locals: { title: "Registrar pagamento", subtitle: @receivable.number } do %>
+  <%= render "receivables/payments/form", form: @form, receivable: @receivable %>
+<% end %>

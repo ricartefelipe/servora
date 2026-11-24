@@ -12,7 +12,8 @@ module NavigationHelper
       NavItem.new("Agenda", :agenda_index_path, :calendar, :schedule_view, %w[agenda absences]),
       NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes decisions]),
       NavItem.new("Estoque", :stock_balances_path, :stock, :inventory_view,
-        %w[stock_balances stock_movements warehouses receipts transfers adjustments])
+        %w[stock_balances stock_movements warehouses receipts transfers adjustments]),
+      NavItem.new("Financeiro", :receivables_path, :finance, :finance_view, %w[receivables payments discounts charges])
     ]],
     ["Cadastros", [
       NavItem.new("Clientes", :customers_path, :customers, :customers_view, %w[customers locations contacts]),
@@ -25,6 +26,7 @@ module NavigationHelper
       NavItem.new("Técnicos e equipes", :technicians_path, :wrench, :schedule_manage, %w[technicians teams]),
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),
       NavItem.new("Eventos", :outbox_events_path, :integrations, :outbox_reprocess, %w[outbox_events]),
+      NavItem.new("Pagamentos", :edit_payment_integration_path, :finance, :integrations_manage, %w[payment_integrations]),
       NavItem.new("Configurações", :edit_settings_path, :settings, :organization_manage, %w[settings])
     ]]
   ].freeze

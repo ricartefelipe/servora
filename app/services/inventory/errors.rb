@@ -6,7 +6,7 @@ module Inventory
     class Unavailable < Servora::RuleViolation; end
     class NotStockable < Servora::RuleViolation; end
     class InvalidOperation < Servora::RuleViolation; end
-    class KeyReused < Servora::RuleViolation; end
+    KeyReused = IdempotentOperation::KeyReused
 
     module_function
 

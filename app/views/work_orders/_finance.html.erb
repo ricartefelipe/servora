@@ -1,0 +1,80 @@
+<%# Financial panel of a work order: billing (finance roles) and margins (cost permission). %>
+<section id="financeiro" class="sv-card space-y-5 p-5 text-sm" aria-labelledby="financeiro-title">
+  <div class="flex items-center justify-between gap-3">
+    <h2 id="financeiro-title" class="font-semibold text-ink-900">Financeiro</h2>
+    <% if wo_policy.bill? && @financials.remaining_to_bill.positive? %>
+      <%= link_to "Faturar", new_receivable_path(ordem: @work_order.id), class: "sv-btn-secondary sv-btn-sm", data: { turbo_frame: "modal" } %>
+    <% end %>
+  </div>
+
+  <% if wo_policy.view_finance? %>
+    <dl class="grid grid-cols-2 gap-3">
+      <div><dt class="text-xs text-ink-500">Autorizado</dt><dd class="sv-num font-semibold text-ink-900"><%= money(@financials.billable_total) %></dd></div>
+      <div><dt class="text-xs text-ink-500">A faturar</dt><dd class="sv-num font-semibold text-ink-900"><%= money(@financials.remaining_to_bill) %></dd></div>
+      <div><dt class="text-xs text-ink-500">Faturado</dt><dd class="sv-num font-semibold text-ink-900"><%= money(@financials.issued_total) %></dd></div>
+      <div><dt class="text-xs text-ink-500">Recebido</dt><dd class="sv-num font-semibold text-ink-900"><%= money(@financials.received_total) %></dd></div>
+    </dl>
+    <% if @receivables.any? %>
+      <ul class="divide-y divide-ink-100 rounded-xl border border-ink-100" role="list">
+        <% @receivables.each do |receivable| %>
+          <li class="flex flex-wrap items-center gap-2 px-3 py-2">
+            <%= link_to receivable.number, receivable_path(receivable), class: "sv-link font-mono text-xs" %>
+            <span class="sv-num flex-1 text-right"><%= money(receivable.amount - receivable.discount_amount) %></span>
+            <%= render "receivables/status_badge", receivable: %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% end %>
+
+  <% if wo_policy.view_costs? %>
+    <% predicted = @financials.predicted %>
+    <% realized = @financials.realized %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <caption class="sr-only">Margem prevista e realizada</caption>
+        <thead class="text-xs text-ink-500"><tr><th scope="col" class="py-1 font-medium">Margem</th><th scope="col" class="py-1 text-right font-medium">Prevista</th><th scope="col" class="py-1 text-right font-medium">Realizada</th></tr></thead>
+        <tbody class="divide-y divide-ink-100">
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Receita</th><td class="sv-num text-right"><%= money(predicted.total) %></td><td class="sv-num text-right"><%= money(realized.revenue) %></td></tr>
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Material</th><td class="text-right text-ink-400" rowspan="3"><%= predicted.estimated_cost ? money(predicted.estimated_cost) : "custo incompleto" %></td><td class="sv-num text-right"><%= money(realized.material_cost) %></td></tr>
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Mão de obra</th><td class="sv-num text-right"><%= money(realized.labor_cost) %></td></tr>
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Despesas</th><td class="sv-num text-right"><%= money(realized.expenses) %></td></tr>
+          <tr class="font-semibold text-ink-900">
+            <th scope="row" class="py-1.5">Margem</th>
+            <td class="sv-num text-right"><%= predicted.margin ? "#{money(predicted.margin)} (#{predicted.margin_percent || '—'}%)" : "—" %></td>
+            <td class="sv-num text-right <%= realized.margin.negative? ? 'text-rose-700' : '' %>"><%= money(realized.margin) %><% if realized.margin_percent %> (<%= realized.margin_percent %>%)<% end %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <% if wo_policy.view_costs? || wo_policy.view_finance? %>
+    <div>
+      <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Despesas</h3>
+      <% if @expenses.empty? %>
+        <p class="text-ink-500">Nenhuma despesa registrada.</p>
+      <% else %>
+        <ul class="space-y-1" role="list">
+          <% @expenses.each do |expense| %>
+            <li class="flex justify-between gap-2"><span class="text-ink-700"><%= expense.category_label %> · <%= expense.description %></span><span class="sv-num"><%= money(expense.amount) %></span></li>
+          <% end %>
+        </ul>
+      <% end %>
+      <% if wo_policy.record_expense? %>
+        <details class="mt-3">
+          <summary class="sv-link cursor-pointer list-none">Registrar despesa</summary>
+          <%= form_with url: work_order_expenses_path(@work_order), scope: :expense, class: "mt-3 space-y-2" do |f| %>
+            <div><%= f.label :category, "Categoria", class: "sv-label" %><%= f.select :category, Expense::CATEGORIES.map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
+            <div><%= f.label :description, "Descrição", class: "sv-label" %><%= f.text_field :description, class: "sv-input", required: true %></div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><%= f.label :amount, "Valor (R$)", class: "sv-label" %><%= f.number_field :amount, step: "0.01", min: "0.01", class: "sv-input", required: true %></div>
+              <div><%= f.label :incurred_on, "Data", class: "sv-label" %><%= f.date_field :incurred_on, value: Time.zone.today.iso8601, class: "sv-input", required: true %></div>
+            </div>
+            <%= f.button "Registrar despesa", type: "submit", class: "sv-btn-secondary w-full" %>
+          <% end %>
+        </details>
+      <% end %>
+    </div>
+  <% end %>
+</section>

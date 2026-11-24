@@ -1,0 +1,4 @@
+<% content_for :title, "Faturar ordem" %>
+<%= render layout: "shared/modal", locals: { title: "Faturar ordem de serviço", subtitle: @work_order.title } do %>
+  <%= render "receivables/form", form: @form, work_order: @work_order %>
+<% end %>

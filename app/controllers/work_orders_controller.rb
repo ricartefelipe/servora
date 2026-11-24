@@ -24,12 +24,12 @@ class WorkOrdersController < TenantController
 
   def show
     authorize @work_order
-    @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if policy(@work_order).add_item?
-    @technicians = current_organization.memberships.technicians.includes(:user).ordered if policy(@work_order).assign?
-    load_materials if policy(@work_order).view_materials?
-    return unless policy(@work_order).decide_item?
-
-    @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)
+    wo_policy = policy(@work_order)
+    @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if wo_policy.add_item?
+    @technicians = current_organization.memberships.technicians.includes(:user).ordered if wo_policy.assign?
+    load_materials if wo_policy.view_materials?
+    load_finance(wo_policy) if wo_policy.view_finance? || wo_policy.view_costs?
+    load_approvers if wo_policy.decide_item?
   end
 
   def new
@@ -92,6 +92,20 @@ class WorkOrdersController < TenantController
   end
 
   private
+
+  def load_approvers
+    @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)
+  end
+
+  def load_finance(wo_policy)
+    @financials = WorkOrderFinancialsQuery.new(@work_order)
+    @receivables = []
+    if wo_policy.view_finance?
+      @receivables = tenant_relation(Receivable).where(work_order_id: @work_order.id).order(:due_on,
+        :number)
+    end
+    @expenses = tenant_relation(Expense).where(work_order_id: @work_order.id).order(:incurred_on, :created_at)
+  end
 
   def load_materials
     @reservations = tenant_relation(StockReservation).where(work_order_id: @work_order.id)

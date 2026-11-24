@@ -17,7 +17,9 @@ module Outbox
       "work_order.status_changed" => [],
       "visit.scheduled" => ["Notifications::Handlers::VisitScheduled"],
       "visit.started" => [],
-      "visit.finished" => []
+      "visit.finished" => [],
+      "payment_charge.requested" => ["Payments::Handlers::SubmitCharge"],
+      "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

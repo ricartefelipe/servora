@@ -26,6 +26,8 @@ class WorkOrder < TenantRecord
   has_many :time_entries, -> { order(:started_at) }, dependent: nil, inverse_of: :work_order
   has_many :stock_reservations, -> { order(:created_at) }, dependent: nil, inverse_of: :work_order
   has_many :material_consumptions, -> { order(:created_at) }, dependent: nil, inverse_of: :work_order
+  has_many :receivables, -> { order(:due_on, :number) }, dependent: nil, inverse_of: :work_order
+  has_many :expenses, -> { order(:incurred_on, :created_at) }, dependent: nil, inverse_of: :work_order
   has_many :reports, -> { order(version_number: :desc) }, class_name: "WorkOrderReport", dependent: nil, inverse_of: :work_order
 
   enum :status, WorkOrders::States.states.index_by(&:itself), validate: true
