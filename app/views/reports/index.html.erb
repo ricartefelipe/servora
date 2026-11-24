@@ -1,0 +1,66 @@
+<% content_for :title, "Relatórios" %>
+<%= page_header("Relatórios", subtitle: "Indicadores do período no fuso da organização. Custos e margens aparecem somente para perfis autorizados.") %>
+
+<%= form_with url: reports_path, method: :get, class: "mb-6 flex flex-wrap items-end gap-3" do |f| %>
+  <%= f.hidden_field :relatorio, value: @selected %>
+  <div><%= f.label :de, "De", class: "sv-label" %><%= f.date_field :de, value: @period.from.iso8601, class: "sv-input" %></div>
+  <div><%= f.label :ate, "Até", class: "sv-label" %><%= f.date_field :ate, value: @period.to.iso8601, class: "sv-input" %></div>
+  <%= f.button "Aplicar período", type: "submit", class: "sv-btn-secondary" %>
+  <p class="pb-2.5 text-xs text-ink-500">Período máximo de <%= Reports::Period::MAX_DAYS %> dias.</p>
+<% end %>
+
+<nav class="mb-5 flex gap-1 overflow-x-auto border-b border-ink-200" aria-label="Relatórios disponíveis">
+  <% @available.each do |key| %>
+    <% current = key == @selected %>
+    <%= link_to Reports::Catalog::DEFINITIONS.fetch(key).first.new(period: @period, zone: current_organization.zone, show_costs: false).title,
+          reports_path(relatorio: key, **@period.to_param), aria: { current: (current ? "page" : nil) },
+          class: "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium #{current ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-500 hover:text-ink-800'}" %>
+  <% end %>
+</nav>
+
+<% summary = @report.summary %>
+<% figures = summary.reject { |key, _| key.is_a?(Symbol) } %>
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <% figures.each do |label, value| %>
+    <%= stat_tile(label, report_value(value), hint: @period.label) %>
+  <% end %>
+</div>
+
+<% %i[by_status by_origin].each do |group| %>
+  <% next unless summary[group]&.any? %>
+  <section class="sv-card mb-6 p-5" aria-label="<%= group == :by_status ? 'Por situação' : 'Por origem' %>">
+    <h2 class="mb-3 text-sm font-semibold text-ink-900"><%= group == :by_status ? "Abertas no período, por situação" : "Abertas no período, por origem" %></h2>
+    <% max = summary[group].values.max.to_f %>
+    <ul class="space-y-2" role="list">
+      <% summary[group].sort_by { |_, count| -count }.each do |label, count| %>
+        <li class="grid grid-cols-[10rem_1fr_3rem] items-center gap-3 text-sm">
+          <span class="truncate text-ink-700"><%= label %></span>
+          <progress class="h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-ink-100 [&::-webkit-progress-value]:bg-brand-500 [&::-moz-progress-bar]:bg-brand-500" value="<%= count %>" max="<%= max %>" aria-label="<%= label %>: <%= count %>"></progress>
+          <span class="sv-num text-right text-ink-900"><%= count %></span>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>
+
+<section class="sv-card overflow-hidden" aria-labelledby="tabela-title">
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+    <h2 id="tabela-title" class="font-semibold text-ink-900"><%= @report.title %> · <%= @period.label %></h2>
+    <%= link_to export_report_path(relatorio: @selected, **@period.to_param), class: "sv-btn-secondary sv-btn-sm", data: { turbo: false } do %><%= icon(:download, size: 16) %> Exportar CSV<% end %>
+  </div>
+  <% if @rows.empty? %>
+    <%= empty_state("Sem dados no período", description: "Ajuste o período para ver os indicadores.", icon_name: :reports) %>
+  <% else %>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead><tr><% @report.headers.each do |header| %><th scope="col"><%= header %></th><% end %></tr></thead>
+        <tbody class="divide-y divide-ink-100">
+          <% @rows.each do |row| %>
+            <tr><% row.each do |cell| %><td class="<%= 'sv-num text-right' if cell.is_a?(Numeric) || cell.is_a?(Reports::Money) %>"><%= report_value(cell) %></td><% end %></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if @rows.size >= Reports::Base::SCREEN_ROWS %><p class="px-5 py-3 text-xs text-ink-500">Exibindo as primeiras <%= Reports::Base::SCREEN_ROWS %> linhas; a exportação inclui até <%= number_with_delimiter(Reports::Base::EXPORT_ROWS, delimiter: ".") %>.</p><% end %>
+  <% end %>
+</section>
