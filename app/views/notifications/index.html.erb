@@ -6,11 +6,12 @@
 <% end %>
 
 <section class="sv-card overflow-hidden">
-  <ul id="notifications-feed" class="divide-y divide-ink-150" role="list">
+  <%# A role-based list: items are also prepended in real time, outside this template. %>
+  <div id="notifications-feed" class="divide-y divide-ink-150" role="list">
     <% @notifications.each do |notification| %>
       <%= render "notifications/notification", notification: %>
     <% end %>
-  </ul>
+  </div>
   <% if @notifications.empty? %>
     <%= empty_state("Nenhuma notificação", description: "Quando algo precisar da sua atenção, aparecerá aqui.", icon_name: :bell) %>
   <% end %>
