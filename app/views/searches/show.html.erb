@@ -1,0 +1,22 @@
+<% if turbo_frame_request? %>
+  <%= turbo_frame_tag "command-palette-results" do %>
+    <%= render "searches/results", term: @term, groups: @groups, listbox: true %>
+  <% end %>
+<% else %>
+  <% content_for :title, "Busca" %>
+  <%= page_header("Busca", eyebrow: "Busca rápida",
+        subtitle: "Ordens de serviço, clientes, equipamentos e orçamentos que você pode consultar.") %>
+
+  <%= form_with url: search_path, method: :get, role: "search", class: "mb-5 flex max-w-2xl flex-wrap items-end gap-3" do |f| %>
+    <div class="min-w-64 flex-1">
+      <%= f.label :q, "Buscar", class: "sv-label" %>
+      <%= f.text_field :q, value: @term, class: "sv-input", autocomplete: "off", spellcheck: false,
+            placeholder: "Número, nome, documento, e-mail ou número de série" %>
+    </div>
+    <%= f.submit "Buscar", name: nil, class: "sv-btn-secondary" %>
+  <% end %>
+
+  <section class="max-w-2xl overflow-hidden rounded-2xl bg-noir-900 py-1 text-white ring-1 ring-white/10" aria-label="Resultados da busca">
+    <%= render "searches/results", term: @term, groups: @groups, listbox: false %>
+  </section>
+<% end %>

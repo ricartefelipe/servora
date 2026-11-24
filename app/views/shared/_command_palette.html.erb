@@ -1,0 +1,40 @@
+<%# Command palette (Ctrl+K / Cmd+K). The command-palette controller lives on
+    <body> so the sidebar row and the top bar button can open it; results come
+    from the tenant-scoped search endpoint into the Turbo Frame below. %>
+<dialog id="busca-rapida" aria-labelledby="busca-rapida-titulo"
+        data-command-palette-target="dialog"
+        data-action="close->command-palette#closed pointerdown->command-palette#pressed click->command-palette#backdrop keydown->command-palette#escape"
+        class="m-auto mt-[12vh] w-[min(640px,92vw)] max-w-none overflow-hidden rounded-2xl bg-noir-900 p-0 text-white shadow-[var(--shadow-float)] ring-1 ring-white/10 backdrop:bg-noir-950/60">
+  <h2 id="busca-rapida-titulo" class="sr-only">Busca rápida</h2>
+  <div class="flex h-12 items-center gap-3 border-b border-white/10 px-4">
+    <%= icon(:search, size: 18, css: "text-white/50") %>
+    <label for="busca-rapida-termo" class="sr-only">Buscar ordens de serviço, clientes, equipamentos e orçamentos</label>
+    <input id="busca-rapida-termo" type="text" role="combobox" autocomplete="off" autocapitalize="off" spellcheck="false"
+           enterkeyhint="go" maxlength="<%= QuickSearchQuery::MAX_LENGTH %>"
+           aria-autocomplete="list" aria-expanded="false" aria-controls="command-palette-listbox"
+           aria-describedby="busca-rapida-dicas"
+           placeholder="Buscar ordens, clientes, equipamentos e orçamentos…"
+           class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-white caret-brand-300 placeholder:text-white/50 focus:outline-none focus-visible:outline-none"
+           data-command-palette-target="input"
+           data-action="input->command-palette#search keydown->command-palette#navigate">
+    <kbd class="hidden rounded-md bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px] text-white/60 ring-1 ring-inset ring-white/10 sm:inline" aria-hidden="true">Esc</kbd>
+  </div>
+
+  <p class="sr-only" role="status" aria-live="polite" data-command-palette-target="status"></p>
+
+  <template data-command-palette-target="hint">
+    <%= render "searches/results", term: "", groups: [], listbox: true %>
+  </template>
+  <%= turbo_frame_tag "command-palette-results", target: "_top",
+        data: { command_palette_target: "frame", turbo_prefetch: false,
+                action: "turbo:frame-load->command-palette#loaded turbo:frame-missing->command-palette#failed " \
+                        "turbo:fetch-request-error->command-palette#failed" } do %>
+    <%= render "searches/results", term: "", groups: [], listbox: true %>
+  <% end %>
+
+  <p id="busca-rapida-dicas" class="flex items-center gap-4 border-t border-white/10 px-4 py-2.5 text-[12px] text-white/60">
+    <span><kbd class="font-mono text-white/80">↑</kbd> <kbd class="font-mono text-white/80">↓</kbd> para navegar</span>
+    <span><kbd class="font-mono text-white/80">Enter</kbd> para abrir</span>
+    <span><kbd class="font-mono text-white/80">Esc</kbd> para fechar</span>
+  </p>
+</dialog>

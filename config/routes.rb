@@ -63,6 +63,7 @@ Rails.application.routes.draw do
 
     # Organization level
     get "painel", to: "dashboards#show", as: :dashboard
+    get "busca", to: "searches#show", as: :search
     resources :members, path: "equipe", only: %i[index edit update] do
       member do
         patch :deactivate, path: "desativar"
