@@ -19,7 +19,7 @@ module Servora
     config.load_defaults 8.1
 
     # lib/servora/version.rb defines Servora::VERSION and is required above.
-    config.autoload_lib(ignore: %w[assets tasks servora/version.rb])
+    config.autoload_lib(ignore: %w[assets tasks servora/version.rb servora/json_log_formatter.rb])
 
     # Product defaults: Portuguese UI, BRL, organization-specific time zones are
     # applied per request from the organization record.

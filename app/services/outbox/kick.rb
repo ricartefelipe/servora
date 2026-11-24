@@ -10,7 +10,7 @@ module Outbox
     def call
       Outbox::DispatchJob.perform_later
     rescue ActiveJob::EnqueueError, ActiveRecord::ActiveRecordError => e
-      Rails.logger.warn(event: "outbox.kick_failed", error_class: e.class.name)
+      Rails.logger.warn(Servora::StructuredLog.line(event: "outbox.kick_failed", error_class: e.class.name))
       Servora::Metrics.increment(:outbox_kick_failures_total)
       nil
     end

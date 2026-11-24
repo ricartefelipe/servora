@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require_relative "../../lib/servora/json_log_formatter"
 
 Rails.application.configure do
   config.enable_reloading = false
@@ -15,7 +16,10 @@ Rails.application.configure do
   config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
   config.ssl_options = { redirect: { exclude: ->(request) { request.path.in?(%w[/up /ready]) } } }
 
-  config.logger = ActiveSupport::TaggedLogging.logger($stdout)
+  # LOG_FORMAT=json (default): one JSON object per line.
+  stdout_logger = ActiveSupport::Logger.new($stdout)
+  stdout_logger.formatter = Servora::JsonLogFormatter.new if ENV.fetch("LOG_FORMAT", "json") == "json"
+  config.logger = ActiveSupport::TaggedLogging.new(stdout_logger)
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
   config.silence_healthcheck_path = "/up"
   config.active_support.report_deprecations = false

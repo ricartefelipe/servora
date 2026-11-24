@@ -82,7 +82,8 @@ module Payments
 
       def request(verb, path, payload = nil)
         uri = URI("#{@base_uri}#{path}")
-        response = http(uri).request(build(verb, uri, payload))
+        operation = "#{verb} #{path.split("?").first.gsub(%r{/[\w-]{8,}\z}, "/:id")}"
+        response = Servora::Metrics.measure_integration("asaas", operation) { http(uri).request(build(verb, uri, payload)) }
         handle(response)
       rescue *NOT_DELIVERED => e
         raise Errors::Unavailable, "Provedor indisponível: #{e.class.name}"
