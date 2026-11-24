@@ -5,7 +5,16 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+### Adicionado
+
+- Relatórios gerenciais: ordens de serviço, produtividade por técnico, prazos (SLA), financeiro e consumo de
+  materiais por período, com permissões de custo e financeiro, respeito aos módulos do plano e exportação CSV
+  protegida contra injeção de fórmulas e auditada.
+
 ### Corrigido
+
+- Concluir uma ordem com técnicos atribuídos falhava ao montar o relatório de execução (carregamento dos nomes dos
+  técnicos).
 
 - Dumps e backups de banco (`*.sql` na raiz, `*.backup`, `*.bak`) ignorados pelo Git e fora da imagem Docker;
   `db/structure.sql` continua versionado.
