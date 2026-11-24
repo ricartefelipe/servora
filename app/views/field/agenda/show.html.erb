@@ -2,7 +2,7 @@
 <% content_for :theme_color, "#ffffff" %>
 <% zone = current_organization.zone %>
 <% upcoming = @visits_by_day.values.flatten %>
-<% next_visit = upcoming.find { |visit| visit.status == "in_progress" } || upcoming.first %>
+<% next_visit = upcoming.find(&:in_progress?) || upcoming.find(&:traveling?) || upcoming.first %>
 <% today_total = @visits_by_day.fetch(@today, []).size %>
 <% content_for :field_title, today_total.zero? ? "Hoje · sem visitas" : "Hoje · #{pluralize(today_total, 'visita', plural: 'visitas')}" %>
 <div data-controller="service-worker"></div>
