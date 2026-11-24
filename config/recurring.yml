@@ -15,6 +15,11 @@ default: &default
     queue: default
     schedule: every day at 01:30
 
+  sla_scan:
+    class: Sla::ScanJob
+    queue: default
+    schedule: every 5 minutes
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default

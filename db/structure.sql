@@ -327,6 +327,22 @@ CREATE TABLE public.audit_events (
 
 
 --
+-- Name: business_hours; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.business_hours (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    weekday integer NOT NULL,
+    start_minute integer NOT NULL,
+    end_minute integer NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT business_hours_values CHECK (((weekday >= 0) AND (weekday <= 6) AND (start_minute >= 0) AND (end_minute <= 1440) AND (start_minute < end_minute)))
+);
+
+
+--
 -- Name: catalog_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -547,6 +563,20 @@ CREATE TABLE public.financial_events (
     receivable_id uuid NOT NULL,
     payment_id uuid,
     CONSTRAINT financial_events_kind CHECK (((kind)::text = ANY (ARRAY['issued'::text, 'payment'::text, 'discount'::text, 'refund'::text, 'canceled'::text, 'charge_requested'::text, 'charge_submitted'::text, 'charge_confirmed'::text, 'charge_failed'::text, 'charge_unknown'::text, 'charge_canceled'::text])))
+);
+
+
+--
+-- Name: holidays; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.holidays (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    date date NOT NULL,
+    name character varying NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
 );
 
 
@@ -1139,6 +1169,72 @@ CREATE TABLE public.skills (
 
 
 --
+-- Name: sla_clock_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sla_clock_events (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    occurred_at timestamp(6) with time zone NOT NULL,
+    details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    sla_clock_id uuid NOT NULL,
+    CONSTRAINT sla_clock_events_kind CHECK (((kind)::text = ANY (ARRAY['started'::text, 'paused'::text, 'resumed'::text, 'met'::text, 'breached'::text, 'warned'::text, 'canceled'::text, 'reopened'::text])))
+);
+
+
+--
+-- Name: sla_clocks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sla_clocks (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    metric character varying NOT NULL,
+    status character varying DEFAULT 'running'::character varying NOT NULL,
+    target_seconds integer NOT NULL,
+    consumed_seconds integer DEFAULT 0 NOT NULL,
+    warning_percent integer NOT NULL,
+    business_hours_only boolean NOT NULL,
+    segment integer DEFAULT 1 NOT NULL,
+    started_at timestamp(6) with time zone NOT NULL,
+    running_since timestamp(6) with time zone,
+    due_at timestamp(6) with time zone,
+    warn_at timestamp(6) with time zone,
+    stopped_at timestamp(6) with time zone,
+    breached_at timestamp(6) with time zone,
+    warned_at timestamp(6) with time zone,
+    breach_notified_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    CONSTRAINT sla_clocks_consistency CHECK (((target_seconds > 0) AND (consumed_seconds >= 0) AND (segment >= 1) AND (((status)::text <> 'running'::text) OR ((running_since IS NOT NULL) AND (due_at IS NOT NULL))) AND (((status)::text = 'running'::text) OR (running_since IS NULL)))),
+    CONSTRAINT sla_clocks_metric CHECK (((metric)::text = ANY (ARRAY['first_response'::text, 'resolution'::text]))),
+    CONSTRAINT sla_clocks_status CHECK (((status)::text = ANY (ARRAY['running'::text, 'paused'::text, 'met'::text, 'breached'::text, 'canceled'::text])))
+);
+
+
+--
+-- Name: sla_policies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sla_policies (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    priority character varying NOT NULL,
+    first_response_minutes integer NOT NULL,
+    resolution_minutes integer NOT NULL,
+    business_hours_only boolean DEFAULT true NOT NULL,
+    warning_percent integer DEFAULT 80 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT sla_policies_priority CHECK (((priority)::text = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text]))),
+    CONSTRAINT sla_policies_values CHECK (((first_response_minutes > 0) AND (resolution_minutes > 0) AND (first_response_minutes <= resolution_minutes) AND (warning_percent >= 50) AND (warning_percent <= 95)))
+);
+
+
+--
 -- Name: stock_balances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1594,6 +1690,14 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: business_hours business_hours_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_hours
+    ADD CONSTRAINT business_hours_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: catalog_items catalog_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1671,6 +1775,14 @@ ALTER TABLE ONLY public.expenses
 
 ALTER TABLE ONLY public.financial_events
     ADD CONSTRAINT financial_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: holidays holidays_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.holidays
+    ADD CONSTRAINT holidays_pkey PRIMARY KEY (id);
 
 
 --
@@ -1895,6 +2007,30 @@ ALTER TABLE ONLY public.service_types
 
 ALTER TABLE ONLY public.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sla_clock_events sla_clock_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clock_events
+    ADD CONSTRAINT sla_clock_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sla_clocks sla_clocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clocks
+    ADD CONSTRAINT sla_clocks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sla_policies sla_policies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_policies
+    ADD CONSTRAINT sla_policies_pkey PRIMARY KEY (id);
 
 
 --
@@ -2157,6 +2293,13 @@ CREATE INDEX idx_on_organization_id_status_priority_requested_at_20346fbe18 ON p
 
 
 --
+-- Name: idx_on_organization_id_weekday_start_minute_ae5523c8b9; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_organization_id_weekday_start_minute_ae5523c8b9 ON public.business_hours USING btree (organization_id, weekday, start_minute);
+
+
+--
 -- Name: idx_on_organization_id_work_order_id_074bd6e1b0; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2217,6 +2360,13 @@ CREATE INDEX index_audit_events_on_organization_id_and_created_at ON public.audi
 --
 
 CREATE UNIQUE INDEX index_audit_events_on_tenant_key ON public.audit_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_business_hours_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_business_hours_on_tenant_key ON public.business_hours USING btree (organization_id, id);
 
 
 --
@@ -2406,6 +2556,20 @@ CREATE INDEX index_financial_events_on_organization_id_and_receivable_id ON publ
 --
 
 CREATE UNIQUE INDEX index_financial_events_on_tenant_key ON public.financial_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_holidays_on_organization_id_and_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_holidays_on_organization_id_and_date ON public.holidays USING btree (organization_id, date);
+
+
+--
+-- Name: index_holidays_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_holidays_on_tenant_key ON public.holidays USING btree (organization_id, id);
 
 
 --
@@ -2924,6 +3088,55 @@ CREATE UNIQUE INDEX index_skills_on_organization_id_and_name ON public.skills US
 --
 
 CREATE UNIQUE INDEX index_skills_on_tenant_key ON public.skills USING btree (organization_id, id);
+
+
+--
+-- Name: index_sla_clock_events_on_organization_id_and_sla_clock_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_sla_clock_events_on_organization_id_and_sla_clock_id ON public.sla_clock_events USING btree (organization_id, sla_clock_id);
+
+
+--
+-- Name: index_sla_clock_events_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_sla_clock_events_on_tenant_key ON public.sla_clock_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_sla_clocks_on_organization_id_and_status_and_due_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_sla_clocks_on_organization_id_and_status_and_due_at ON public.sla_clocks USING btree (organization_id, status, due_at);
+
+
+--
+-- Name: index_sla_clocks_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_sla_clocks_on_tenant_key ON public.sla_clocks USING btree (organization_id, id);
+
+
+--
+-- Name: index_sla_clocks_on_work_order_id_and_metric; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_sla_clocks_on_work_order_id_and_metric ON public.sla_clocks USING btree (work_order_id, metric);
+
+
+--
+-- Name: index_sla_policies_on_organization_id_and_priority; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_sla_policies_on_organization_id_and_priority ON public.sla_policies USING btree (organization_id, priority);
+
+
+--
+-- Name: index_sla_policies_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_sla_policies_on_tenant_key ON public.sla_policies USING btree (organization_id, id);
 
 
 --
@@ -3784,6 +3997,14 @@ ALTER TABLE ONLY public.visit_transitions
 
 
 --
+-- Name: holidays fk_rails_1afd2ce622; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.holidays
+    ADD CONSTRAINT fk_rails_1afd2ce622 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: work_order_assignments fk_rails_1b8a8a53ac; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3832,6 +4053,14 @@ ALTER TABLE ONLY public.stock_balances
 
 
 --
+-- Name: business_hours fk_rails_35acd7f354; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.business_hours
+    ADD CONSTRAINT fk_rails_35acd7f354 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: financial_events fk_rails_376b99903d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3872,6 +4101,14 @@ ALTER TABLE ONLY public.warehouses
 
 
 --
+-- Name: sla_clocks fk_rails_492295a44f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clocks
+    ADD CONSTRAINT fk_rails_492295a44f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: work_order_reports fk_rails_4b371782c8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3901,6 +4138,14 @@ ALTER TABLE ONLY public.equipment
 
 ALTER TABLE ONLY public.customers
     ADD CONSTRAINT fk_rails_58234c715e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: sla_clock_events fk_rails_58f85684b0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clock_events
+    ADD CONSTRAINT fk_rails_58f85684b0 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3973,6 +4218,14 @@ ALTER TABLE ONLY public.time_entries
 
 ALTER TABLE ONLY public.portal_access_grants
     ADD CONSTRAINT fk_rails_721b04c463 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: sla_policies fk_rails_7f66676233; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_policies
+    ADD CONSTRAINT fk_rails_7f66676233 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4253,6 +4506,22 @@ ALTER TABLE ONLY public.service_type_skills
 
 ALTER TABLE ONLY public.service_type_skills
     ADD CONSTRAINT fk_service_type_skills_skill_id_tenant FOREIGN KEY (organization_id, skill_id) REFERENCES public.skills(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: sla_clock_events fk_sla_clock_events_sla_clock_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clock_events
+    ADD CONSTRAINT fk_sla_clock_events_sla_clock_id_tenant FOREIGN KEY (organization_id, sla_clock_id) REFERENCES public.sla_clocks(organization_id, id);
+
+
+--
+-- Name: sla_clocks fk_sla_clocks_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sla_clocks
+    ADD CONSTRAINT fk_sla_clocks_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
 
 
 --
@@ -4582,6 +4851,12 @@ ALTER TABLE ONLY public.work_schedules
 ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: business_hours; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.business_hours ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: catalog_items; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -4640,6 +4915,12 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.financial_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: holidays; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4848,6 +5129,24 @@ ALTER TABLE public.service_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: sla_clock_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sla_clock_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sla_clocks; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sla_clocks ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sla_policies; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sla_policies ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: stock_balances; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -4888,6 +5187,13 @@ ALTER TABLE public.technician_allocations ENABLE ROW LEVEL SECURITY;
 --
 
 CREATE POLICY tenant_isolation ON public.audit_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: business_hours tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.business_hours USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -4958,6 +5264,13 @@ CREATE POLICY tenant_isolation ON public.expenses USING ((organization_id = publ
 --
 
 CREATE POLICY tenant_isolation ON public.financial_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: holidays tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.holidays USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -5133,6 +5446,27 @@ CREATE POLICY tenant_isolation ON public.service_types USING ((organization_id =
 --
 
 CREATE POLICY tenant_isolation ON public.skills USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: sla_clock_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.sla_clock_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: sla_clocks tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.sla_clocks USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: sla_policies tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.sla_policies USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -5340,6 +5674,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124010000'),
 ('20261124009000'),
 ('20261124008000'),
 ('20261124007000'),

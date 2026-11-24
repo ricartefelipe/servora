@@ -239,3 +239,15 @@ status atualizado.
 - **Consequências**: uma única fonte para vigência e suspensão; manutenção preventiva avulsa é modelada como
   um contrato sem mensalidade.
 
+## DEC-031 — Relógios de SLA com consumo acumulado e deduplicação por reivindicação
+
+- **Contexto**: prazos precisam pausar e retomar sem recalcular a história, e alertas não podem se repetir
+  quando varreduras se sobrepõem.
+- **Decisão**: cada relógio guarda o tempo útil consumido até a última pausa e, enquanto corre, o instante de
+  início do trecho, o vencimento e o instante do alerta. Pausar soma o trecho; retomar recalcula vencimento a
+  partir do restante. Alertas são reivindicados com atualização condicional na própria linha antes de publicar.
+- **Alternativas**: recalcular a partir do histórico a cada consulta (custo e complexidade); travar uma linha
+  global de agendamento (serializa organizações sem necessidade).
+- **Consequências**: consultas de risco e estouro são simples (`due_at`, `warn_at`); qualquer número de
+  varreduras concorrentes notifica uma vez.
+

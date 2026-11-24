@@ -236,6 +236,33 @@ Aba "Materiais": reservas (com liberação manual), consumo a partir de reserva 
 devolução. `work_order.canceled` e `work_order.completed` acionam
 `Inventory::Handlers::ReleaseWorkOrderReservations` pela outbox.
 
+## SLA
+
+- **Calendário** (`Sla::BusinessCalendar`, domínio puro): expediente semanal com até dois intervalos por dia,
+  feriados e fuso da organização. Os limites de cada intervalo são montados com o relógio local do fuso; o tempo
+  é medido em segundos. Políticas podem contar só no expediente ou continuamente (24×7).
+- **Políticas** por prioridade: prazos de primeira resposta e resolução e percentual do prazo que dispara o
+  alerta de risco. Cada relógio copia alvo, percentual e modo no início: mudar a política não move prazos já
+  prometidos.
+- **Relógios** (`sla_clocks`, um por ordem e métrica) são atualizados explicitamente por `WorkOrders::Create`,
+  `CreateFromQuote` e `WorkOrders::Transition` dentro das mesmas transações:
+
+| Evento da ordem | Primeira resposta | Resolução |
+|---|---|---|
+| Solicitação registrada | inicia | inicia |
+| Agendada, em execução, aguardando peças/cliente, concluída | cumprida ou estourada | — |
+| Aguardando aprovação, cliente ou peças | — | pausa (acumula o tempo útil consumido) |
+| Sai da espera | — | retoma com o tempo restante |
+| Concluída | — | cumprida ou estourada |
+| Reaberta | — | retoma (novo segmento) com o tempo já consumido |
+| Cancelada | cancelada | cancelada |
+
+- **Alertas**: `Sla::ScanJob` (a cada 5 minutos) reivindica cada relógio com `UPDATE … WHERE warned_at IS NULL`
+  (ou `breach_notified_at`) e só quem reivindica publica o evento na outbox (chave de deduplicação por relógio e
+  segmento). Coordenação e técnicos atribuídos recebem notificação interna. Spec com três varreduras
+  simultâneas.
+- `sla_clock_events` é append-only. O painel mostra prazos estourados e em risco.
+
 ## Contratos e manutenção preventiva
 
 ### Contratos
