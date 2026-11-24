@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Release step: creates/migrates every database of the current environment
+# using the owner role, then (re)applies the application role privileges.
+#
+# Run exactly once per deployment (never from each web process):
+#   bin/db-prepare            # db:prepare + privileges
+#   bin/db-prepare --seed     # also loads idempotent demonstration data
+#
+# Seeds run with the application role, so they go through the same
+# Row-Level Security policies as the running application.
+require "rbconfig"
+
+ROOT = File.expand_path("..", __dir__)
+ruby = RbConfig.ruby
+rails = File.join(ROOT, "bin", "rails")
+
+owner_env = { "SERVORA_DB_ROLE" => "owner" }
+system(owner_env, ruby, rails, "db:prepare", "db:privileges:apply", chdir: ROOT, exception: true)
+
+if ARGV.include?("--seed")
+  system({ "SERVORA_DB_ROLE" => "app" }, ruby, rails, "db:seed", chdir: ROOT, exception: true)
+end

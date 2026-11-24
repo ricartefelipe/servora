@@ -1,0 +1,3 @@
+web: ruby bin/rails server -p ${PORT:-3000}
+worker: ruby bin/jobs
+css: ruby bin/rails tailwindcss:watch

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+
+# Migrations never run implicitly here. They are executed once by a dedicated
+# release step (bin/db-prepare, the "migrate" service in docker-compose.yml),
+# so several web replicas can start in parallel safely.
+exec "$@"

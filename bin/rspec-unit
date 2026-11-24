@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Pure rule suite: loads spec/unit_helper.rb instead of Rails.
+require "bundler/setup"
+require "rspec/core"
+
+args = ["--require", "unit_helper", "--pattern", "spec/unit/**/*_spec.rb", *ARGV]
+exit RSpec::Core::Runner.run(args)

@@ -1,0 +1,107 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+  - rubocop-rspec_rails
+  - rubocop-performance
+  - rubocop-factory_bot
+  - rubocop-capybara
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "bin/**/*"
+    - "db/*schema.rb"
+    - "db/structure.sql"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "node_modules/**/*"
+    - "coverage/**/*"
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - "config/**/*"
+    - "Gemfile"
+    - "Rakefile"
+    - "config.ru"
+
+Layout/LineLength:
+  Max: 130
+  AllowedPatterns:
+    - '\A\s*#'
+
+Metrics/MethodLength:
+  Max: 20
+  CountAsOne: ["array", "hash", "heredoc", "method_call"]
+
+Metrics/ClassLength:
+  Max: 200
+  CountAsOne: ["array", "hash", "heredoc"]
+
+Metrics/AbcSize:
+  Max: 25
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "config/**/*"
+    - "db/**/*"
+    - "lib/tasks/**/*"
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
+Rails/I18nLocaleTexts:
+  Enabled: false
+
+Rails/CreateTableWithTimestamps:
+  Exclude:
+    - "db/migrate/*"
+
+Rails/ReversibleMigration:
+  Enabled: true
+
+Rails/SkipsModelValidations:
+  Exclude:
+    - "spec/**/*"
+
+RSpec/ExampleLength:
+  Max: 25
+  CountAsOne: ["array", "hash", "heredoc", "method_call"]
+
+RSpec/MultipleExpectations:
+  Max: 6
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 12
+
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/requests/**/*"
+    - "spec/system/**/*"
+    - "spec/integration/**/*"
+    - "spec/database/**/*"
+
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+# Function bodies (PL/pgSQL) must keep their line structure.
+Rails/SquishedSQLHeredocs:
+  Exclude:
+    - "db/migrate/*"
