@@ -18,7 +18,7 @@ class AuditEvent < TenantRecord
 
   def self.record!(action:, organization: Current.organization, auditable: nil, changes: {}, metadata: {})
     create!(
-      organization:,
+      organization_id: auditable.try(:organization_id) || organization&.id,
       action:,
       auditable_type: auditable&.class&.polymorphic_name,
       auditable_id: auditable&.id,
