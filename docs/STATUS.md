@@ -48,6 +48,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
+| NFS-e | Emissão pelo provedor sem duplicidade após resposta perdida, rejeição, acompanhamento, cancelamento, emissão automática única | `spec/services/invoices_spec.rb`, `spec/requests/invoices_spec.rb`, `spec/services/payments/gateways/asaas_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -59,8 +60,8 @@ demonstração em `docs/`.
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 84 exemplos (regras puras) + 463 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,51%, branches 84,17% |
+| `bash bin/test-all` | 84 exemplos (regras puras) + 473 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,52%, branches 83,44% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -76,14 +77,13 @@ demonstração em `docs/`.
 
 | Integração | Situação |
 |---|---|
+| Asaas sandbox (NFS-e) | Emissão, consulta e cancelamento cobertos com WebMock; não exercitados no sandbox real. Requer serviço municipal configurado na conta do Asaas e dados fiscais em Configurações → Nota fiscal. |
 | Asaas sandbox | Adapter e webhook de entrada implementados e cobertos com WebMock e payloads gravados. Não foram executados contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; gerar o token em Configurações → Integrações e cadastrá-lo no Asaas com a URL `/webhooks/asaas`; emitir uma conta, gerar a cobrança e pagar no sandbox. |
 
 ## Em andamento
 
-- Nenhum item. Evoluções futuras entram como `feature/*` a partir de `develop`.
+- Cobrança automática da mensalidade da plataforma.
 
 ## Ponto de continuidade
 
-Versão 1.0.0 publicada. Próximas evoluções candidatas: confirmação de pagamento exercitada no Asaas sandbox com
-credencial real, cobrança automatizada da assinatura da plataforma, execução de estornos no provedor e emissão de
-nota fiscal por integração dedicada.
+Próxima branch: `feature/cobranca-da-plataforma` a partir de `develop`.

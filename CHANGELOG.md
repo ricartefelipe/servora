@@ -5,6 +5,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+### Adicionado
+
+- Nota fiscal de serviço (NFS-e) emitida pelo provedor de pagamentos: dados fiscais, emissão manual ou automática
+  na quitação, acompanhamento da prefeitura, cancelamento e link da nota no portal do cliente.
+
 ## [1.0.0] - 2026-11-24
 
 Ciclo completo da operação de serviços de campo: da solicitação à execução e ao resultado financeiro, com

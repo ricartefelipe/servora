@@ -365,6 +365,21 @@ ReconcileJob (a cada 5 min) ─▶ SyncChargeJob para cobranças aguardando paga
   sandbox real** por falta de credencial neste ambiente. Confirmação por webhook será adicionada junto com o
   módulo de webhooks de entrada; até lá, a conciliação periódica confirma os pagamentos.
 
+### Nota fiscal de serviço (NFS-e)
+
+- Emitida pelo provedor de pagamentos (Asaas: `POST /invoices` vinculada ao pagamento da cobrança, ou ao cliente,
+  seguida de `POST /invoices/{id}/authorize`). A inscrição municipal e o certificado digital são configurados na conta
+  do provedor; o Servora guarda o código e a descrição do serviço municipal, a alíquota de ISS e a retenção.
+- Mesmo padrão das cobranças: nota pendente com referência externa estável + evento na outbox; envio fora de
+  transações; após qualquer tentativa anterior (ou resultado desconhecido), consulta pela referência antes de emitir.
+  No máximo uma nota válida por conta (índice único parcial).
+- Situações: aguardando envio, em processamento na prefeitura, autorizada (número, código de verificação, PDF e XML do
+  provedor), rejeitada (mensagem da prefeitura), em verificação, cancelamento solicitado, cancelada. Notas em
+  processamento são acompanhadas a cada 10 minutos.
+- Emissão automática opcional quando a conta é quitada (`receivable.settled`, uma vez por conta).
+- O portal do cliente mostra o link da nota autorizada em cada cobrança.
+- Simulador: ,66 rejeitada pela prefeitura; ,13 perde a primeira resposta e é encontrada pela referência.
+
 ### Margem
 
 `WorkOrderFinancialsQuery`: prevista = itens autorizados × custo unitário estimado; realizada = faturado
