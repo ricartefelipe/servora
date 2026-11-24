@@ -5,7 +5,7 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
-## [1.1.0] - 2026-11-25
+## [1.1.0] - 2026-11-24
 
 Execução financeira completa no provedor de pagamentos e cobrança da própria plataforma.
 
