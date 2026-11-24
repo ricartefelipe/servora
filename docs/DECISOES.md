@@ -251,6 +251,23 @@ status atualizado.
 - **Consequências**: consultas de risco e estouro são simples (`due_at`, `warn_at`); qualquer número de
   varreduras concorrentes notifica uma vez.
 
+## DEC-032 — Active Storage com organização atribuída pelo banco
+
+- **Contexto**: as tabelas padrão do Active Storage não têm organização e ficariam fora do RLS.
+- **Decisão**: criar as tabelas com `organization_id NOT NULL DEFAULT servora_current_organization_id()`, política
+  de isolamento e chaves compostas entre anexos e blobs; desligar rotas, análises e variantes; servir arquivos
+  só por controllers autorizados.
+- **Consequências**: nenhum código precisa lembrar de preencher a organização; criar blob fora de um contexto
+  de tenant falha. Uploads para o armazenamento ocorrem dentro da transação da requisição (sem locks de linha
+  mantidos nesse momento).
+
+## DEC-033 — PDFs gerados sob demanda a partir de dados congelados
+
+- **Decisão**: não armazenar PDFs; gerar a partir do snapshot da versão do orçamento e dos dados da versão do
+  relatório, ambos imutáveis.
+- **Consequências**: sem arquivos órfãos nem divergência entre registro e documento; o custo é gerar a cada
+  download (documentos pequenos).
+
 ## DEC-034 — Offline por fila de operações idempotentes, não por cópia dos dados
 
 - **Contexto**: o técnico perde conexão em subsolos e áreas rurais, mas os dados da ordem pertencem ao cliente

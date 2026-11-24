@@ -294,6 +294,51 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: active_storage_attachments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_attachments (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid DEFAULT public.servora_current_organization_id() NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id uuid NOT NULL,
+    blob_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_blobs (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid DEFAULT public.servora_current_organization_id() NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    service_name character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    checksum character varying,
+    created_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_variant_records; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_variant_records (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid DEFAULT public.servora_current_organization_id() NOT NULL,
+    blob_id uuid NOT NULL,
+    variation_digest character varying NOT NULL
+);
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1569,6 +1614,27 @@ CREATE TABLE public.work_order_equipment (
 
 
 --
+-- Name: work_order_evidences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_evidences (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    caption character varying,
+    content_type character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    original_filename character varying NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    uploaded_by_membership_id uuid NOT NULL,
+    CONSTRAINT work_order_evidences_kind CHECK (((kind)::text = ANY (ARRAY['photo'::text, 'document'::text]))),
+    CONSTRAINT work_order_evidences_size CHECK ((byte_size > 0))
+);
+
+
+--
 -- Name: work_order_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1690,6 +1756,30 @@ CREATE TABLE public.work_schedules (
     CONSTRAINT work_schedules_interval CHECK (((start_minute >= 0) AND (end_minute <= 1440) AND (start_minute < end_minute))),
     CONSTRAINT work_schedules_weekday CHECK (((weekday >= 0) AND (weekday <= 6)))
 );
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_variant_records active_storage_variant_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT active_storage_variant_records_pkey PRIMARY KEY (id);
 
 
 --
@@ -2189,6 +2279,14 @@ ALTER TABLE ONLY public.work_order_equipment
 
 
 --
+-- Name: work_order_evidences work_order_evidences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_evidences
+    ADD CONSTRAINT work_order_evidences_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: work_order_items work_order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2334,6 +2432,13 @@ CREATE INDEX idx_on_organization_id_work_order_id_074bd6e1b0 ON public.material_
 
 
 --
+-- Name: idx_on_organization_id_work_order_id_1445d5d793; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_work_order_id_1445d5d793 ON public.work_order_evidences USING btree (organization_id, work_order_id);
+
+
+--
 -- Name: idx_on_organization_id_work_order_id_5a82199b7e; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2352,6 +2457,41 @@ CREATE INDEX idx_on_organization_id_work_order_id_8b9dd6799b ON public.work_orde
 --
 
 CREATE INDEX idx_on_organization_id_work_order_id_abfa99dc1a ON public.work_order_checklist_items USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON public.active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON public.active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_blobs USING btree (key);
+
+
+--
+-- Name: index_active_storage_blobs_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_tenant_key ON public.active_storage_blobs USING btree (organization_id, id);
+
+
+--
+-- Name: index_active_storage_variant_records_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
 
 
 --
@@ -3454,6 +3594,13 @@ CREATE UNIQUE INDEX index_work_order_equipment_unique ON public.work_order_equip
 
 
 --
+-- Name: index_work_order_evidences_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_evidences_on_tenant_key ON public.work_order_evidences USING btree (organization_id, id);
+
+
+--
 -- Name: index_work_order_items_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3570,6 +3717,22 @@ CREATE TRIGGER quote_versions_no_delete_after_draft BEFORE DELETE ON public.quot
 --
 
 CREATE TRIGGER stock_balances_guard BEFORE INSERT OR UPDATE ON public.stock_balances FOR EACH ROW EXECUTE FUNCTION public.servora_guard_stock_balance();
+
+
+--
+-- Name: active_storage_attachments fk_active_storage_attachments_blob_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT fk_active_storage_attachments_blob_tenant FOREIGN KEY (organization_id, blob_id) REFERENCES public.active_storage_blobs(organization_id, id);
+
+
+--
+-- Name: active_storage_variant_records fk_active_storage_variant_records_blob_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT fk_active_storage_variant_records_blob_tenant FOREIGN KEY (organization_id, blob_id) REFERENCES public.active_storage_blobs(organization_id, id);
 
 
 --
@@ -4197,6 +4360,14 @@ ALTER TABLE ONLY public.work_orders
 
 
 --
+-- Name: active_storage_attachments fk_rails_51dbd6101d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT fk_rails_51dbd6101d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: equipment fk_rails_5284aaf58e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4218,6 +4389,14 @@ ALTER TABLE ONLY public.customers
 
 ALTER TABLE ONLY public.sla_clock_events
     ADD CONSTRAINT fk_rails_58f85684b0 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: active_storage_blobs fk_rails_5946a08084; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs
+    ADD CONSTRAINT fk_rails_5946a08084 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4445,6 +4624,14 @@ ALTER TABLE ONLY public.customer_contacts
 
 
 --
+-- Name: work_order_evidences fk_rails_c407c1ab9a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_evidences
+    ADD CONSTRAINT fk_rails_c407c1ab9a FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: work_schedules fk_rails_cd24788784; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4498,6 +4685,14 @@ ALTER TABLE ONLY public.quotes
 
 ALTER TABLE ONLY public.equipment_events
     ADD CONSTRAINT fk_rails_e71dc665bc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: active_storage_variant_records fk_rails_e89407238a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT fk_rails_e89407238a FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4813,6 +5008,22 @@ ALTER TABLE ONLY public.work_order_equipment
 
 
 --
+-- Name: work_order_evidences fk_work_order_evidences_uploaded_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_evidences
+    ADD CONSTRAINT fk_work_order_evidences_uploaded_by_membership_id_tenant FOREIGN KEY (organization_id, uploaded_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: work_order_evidences fk_work_order_evidences_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_evidences
+    ADD CONSTRAINT fk_work_order_evidences_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
 -- Name: work_order_items fk_work_order_items_authorized_by_contact_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4915,6 +5126,24 @@ ALTER TABLE ONLY public.work_orders
 ALTER TABLE ONLY public.work_schedules
     ADD CONSTRAINT fk_work_schedules_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id) ON DELETE CASCADE;
 
+
+--
+-- Name: active_storage_attachments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.active_storage_attachments ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: active_storage_blobs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.active_storage_blobs ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: active_storage_variant_records; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.active_storage_variant_records ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: audit_events; Type: ROW SECURITY; Schema: public; Owner: -
@@ -5259,6 +5488,27 @@ ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.technician_allocations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: active_storage_attachments tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.active_storage_attachments USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: active_storage_blobs tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.active_storage_blobs USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: active_storage_variant_records tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.active_storage_variant_records USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
 
 --
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
@@ -5646,6 +5896,13 @@ CREATE POLICY tenant_isolation ON public.work_order_equipment USING ((organizati
 
 
 --
+-- Name: work_order_evidences tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_evidences USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: work_order_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -5723,6 +5980,12 @@ ALTER TABLE public.work_order_checklist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_order_equipment ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: work_order_evidences; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_evidences ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: work_order_items; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -5760,6 +6023,7 @@ SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20261124012000'),
+('20261124011000'),
 ('20261124010000'),
 ('20261124009000'),
 ('20261124008000'),
