@@ -1,0 +1,12 @@
+<% content_for :title, @error.title %>
+<div class="flex min-h-screen items-center justify-center px-6">
+  <div class="w-full max-w-md text-center animate-slide-up">
+    <div class="mb-8 flex justify-center"><%= render "shared/logo" %></div>
+    <p class="text-sm font-semibold uppercase tracking-widest text-brand-700"><%= @error.code %></p>
+    <h1 class="mt-3 text-3xl font-bold tracking-tight text-ink-950"><%= @error.title %></h1>
+    <p class="mt-4 text-base text-ink-600"><%= @error.message %></p>
+    <div class="mt-8 flex justify-center gap-3">
+      <%= link_to "Voltar ao início", root_path, class: "sv-btn-primary" %>
+    </div>
+  </div>
+</div>
