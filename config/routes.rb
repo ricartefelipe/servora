@@ -195,6 +195,8 @@ Rails.application.routes.draw do
       resources :work_orders, path: "ordens", only: :show
       resources :operations, path: "operacoes", only: :create
     end
+    get "relatorios", to: "reports#index", as: :reports
+    get "relatorios/:relatorio/exportar", to: "reports#export", as: :export_report
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

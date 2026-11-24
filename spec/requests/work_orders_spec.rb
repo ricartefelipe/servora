@@ -20,6 +20,18 @@ RSpec.describe "Work orders" do
     expect(response.body).to include("Vazamento", "Urgente", "Medir pressão de sucção")
   end
 
+  it "completes a work order with assigned technicians and records them in the report" do
+    work_order = open_work_order(scenario)
+    in_tenant(organization) { WorkOrders::Assign.new(work_order:, membership: scenario[:technician]).call }
+    ready_to_complete!(scenario, work_order)
+    sign_in_as(scenario[:coordinator])
+
+    post complete_work_order_path(work_order)
+
+    report = in_tenant(organization) { WorkOrderReport.sole }
+    expect(report.data["technicians"]).to eq([scenario[:technician].user.name])
+  end
+
   it "shows why completion is refused" do
     work_order = open_work_order(scenario)
     in_tenant(organization) { WorkOrders::Transition.new(work_order:, to: "in_progress", actor: nil).call }

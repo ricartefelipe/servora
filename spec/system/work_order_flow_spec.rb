@@ -30,7 +30,7 @@ RSpec.describe "Execução e conclusão de uma ordem de serviço", :js do
 
     expect(page).to have_text("Ordem de serviço concluída")
     expect(page).to have_css(".sv-badge", text: "Concluída")
-    click_on "Relatórios"
+    within("[role=tablist]") { click_on "Relatórios" }
     expect(page).to have_text("Relatório versão 1")
     expect(page).to have_text("Filtro obstruído")
   end

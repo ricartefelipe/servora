@@ -15,11 +15,17 @@ module WorkOrders
         "problem" => @work_order.problem_description, "diagnosis" => @work_order.diagnosis.to_s,
         "solution" => @work_order.solution.to_s,
         "checklist" => @work_order.checklist_items.map { |c| { "label" => c.label, "response" => c.response.to_s } },
-        "services" => services, "technicians" => @work_order.technicians.map { |m| m.user.name }
+        "services" => services, "technicians" => technician_names
       }
     end
 
     private
+
+    # Explicit query: the names never depend on what the caller preloaded.
+    def technician_names
+      Membership.where(id: WorkOrderAssignment.where(work_order_id: @work_order.id).select(:membership_id))
+        .joins(:user).order("users.name").pluck("users.name")
+    end
 
     def work_order_data
       { "number" => @work_order.number, "title" => @work_order.title, "priority" => @work_order.priority,

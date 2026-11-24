@@ -31,6 +31,8 @@ gem "rails-i18n", "~> 8.1"
 
 # Documents
 gem "prawn", "~> 2.5"
+# CSV exports (bundled gem since Ruby 3.4)
+gem "csv", "~> 3.3"
 
 # Metrics exposition
 gem "prometheus-client", "~> 5.0"
