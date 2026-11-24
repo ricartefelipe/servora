@@ -31,6 +31,8 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ### Corrigido
 
+- CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),
+  para que falhas de rede do runner encerrem a execução em minutos.
 - A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).
 
 ## [0.1.0] - 2026-11-24
