@@ -50,6 +50,11 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
+## Documentação
+
+C4, modelo de dados, fluxos, políticas, runbooks (backup e restauração exercitados localmente) e roteiro de
+demonstração em `docs/`.
+
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
@@ -74,15 +79,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Documentação final (C4, modelo de dados, fluxos, runbooks, backup e restauração, roteiro de demonstração) e
-  release 1.0.0.
+- Release 1.0.0.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/documentacao-final` a partir de `develop`.
-- Documentação final (C4, modelo de dados, fluxos, runbooks, backup e restauração, roteiro de demonstração) e
-  release 1.0.0.
-
-## Ponto de continuidade
-
-Próxima branch: `feature/documentacao-final` a partir de `develop`.
+Próximo passo: `release/1.0.0` a partir de `develop` após a integração da documentação final.

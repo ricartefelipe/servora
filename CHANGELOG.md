@@ -57,6 +57,9 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   preventiva, financeiro, API), avaliação de 14 dias, taxa de implantação, vagas de técnico controladas e modo
   somente leitura após a avaliação sem ativação.
 
+- Documentação de operação e produto: C4, modelo de dados, fluxos, políticas de calendário, dinheiro e custos,
+  runbooks (com backup e restauração exercitados localmente) e roteiro de demonstração.
+
 ### Corrigido
 
 - Plural em português nas telas (por exemplo, "5 dias" e "itens").
