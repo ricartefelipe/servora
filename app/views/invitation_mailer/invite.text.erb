@@ -1,0 +1,8 @@
+Você foi convidado para o Servora
+
+<%= @inviter_name %> convidou você para a equipe <%= @organization.name %> com o perfil <%= @invitation.role_label %>.
+O convite é pessoal, pode ser usado uma única vez e vale até <%= l(@invitation.expires_at, format: :long) %>.
+
+Acesse: <%= @url %>
+
+Se você não esperava este convite, ignore esta mensagem.

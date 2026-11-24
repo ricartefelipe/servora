@@ -1,0 +1,27 @@
+<% content_for :title, "Convite" %>
+<% state = @invitation.state %>
+<div class="mb-6 grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700"><%= icon(:team, size: 24) %></div>
+<%= render "shared/auth_heading", title: "Convite para #{@invitation.organization.name}",
+      subtitle: "#{@invitation.invited_by.user.name} convidou #{@invitation.email} com o perfil #{@invitation.role_label}." %>
+
+<% if state == :pending %>
+  <% if user_signed_in? %>
+    <% if current_user.email == @invitation.email %>
+      <%= button_to "Aceitar convite", invitation_path(@token), method: :post, class: "sv-btn-primary w-full" %>
+    <% else %>
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+        Você está conectado como <strong><%= current_user.email %></strong>. Entre com o e-mail do convite para aceitá-lo.
+      </div>
+    <% end %>
+  <% else %>
+    <div class="space-y-3">
+      <%= link_to "Entrar para aceitar", new_user_session_path, class: "sv-btn-primary w-full" %>
+      <%= link_to "Criar conta com #{@invitation.email}", new_user_registration_path, class: "sv-btn-secondary w-full" %>
+    </div>
+  <% end %>
+<% else %>
+  <div class="rounded-xl border border-ink-200 bg-ink-50 p-4 text-sm text-ink-700" role="status">
+    <%= { accepted: "Este convite já foi utilizado.", revoked: "Este convite foi revogado.",
+          expired: "Este convite expirou. Peça um novo convite ao administrador." }.fetch(state) %>
+  </div>
+<% end %>
