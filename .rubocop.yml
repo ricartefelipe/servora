@@ -133,3 +133,4 @@ RSpec/DescribeClass:
     # Grouped specs covering several identity classes.
     - "spec/models/identity_spec.rb"
     - "spec/policies/identity_policies_spec.rb"
+    - "spec/policies/customer_policies_spec.rb"
