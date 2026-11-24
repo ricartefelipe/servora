@@ -1,25 +1,87 @@
 <% content_for :title, "Painel" %>
-<%= page_header("Olá, #{current_user.name.split.first}", eyebrow: current_organization.name,
-      subtitle: "Visão geral da operação de hoje, #{l(Date.current, format: :long)}.") %>
+<% cover = @today.cover %>
+<% first_name = current_user.name.split.first %>
+<% greeting = case Time.current.hour when 5...12 then "Bom dia" when 12...18 then "Boa tarde" else "Boa noite" end %>
+
+<%# Capa: the only large ruby surface of the desktop app. No status or danger figures inside it. %>
+<% finance = @today.finance %>
+<% operational = can?(:schedule_view) || can?(:work_orders_execute) %>
+<% cells = if operational
+             [["Visitas hoje", cover.visits_done, cover.visits_total],
+              ["Em campo agora", cover.in_field, nil],
+              cover.open_orders ? ["OS em aberto", cover.open_orders, nil] : ["Próximas visitas", cover.upcoming, nil]]
+           elsif finance
+             [["A receber", money(finance.outstanding), nil], ["Recebido no mês", money(finance.received_this_month), nil]]
+           else
+             [["Membros ativos", @overview.active_members_count, nil]]
+           end %>
+<section class="relative mb-6 overflow-hidden rounded-[20px] bg-brand-700 px-6 py-7 text-white lg:px-8 lg:py-8" aria-labelledby="capa-titulo">
+  <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <div class="min-w-0">
+      <p class="flex items-start gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-on-brand-muted">
+        <span class="mt-[5px] inline-block size-1.5 shrink-0 rotate-45 bg-white" aria-hidden="true"></span>
+        <span><%= current_organization.name %> · <%= l(Date.current, format: "%A, %-d de %B") %></span>
+      </p>
+      <h1 id="capa-titulo" class="sv-display mt-3 text-display-md text-white sm:text-display-xl"><%= greeting %>, <%= first_name %>.</h1>
+      <p class="mt-2 text-[15px] text-on-brand-muted">
+        <% if operational %>
+          <%= pluralize(cover.visits_total, "visita", plural: "visitas") %> hoje · <%= cover.in_field %> em campo agora
+        <% elsif finance %>
+          Recebimentos e contas da organização em um só lugar.
+        <% else %>
+          Visão geral da operação de hoje.
+        <% end %>
+      </p>
+      <div class="mt-6 flex flex-wrap gap-2">
+        <% if can?(:work_orders_manage) %>
+          <%= link_to new_work_order_path, class: "sv-btn-on-brand" do %><%= icon(:plus, size: 16) %> Nova ordem de serviço<% end %>
+        <% end %>
+        <% if can?(:schedule_view) %>
+          <%= link_to agenda_index_path, class: "sv-btn-ghost-on-brand" do %><%= icon(:calendar, size: 16) %> Abrir agenda<% end %>
+        <% elsif finance %>
+          <%= link_to receivables_path, class: "sv-btn-on-brand" do %><%= icon(:finance, size: 16) %> Abrir financeiro<% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex flex-col items-stretch gap-5 lg:items-end">
+      <%= render "shared/gem_outline", class: "pointer-events-none mr-6 hidden h-24 w-auto self-end lg:block", opacity: 0.35 %>
+      <dl class="grid auto-cols-fr grid-flow-col divide-x divide-white/20 lg:min-w-[24rem]">
+        <% cells.each_with_index do |(label, value, total), index| %>
+          <div class="flex flex-col gap-1 <%= index.zero? ? 'pr-4 sm:pr-6' : 'px-4 sm:px-6' %>">
+            <dt class="min-h-8 text-xs leading-4 text-on-brand-muted sm:min-h-4"><%= label %></dt>
+            <dd class="sv-num text-[22px] font-semibold leading-tight sm:text-[32px]"><%= value %><% if total %><span class="text-on-brand-muted">/<%= total %></span><% end %></dd>
+            <% if total %>
+              <dd>
+                <progress class="block h-1 w-full overflow-hidden rounded-full [&::-moz-progress-bar]:bg-white [&::-webkit-progress-bar]:bg-white/20 [&::-webkit-progress-value]:bg-white"
+                          value="<%= value %>" max="<%= [total, 1].max %>" aria-label="Progresso do dia: <%= cover.progress %>%"><%= cover.progress %>%</progress>
+              </dd>
+            <% end %>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+  </div>
+</section>
 
 <% if @overview.show_onboarding? %>
-  <section class="sv-card mb-8 overflow-hidden" aria-labelledby="onboarding-title">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-ink-100 bg-gradient-to-r from-brand-50 to-white px-6 py-5">
+  <section class="sv-card mb-6 overflow-hidden" aria-labelledby="onboarding-title">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-ink-150 px-5 py-4">
       <div>
-        <h2 id="onboarding-title" class="font-semibold text-ink-900">Primeiros passos</h2>
-        <p class="text-sm text-ink-600">Deixe o Servora pronto para a sua operação.</p>
+        <h2 id="onboarding-title" class="text-[15px] font-semibold text-ink-950">Primeiros passos</h2>
+        <p class="text-[13px] text-ink-600">Deixe o Servora pronto para a sua operação.</p>
       </div>
       <%= button_to "Concluir primeiros passos", complete_onboarding_settings_path, method: :patch, class: "sv-btn-secondary sv-btn-sm" %>
     </div>
-    <ol class="grid gap-px bg-ink-100 sm:grid-cols-2 xl:grid-cols-4">
+    <ol class="grid gap-px bg-ink-150 sm:grid-cols-2 xl:grid-cols-4">
       <% @overview.onboarding_steps.each_with_index do |step, index| %>
         <li class="flex gap-4 bg-white p-5">
-          <span class="grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold <%= step.done ? 'bg-emerald-600 text-white' : 'bg-ink-100 text-ink-600' %>">
-            <%= step.done ? icon(:check, size: 16, label: "Concluído") : index + 1 %>
+          <span class="sv-num grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold <%= step.done ? 'bg-emerald-600 text-white' : 'bg-white text-ink-700 ring-1 ring-ink-300' %>">
+            <%= step.done ? icon(:check, size: 14, label: "Concluído") : index + 1 %>
           </span>
           <div>
-            <%= link_to step.title, public_send(step.path_helper), class: "font-medium text-ink-900 hover:text-brand-700" %>
-            <p class="mt-0.5 text-sm text-ink-600"><%= step.description %></p>
+            <%= link_to step.title, public_send(step.path_helper), class: "sv-link text-[13px] font-semibold no-underline hover:underline" %>
+            <p class="mt-0.5 text-[13px] text-ink-600"><%= step.description %></p>
           </div>
         </li>
       <% end %>
@@ -28,27 +90,85 @@
 <% end %>
 
 <% if current_subscription&.status == "trialing" && can?(:subscription_manage) %>
-  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900" role="status">
-    <span><% if current_subscription.trial_expired? %>A avaliação terminou. Os dados seguem disponíveis para consulta.<% else %>Avaliação: <%= pluralize(current_subscription.trial_days_left, "dia restante", plural: "dias restantes") %> com todos os módulos.<% end %></span>
-    <%= link_to "Ver assinatura", subscription_path, class: "sv-btn-primary sv-btn-sm" %>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-sky-50 px-4 py-3 text-[13px] text-sky-900 ring-1 ring-inset ring-sky-600/15" role="status">
+    <span class="flex items-center gap-2"><%= icon(:info, size: 16, css: "text-sky-700") %><% if current_subscription.trial_expired? %>A avaliação terminou. Os dados seguem disponíveis para consulta.<% else %>Avaliação: <%= pluralize(current_subscription.trial_days_left, "dia restante", plural: "dias restantes") %> com todos os módulos.<% end %></span>
+    <%= link_to "Ver assinatura", subscription_path, class: "sv-btn-secondary sv-btn-sm" %>
   </div>
 <% end %>
 
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-  <% if (customers = @overview.active_customers_count) %>
-    <%= stat_tile("Clientes ativos", customers) %>
-  <% end %>
-  <% alerts = @overview.equipment_alerts %>
-  <% if can?(:customers_view) %>
-    <%= stat_tile("Equipamentos parados", alerts["inoperative"] || 0, tone: (alerts["inoperative"].to_i.positive? ? :danger : :neutral),
-          hint: "#{alerts['attention'] || 0} requerem atenção") %>
-  <% end %>
-  <% if (sla = @overview.sla_alerts) %>
-    <%= stat_tile("Prazos estourados", sla[:breached], tone: sla[:breached].positive? ? :danger : :neutral,
-          hint: "#{sla[:at_risk]} em risco (SLA)") %>
-  <% end %>
-  <%= stat_tile("Membros ativos", @overview.active_members_count) %>
-  <% if (pending = @overview.pending_invitations_count) %>
-    <%= stat_tile("Convites pendentes", pending) %>
-  <% end %>
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+  <% attention = @today.attention %>
+  <section class="sv-card min-w-0 lg:col-span-7" aria-labelledby="atencao-titulo">
+    <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
+      <h2 id="atencao-titulo" class="flex items-center gap-2 text-[15px] font-semibold text-ink-950">
+        <span class="sv-facet" aria-hidden="true"></span> Precisa de atenção
+      </h2>
+      <% if attention.any? %><span class="sv-num font-mono text-xs text-ink-500"><%= pluralize(attention.sum(&:count), "item", plural: "itens") %></span><% end %>
+    </header>
+    <% if attention.any? %>
+      <ul class="divide-y divide-ink-150" role="list">
+        <% attention.each do |item| %>
+          <li class="flex min-h-12 items-center gap-3 px-5 py-2">
+            <% if item.severity == :high %>
+              <%= icon(:alert, size: 16, css: "text-rose-600", label: "Alta prioridade") %>
+            <% else %>
+              <%= icon(:clock, size: 16, css: "text-amber-600", label: "Média prioridade") %>
+            <% end %>
+            <span class="sv-num w-6 text-right text-[15px] font-semibold text-ink-950"><%= item.count %></span>
+            <span class="min-w-0 flex-1 truncate text-[13px] text-ink-800"><%= item.label %></span>
+            <%= link_to public_send(item.route, **item.params), class: "sv-btn-ghost sv-btn-sm", aria: { label: "Resolver: #{item.label}" } do %><span class="max-sm:sr-only">Resolver</span><%= icon(:chevron_right, size: 14) %><% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="flex items-center gap-2 px-5 py-6 text-[13px] text-ink-700">
+        <%= icon(:check, size: 16, css: "text-emerald-600") %>
+        <% if @today.areas_checked.positive? %>Tudo em dia em <%= pluralize(@today.areas_checked, "área verificada", plural: "áreas verificadas") %>.<% else %>Nada pendente agora.<% end %>
+      </p>
+    <% end %>
+  </section>
+
+  <section class="sv-card min-w-0 lg:col-span-5" aria-labelledby="proximas-titulo">
+    <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
+      <h2 id="proximas-titulo" class="text-[15px] font-semibold text-ink-950">Próximas visitas</h2>
+      <% if can?(:schedule_view) %><%= link_to agenda_index_path, class: "sv-btn-ghost sv-btn-sm" do %>Ver agenda<%= icon(:chevron_right, size: 14) %><% end %><% end %>
+    </header>
+    <% visits = @today.upcoming_visits %>
+    <% if visits.any? %>
+      <ul class="divide-y divide-ink-150" role="list">
+        <% visits.each do |visit| %>
+          <li class="flex items-center gap-3 px-5 py-3">
+            <span class="sv-num w-12 shrink-0 font-mono text-xs text-ink-600"><%= l(visit.scheduled_start, format: "%H:%M") %><br><span class="text-ink-500"><%= l(visit.scheduled_start, format: "%d/%m") %></span></span>
+            <span class="min-w-0 flex-1">
+              <%= link_to visit.work_order.customer.name, work_order_path(visit.work_order), class: "block truncate text-[13px] font-medium text-ink-950 hover:underline hover:decoration-ink-300 hover:underline-offset-4" %>
+              <span class="block truncate text-xs text-ink-500"><%= visit.work_order.number %> · <%= visit.work_order.service_location.city %></span>
+            </span>
+            <%= badge(visit.status_label, tone: visit.in_progress? ? :ember : :indigo) %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="px-5 py-6 text-[13px] text-ink-600">Nenhuma visita agendada a partir de agora.</p>
+    <% end %>
+  </section>
 </div>
+
+<% strip = capture do %>
+  <% if (customers = @overview.active_customers_count) %>
+    <div class="p-5"><p class="text-xs font-medium text-ink-600">Clientes ativos</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= customers %></p></div>
+  <% end %>
+  <div class="p-5"><p class="text-xs font-medium text-ink-600">Membros ativos</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= @overview.active_members_count %></p></div>
+  <% if (pending = @overview.pending_invitations_count) %>
+    <div class="p-5"><p class="text-xs font-medium text-ink-600">Convites pendentes</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= pending %></p></div>
+  <% end %>
+  <% if cover.open_orders %>
+    <div class="p-5"><p class="text-xs font-medium text-ink-600">Visitas concluídas hoje</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= cover.visits_done %></p></div>
+  <% end %>
+<% end %>
+<% tiles = strip.scan('class="p-5"').size %>
+<% if tiles >= 2 %>
+  <% columns = { 2 => "grid-cols-2", 3 => "grid-cols-3" }.fetch(tiles, "grid-cols-2 sm:grid-cols-4") %>
+  <section class="sv-card mt-6 grid <%= columns %> divide-x divide-ink-150" aria-label="Indicadores da organização">
+    <%= strip %>
+  </section>
+<% end %>
