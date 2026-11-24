@@ -87,7 +87,7 @@ module Audit
         "completed" => "concluída", "reopened" => "reaberta", "canceled" => "cancelada",
         "item_added" => "item adicional incluído", "item_authorized" => "item adicional autorizado",
         "item_rejected" => "item adicional recusado", "evidence_added" => "evidência anexada",
-        "evidence_removed" => "evidência removida"
+        "evidence_removed" => "evidência removida", "bulk_status_changed" => "situação alterada em lote"
       }]
     }.freeze
 
@@ -132,14 +132,16 @@ module Audit
       "policies" => "Políticas de prazo", "portal_enabled" => "Acesso ao portal", "position" => "Cargo",
       "postal_code" => "CEP", "priority" => "Prioridade", "provider" => "Provedor", "quantity" => "Quantidade",
       "quote" => "Orçamento", "reason" => "Motivo", "report" => "Relatório", "report_version" => "Versão do relatório",
-      "retain_iss" => "Reter ISS", "role" => "Perfil", "schedule_mode" => "Modo de agendamento",
+      "refused_numbers" => "Ordens não alteradas", "retain_iss" => "Reter ISS", "role" => "Perfil",
+      "schedule_mode" => "Modo de agendamento",
       "scopes" => "Permissões", "seats" => "Licenças", "segment" => "Segmento", "serial_number" => "Número de série",
       "service_location_id" => "Local de atendimento", "shifts" => "Turnos", "skills" => "Habilidades",
       "sku" => "Código", "starts_at" => "Início", "state" => "UF", "status" => "Situação", "street" => "Logradouro",
       "technicians" => "Técnicos", "time_zone" => "Fuso horário", "title" => "Título", "total" => "Total",
       "tracks_inventory" => "Controla estoque", "trade_name" => "Nome fantasia",
       "travel_buffer_minutes" => "Deslocamento padrão", "unit" => "Unidade", "unit_cost" => "Custo unitário",
-      "unit_price" => "Preço", "url" => "Endereço", "user_id" => "Pessoa", "version" => "Versão",
+      "unit_price" => "Preço", "updated_numbers" => "Ordens alteradas", "url" => "Endereço", "user_id" => "Pessoa",
+      "version" => "Versão",
       "warehouse" => "Depósito", "warranty_notes" => "Observações da garantia", "warranty_until" => "Garantia até"
     }.freeze
 

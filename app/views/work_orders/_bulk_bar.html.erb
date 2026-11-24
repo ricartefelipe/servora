@@ -1,0 +1,37 @@
+<%# Bulk status bar: noir pill at the bottom centre of the content area, shown by table-select
+    while at least one row is checked. It is a plain POST form; the row checkboxes join it
+    through their form attribute. The reason becomes required for the waiting states, the
+    same rule WorkOrders::ChangeStatus applies on the server. %>
+<% targets = WorkOrders::ChangeStatus::ALLOWED_TARGETS %>
+<%= form_with url: work_orders_bulk_status_path, method: :post, scope: :status_change, id: "ordens-em-lote",
+      class: "fixed inset-x-0 bottom-6 z-40 mx-auto hidden w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-noir-950 py-2 pl-5 pr-2 text-white shadow-[var(--shadow-float)] ring-1 ring-white/10 sm:flex lg:left-64 xl:flex-nowrap xl:rounded-full lg:max-w-[calc(100vw-18rem)]",
+      data: { table_select_target: "bar", action: "keydown.esc->table-select#clear" },
+      html: { hidden: true, aria: { label: "Ações em lote" } } do |f| %>
+  <%= hidden_field_tag "retorno[situacao]", params[:situacao], id: nil %>
+  <%= hidden_field_tag "retorno[q]", params[:q], id: nil %>
+  <%= hidden_field_tag "retorno[pagina]", params[:pagina], id: nil %>
+  <p class="sv-num whitespace-nowrap text-[13px] font-semibold" data-table-select-target="count">0 selecionadas</p>
+  <span class="hidden h-5 w-px bg-white/15 lg:block" aria-hidden="true"></span>
+  <div class="flex items-center gap-2">
+    <%= f.label :to, "Mover para", class: "whitespace-nowrap text-xs font-medium text-white/72" %>
+    <%= f.select :to, targets.map { |status| [WorkOrders::LABELS[status], status] }, { include_blank: "Escolha a situação" },
+          required: true, data: { table_select_target: "target", action: "table-select#syncReason" },
+          class: "h-8 rounded-lg bg-white/[0.08] px-2 text-[13px] text-white ring-1 ring-inset ring-white/15 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-white/70" %>
+  </div>
+  <div class="flex items-center gap-2">
+    <%= f.label :reason, "Motivo", class: "whitespace-nowrap text-xs font-medium text-white/72" %>
+    <%= f.text_field :reason, placeholder: "Obrigatório para esperas", autocomplete: "off",
+          aria: { describedby: "ordens-em-lote-motivo" },
+          data: { table_select_target: "reason" },
+          class: "h-8 w-52 rounded-lg bg-white/[0.08] px-2.5 text-[13px] text-white ring-1 ring-inset ring-white/15 placeholder:text-white/55 focus:outline-none focus:ring-2 focus:ring-white/70" %>
+    <span id="ordens-em-lote-motivo" class="sr-only" data-table-select-target="reasonHint">Opcional para esta situação.</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <%= f.button type: "submit", class: "sv-btn sv-btn-sm bg-white text-ink-950 hover:bg-ink-100 focus-visible:outline-white" do %>
+      <%= icon(:check, size: 16) %> Aplicar
+    <% end %>
+    <button type="button" class="sv-btn sv-btn-sm text-white/72 hover:bg-white/10 hover:text-white focus-visible:outline-white" data-action="table-select#clear">
+      Limpar seleção
+    </button>
+  </div>
+<% end %>
