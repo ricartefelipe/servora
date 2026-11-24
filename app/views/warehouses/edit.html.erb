@@ -1,0 +1,4 @@
+<% content_for :title, "Editar depósito" %>
+<%= render layout: "shared/modal", locals: { title: "Editar depósito", subtitle: @warehouse.name } do %>
+  <%= render "warehouses/form", warehouse: @warehouse, custodians: @custodians %>
+<% end %>

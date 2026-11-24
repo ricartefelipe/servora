@@ -7,6 +7,30 @@ pt-BR:
     formats:
       default: "%d/%m/%Y"
       long: "%d de %B de %Y"
+  activemodel:
+    attributes:
+      stock_receipt:
+        warehouse_id: "Depósito"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Observação"
+        operation_key: "Identificador da operação"
+        unit_cost: "Custo unitário"
+      stock_transfer:
+        warehouse_id: "Origem"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Observação"
+        operation_key: "Identificador da operação"
+        destination_id: "Destino"
+      stock_adjustment:
+        warehouse_id: "Depósito"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Motivo"
+        operation_key: "Identificador da operação"
+        direction: "Direção"
+        unit_cost: "Custo unitário"
   activerecord:
     models:
       user: { one: "Usuário", other: "Usuários" }
@@ -17,7 +41,14 @@ pt-BR:
       service_location: { one: "Local de atendimento", other: "Locais de atendimento" }
       customer_contact: { one: "Contato", other: "Contatos" }
       equipment: { one: "Equipamento", other: "Equipamentos" }
+      warehouse: { one: "Depósito", other: "Depósitos" }
     attributes:
+      warehouse:
+        name: "Nome"
+        kind: "Tipo"
+        custodian: "Responsável"
+        custodian_membership_id: "Responsável"
+        active: "Ativo"
       user:
         name: "Nome"
         email: "E-mail"

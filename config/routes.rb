@@ -127,6 +127,18 @@ Rails.application.routes.draw do
     resources :absences, path: "ausencias", only: %i[index create destroy]
     resources :technicians, path: "tecnicos", only: %i[index edit update]
     resources :teams, path: "equipes", only: %i[create destroy]
+    scope "estoque" do
+      resources :warehouses, path: "depositos", only: %i[index new create edit update]
+      resources :stock_movements, path: "movimentacoes", only: :index
+      scope module: :stock, as: :stock do
+        resources :receipts, path: "entradas", only: %i[new create]
+        resources :transfers, path: "transferencias", only: %i[new create]
+        resources :adjustments, path: "ajustes", only: %i[new create]
+      end
+    end
+    resources :stock_balances, path: "estoque", only: :index do
+      patch :minimum, on: :collection, path: "minimo"
+    end
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

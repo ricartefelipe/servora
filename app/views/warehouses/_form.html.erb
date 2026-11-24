@@ -1,0 +1,13 @@
+<%= form_with model: warehouse, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <%= f.field :name, label: "Nome", required: true, autofocus: true, hint: "Ex.: Almoxarifado central, Van 02" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.select_field :kind, Warehouse::KINDS.map { |value, label| [label, value] }, label: "Tipo" %>
+    <%= f.select_field :custodian_membership_id, custodians.map { |m| [m.user.name, m.id] }, label: "Responsável",
+          include_blank: "Nenhum", hint: "Obrigatório para estoque de técnico ou veículo" %>
+  </div>
+  <% if warehouse.persisted? %>
+    <%= f.toggle_field :active, label: "Depósito ativo", hint: "Depósitos inativos não recebem novas entradas nem transferências." %>
+  <% end %>
+  <div class="flex justify-end"><%= f.submit_button(warehouse.persisted? ? "Salvar depósito" : "Cadastrar depósito") %></div>
+<% end %>
