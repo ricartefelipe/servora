@@ -92,6 +92,7 @@ Rails.application.routes.draw do
         post :send_portal_link, path: "enviar-link"
         patch :cancel, path: "cancelar"
         post :convert, path: "converter"
+        get "versoes/:version/pdf", action: :pdf, as: :pdf
       end
       scope module: :quotes do
         resources :items, path: "itens", only: %i[create destroy]
@@ -120,6 +121,8 @@ Rails.application.routes.draw do
           patch :restock, on: :member, path: "devolver"
         end
         resources :expenses, path: "despesas", only: :create
+        resources :evidences, path: "anexos", only: %i[create show destroy]
+        resources :reports, path: "relatorios", only: :show
       end
       resources :visits, path: "visitas", only: %i[new create edit update] do
         get :suggestions, on: :collection, path: "sugestoes"

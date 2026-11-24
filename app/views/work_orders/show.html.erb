@@ -54,6 +54,7 @@
           ["execucao", "Execução", nil], ["visitas", "Visitas", @work_order.visits.size],
           ["itens", "Serviços e materiais", @work_order.items.size],
           *([["materiais", "Materiais", @consumptions.size]] if wo_policy.view_materials?),
+          ["anexos", "Anexos", @evidences.size],
           ["historico", "Histórico", nil], ["relatorios", "Relatórios", @work_order.reports.size]] %>
 
     <section id="painel-execucao" role="tabpanel" aria-labelledby="aba-execucao" data-tabs-target="panel" class="space-y-6">
@@ -208,6 +209,7 @@
     </section>
 
     <% if wo_policy.view_materials? %><%= render "work_orders/materials", wo_policy: %><% end %>
+    <%= render "work_orders/evidences", wo_policy: %>
 
     <section id="painel-historico" role="tabpanel" aria-labelledby="aba-historico" data-tabs-target="panel" hidden>
       <ol class="sv-card divide-y divide-ink-100" role="list">
@@ -228,7 +230,10 @@
         <ul class="space-y-3" role="list">
           <% @work_order.reports.each do |report| %>
             <li class="sv-card p-5 text-sm">
-              <p class="font-semibold text-ink-900">Relatório versão <%= report.version_number %></p>
+              <div class="flex items-center justify-between gap-3">
+                <p class="font-semibold text-ink-900">Relatório versão <%= report.version_number %></p>
+                <%= link_to work_order_report_path(@work_order, report), class: "sv-btn-secondary sv-btn-sm", data: { turbo: false } do %><%= icon(:download, size: 16) %> PDF<% end %>
+              </div>
               <p class="text-xs text-ink-500">Registrado em <%= l(report.created_at, format: :short) %> · digest <span class="font-mono"><%= report.content_digest.first(12) %></span></p>
               <p class="mt-2 text-ink-700"><strong>Diagnóstico:</strong> <%= report.data["diagnosis"] %></p>
               <p class="text-ink-700"><strong>Solução:</strong> <%= report.data["solution"] %></p>

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class QuotesController < TenantController
+  include FileDelivery
+
   STATUS_FILTERS = Quote::STATUSES.keys.freeze
 
   before_action :load_quote, except: %i[index new create]
@@ -82,6 +84,15 @@ class QuotesController < TenantController
 
   rescue_from Servora::RuleViolation do |error|
     redirect_to quote_path(@quote), alert: error.message, status: :see_other
+  end
+
+  # PDF of a sent version, rendered from its frozen snapshot.
+  def pdf
+    authorize @quote, :show?
+    version = tenant_relation(QuoteVersion).where(quote_id: @quote.id).where.not(status: "draft")
+      .find_by!(version_number: params.expect(:version))
+    deliver_file(Documents::QuoteProposal.new(version).render, type: "application/pdf",
+      filename: "proposta-#{@quote.number}-v#{version.version_number}.pdf")
   end
 
   private
