@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 module Invitations
-  # Creates a pending invitation. The clear token is only generated when the
+  # Creates a pending invitation and records "invitation.issued" in the outbox
+  # within the same transaction. The clear token is only generated when the
   # e-mail is delivered (see Invitations::Deliver), so it never sits in the
-  # database or in the job queue.
+  # database, in the outbox or in the job queue.
   class Issue
     class AlreadyMember < Servora::RuleViolation; end
     class AlreadyInvited < Servora::RuleViolation; end
@@ -25,7 +26,7 @@ module Invitations
         expires_at: Invitation::VALIDITY.from_now
       )
       AuditEvent.record!(action: "invitation.issued", auditable: invitation, changes: { email: @email, role: @role })
-      Invitations::DeliveryJob.perform_later(organization.id, invitation.id)
+      Outbox::Publisher.publish!(event_type: "invitation.issued", aggregate: invitation)
       invitation
     end
 

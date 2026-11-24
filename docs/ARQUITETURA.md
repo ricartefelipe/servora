@@ -104,12 +104,43 @@ Escopos adicionais aplicados pelas policies:
 - Somente proprietários concedem ou alteram o papel de proprietário; ninguém altera o próprio acesso.
 - A organização sempre mantém ao menos um proprietário ativo (`Memberships::OwnerGuard`, com lock).
 
+## Consistência assíncrona (Transactional Outbox)
+
+A fila (Solid Queue) usa outro banco; enfileirar um job não é atômico com a transação de negócio.
+Por isso, todo efeito assíncrono nasce como linha em `outbox_events`, gravada na mesma transação:
+
+```
+caso de uso ──(mesma transação)──▶ outbox_events (pending)
+                                      │
+   Outbox::DispatchJob (a cada 10 s e após commits) ── servora_claim_outbox_events()
+                                      │   FOR UPDATE SKIP LOCKED + lease (locked_until)
+                                      ▼
+   contexto do tenant: handlers idempotentes ──▶ jobs (fora de transação) ──▶ ack se o lease ainda é nosso
+                                      │
+                         falha ──▶ outbox_event_failures + retentativa com backoff ou "dead"
+```
+
+| Situação | Comportamento |
+|---|---|
+| Commit ok, enqueue pós-commit falha | Evento continua `pending`; o despachante recorrente o processa |
+| Worker morre durante o processamento | Lease expira; outro worker reivindica; ack tardio do primeiro é recusado |
+| Evento processado duas vezes | Handlers idempotentes (ex.: notificação única por destinatário e evento) |
+| Falha transitória | Nova tentativa com backoff exponencial (15 s → 1 h) até `max_attempts` |
+| Falha permanente ou tentativas esgotadas | `dead`, com histórico; reprocessamento manual autorizado e auditado |
+
+Garantia: entrega **pelo menos uma vez**. Não há promessa de exatamente uma vez; a deduplicação é
+responsabilidade de cada handler e de cada job (chaves únicas e verificações de estado).
+
+Notificações em tempo real usam streams Turbo por vínculo (`NotificationsChannel`): além da assinatura do
+nome do stream, a inscrição só é aceita se o vínculo pertencer ao usuário conectado e estiver ativo.
+Nada é transmitido para a organização inteira.
+
 ## Processos
 
 | Processo | Comando | Observações |
 |---|---|---|
 | Web | `bin/rails server` | Puma; nunca executa migrations. |
-| Worker | `bin/jobs` | Solid Queue (fila em banco próprio). |
+| Worker | `bin/jobs` | Solid Queue (fila em banco próprio) e tarefas recorrentes (`config/recurring.yml`). |
 | Release | `bin/db-prepare` | Executado uma vez por deploy com o papel owner. |
 
 ## Bancos

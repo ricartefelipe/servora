@@ -126,3 +126,17 @@ status atualizado.
 
 - **Decisão**: `solid_queue.preserve_finished_jobs = false`, para que argumentos de jobs (por exemplo,
   tokens de e-mails do Devise) não permaneçam no banco da fila após a execução.
+
+## DEC-017 — Tempo de parede nas verificações da outbox
+
+- **Contexto**: `now()` no PostgreSQL é o início da transação; eventos gravados com o relógio da aplicação
+  poderiam parecer "no futuro" para a reivindicação.
+- **Decisão**: a função de claim usa `clock_timestamp()` para vencimento e lease.
+
+## DEC-018 — `structure.sql` regenerado a partir de migrations reais
+
+- **Contexto**: no Rails 8, `db:migrate` em banco vazio carrega o schema existente; o texto de algumas
+  constraints muda quando o dump é recarregado.
+- **Decisão**: `bin/db-structure` move o dump, executa todas as migrations num banco temporário e valida
+  rollback e recarga; a CI executa `bin/db-structure --check`. Constraints de domínio usam
+  `add_inclusion_constraint`, cuja forma canônica é estável.

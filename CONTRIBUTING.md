@@ -79,7 +79,9 @@ Interfaces locais: aplicação em `http://localhost:3000`, Mailpit em `http://lo
 | `bundle exec rubocop` | Estilo e boas práticas (Rails, RSpec, performance) |
 | `bundle exec brakeman` | Análise estática de segurança |
 | `bundle exec bundler-audit check --update` | Vulnerabilidades conhecidas em gems |
-| `SERVORA_DB_ROLE=owner ruby bin/rails db:migrate` | Nova migration (sempre com o papel owner) |
+| `SERVORA_DB_ROLE=owner ruby bin/rails db:migrate:primary` | Aplica migrations no banco de desenvolvimento (papel owner) |
+| `ruby bin/db-structure` | Regenera `db/structure.sql` executando todas as migrations num banco temporário |
+| `ruby bin/db-structure --check` | Confere migrations, rollback e recarga do dump (mesmo passo da CI) |
 
 ## Migrations e banco
 
@@ -90,6 +92,10 @@ Interfaces locais: aplicação em `http://localhost:3000`, Mailpit em `http://lo
   `(organization_id, id)` e a policy de RLS. Referências entre tabelas de tenant usam
   `add_tenant_reference` (chave estrangeira composta).
 - Toda migration precisa ser reversível; a CI executa rollback completo e compara o dump.
+- Em desenvolvimento há vários bancos (principal, fila, cache, cable): use as tarefas com sufixo
+  `:primary` (`db:rollback:primary`, `db:migrate:primary`).
+- Efeitos assíncronos de um caso de uso são publicados com `Outbox::Publisher.publish!` dentro da mesma
+  transação; nunca chame `perform_later` diretamente a partir de regras de negócio.
 
 ## Testes
 

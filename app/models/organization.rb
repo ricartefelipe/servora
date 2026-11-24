@@ -21,6 +21,8 @@ class Organization < ApplicationRecord
   has_many :memberships, dependent: :restrict_with_exception
   has_many :invitations, dependent: :restrict_with_exception
   has_many :audit_events, dependent: :restrict_with_exception
+  has_many :outbox_events, dependent: :restrict_with_exception
+  has_many :notifications, dependent: :restrict_with_exception
 
   enum :status, { active: "active", suspended: "suspended" }, validate: true
 

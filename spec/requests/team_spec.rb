@@ -77,9 +77,10 @@ RSpec.describe "Team management" do
     it "issues and revokes invitations" do
       sign_in_as(owner)
 
-      expect { post team_invitations_path, params: { invitation: { email: "novo@servora.test", role: "attendant" } } }
-        .to have_enqueued_job(Invitations::DeliveryJob)
+      post team_invitations_path, params: { invitation: { email: "novo@servora.test", role: "attendant" } }
       invitation = in_tenant(organization) { Invitation.find_by!(email: "novo@servora.test") }
+
+      expect { run_dispatcher }.to have_enqueued_job(Invitations::DeliveryJob).with(organization.id, invitation.id)
 
       delete team_invitation_path(invitation)
 

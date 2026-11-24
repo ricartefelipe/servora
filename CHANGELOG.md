@@ -16,3 +16,6 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   sessões revogáveis no servidor e verificação em duas etapas (TOTP e códigos de recuperação).
 - Organizações multitenant com RLS, FKs compostas e contexto transacional; onboarding, seleção e troca.
 - Equipe: sete papéis com matriz de permissões, convites de uso único, desativação imediata e auditoria.
+- Transactional Outbox com despachante recorrente, lease, retentativas com backoff, histórico de falhas e
+  reprocessamento autorizado; convites e notificações passam a ser entregues pela outbox.
+- Notificações internas em tempo real por stream privado de cada vínculo.
