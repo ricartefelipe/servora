@@ -73,6 +73,7 @@ demonstração em `docs/`.
 | Versão | Conteúdo |
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+| 1.1.0 | Estornos executados no provedor, NFS-e pelo provedor de pagamentos e cobrança automática da mensalidade da plataforma |
 | 1.0.0 | Estoque, financeiro e cobranças, contratos e preventiva, SLA, anexos e PDFs, área do técnico offline, portal ampliado, API e webhooks, observabilidade, assinaturas da plataforma e documentação de operação |
 
 ## Integrações não exercitadas
@@ -84,9 +85,9 @@ demonstração em `docs/`.
 
 ## Em andamento
 
-- Release 1.1.0 (estornos no provedor, NFS-e, cobrança da plataforma).
+- Nenhum item.
 
 ## Ponto de continuidade
 
-Após a integração: `release/1.1.0`. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos,
-NFS-e e cobrança da plataforma).
+Versão 1.1.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
+cobrança da plataforma) — chave apenas no `.env` local (`ASAAS_SANDBOX_API_KEY`), nunca no repositório.
