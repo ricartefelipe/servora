@@ -181,3 +181,25 @@ status atualizado.
 - **Decisão**: a agenda diária usa CSS Grid de 64 colunas (15 min) com classes `col-start-*`/`col-span-*`
   geradas pelo Tailwind (`@source inline`), em vez de `style` com porcentagens, preservando a CSP sem
   `unsafe-inline`. Reagendamento é feito por formulário (alternativa acessível a arrastar e soltar).
+
+## DEC-025 — Estoque como razão append-only com saldo protegido por trigger
+
+- **Contexto**: o saldo precisa ser consultado rapidamente e nunca pode divergir do histórico, mesmo com
+  concorrência ou acesso direto com o papel de aplicação.
+- **Decisão**: saldo materializado em `stock_balances`, alterado apenas pelo `Inventory::Ledger` junto com uma
+  movimentação append-only que registra o saldo resultante. Um trigger valida que cada alteração corresponde
+  a uma movimentação nova, do mesmo depósito e item, com quantidade compatível com o tipo. Locks sempre na
+  ordem ordem de serviço → reserva/consumo → saldos ordenados.
+- **Alternativas**: recalcular o saldo somando movimentações (consulta cara e sujeita a corrida sem lock de
+  agregação); confiar apenas na aplicação (não protege contra acessos diretos ou bugs).
+- **Consequências**: histórico auditável por construção, disputa pela última unidade resolvida pelo lock da
+  linha de saldo, ausência de deadlocks entre transferências cruzadas.
+
+## DEC-026 — Aba ativa lembrada por página
+
+- **Contexto**: redirecionamentos seguidos pelo Turbo descartam o fragmento da URL, e a página voltava para a
+  primeira aba após cada envio de formulário.
+- **Decisão**: o controller de abas guarda apenas a chave da última aba escolhida por caminho em
+  `sessionStorage` (prefixo `servora:`), usada quando a URL não tem fragmento; o expurgo de dados locais na
+  troca de contexto também limpa essas chaves.
+

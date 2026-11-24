@@ -5,6 +5,21 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+### Adicionado
+
+- Estoque: depósitos (central, técnico, veículo), entradas, transferências, ajustes auditados, estoque
+  mínimo, saldos físico/reservado/disponível, histórico de movimentações e valor em estoque para perfis
+  autorizados.
+- Materiais na ordem de serviço: reservas, consumo com custo histórico, devoluções e liberação automática no
+  cancelamento ou na conclusão.
+- Proteções no banco: trigger que exige movimentação correspondente para alterar saldos, movimentações
+  append-only e constraints contra saldo negativo e reserva acima do físico.
+- Idempotência por chave de operação em entradas, transferências, ajustes e consumos.
+
+### Corrigido
+
+- A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).
+
 ## [0.1.0] - 2026-11-24
 
 Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento com aprovação
