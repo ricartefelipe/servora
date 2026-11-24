@@ -51,6 +51,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Estornos no provedor | Envio após commit, aceite, recusa, resposta ambígua sem reenvio automático, resolução humana, pagamentos manuais sinalizados | `spec/services/payments/submit_refund_spec.rb`, `spec/requests/receivables_spec.rb` |
 | NFS-e | Emissão pelo provedor sem duplicidade após resposta perdida, rejeição, acompanhamento, cancelamento, emissão automática única | `spec/services/invoices_spec.rb`, `spec/requests/invoices_spec.rb`, `spec/services/payments/gateways/asaas_spec.rb` |
 | Cobrança da plataforma | Faturas por período sem duplicidade, implantação na primeira fatura, cobrança após commit, notificação autenticada e deduplicada, inadimplência e reativação | `spec/services/subscriptions/bill_spec.rb`, `spec/requests/platform_billing_spec.rb` |
+| Relatórios | Ordens, produtividade, SLA, financeiro e materiais por período; permissões e módulos; CSV neutralizado e auditado; isolamento | `spec/unit/reports/*`, `spec/queries/reports_spec.rb`, `spec/requests/reports_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -62,8 +63,8 @@ demonstração em `docs/`.
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 84 exemplos (regras puras) + 486 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,45%, branches 83,04% |
+| `bash bin/test-all` | 88 exemplos (regras puras) + 496 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,20%, branches 82,51% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -73,6 +74,7 @@ demonstração em `docs/`.
 | Versão | Conteúdo |
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+| 1.2.0 | Relatórios gerenciais com exportação CSV; correção da conclusão de ordens com técnicos atribuídos; dumps e backups ignorados |
 | 1.1.0 | Estornos executados no provedor, NFS-e pelo provedor de pagamentos e cobrança automática da mensalidade da plataforma |
 | 1.0.0 | Estoque, financeiro e cobranças, contratos e preventiva, SLA, anexos e PDFs, área do técnico offline, portal ampliado, API e webhooks, observabilidade, assinaturas da plataforma e documentação de operação |
 
@@ -89,5 +91,5 @@ demonstração em `docs/`.
 
 ## Ponto de continuidade
 
-Versão 1.1.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
-cobrança da plataforma) — chave apenas no `.env` local (`ASAAS_SANDBOX_API_KEY`), nunca no repositório.
+Versão 1.2.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
+cobrança da plataforma) — chave apenas no `.env` local, nunca no repositório.

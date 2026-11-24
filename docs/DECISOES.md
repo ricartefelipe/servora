@@ -336,3 +336,12 @@ status atualizado.
 - **Consequências**: nenhum dado de pagamento da plataforma fica nas organizações; repetir o faturamento é inofensivo;
   inadimplência reduz a conta a somente leitura sem bloquear o acesso aos dados.
 
+## DEC-042 — Relatórios como agregados sob RLS, com exportação neutralizada
+
+- **Decisão**: relatórios calculados sob demanda por consultas agregadas no contexto da organização, com período
+  limitado; a autorização é por relatório (permissões e módulos) e o CSV neutraliza fórmulas de planilha.
+- **Alternativas**: tabelas de fatos pré-calculadas (mais rápidas, porém com defasagem e mais pontos de
+  sincronização) — reservadas para quando o volume exigir.
+- **Consequências**: números sempre consistentes com os registros; períodos longos têm custo limitado pelo teto de
+  366 dias e pelos limites de linhas.
+

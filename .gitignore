@@ -43,10 +43,13 @@
 /tmp/screenshots/
 /.rspec_status
 
-# Backups and database dumps
+# Backups and database dumps (db/structure.sql is versioned on purpose)
 /backups/
 *.dump
 *.sql.gz
+*.backup
+*.bak
+/*.sql
 
 # Editors and operating systems
 /.idea/

@@ -24,6 +24,7 @@ module NavigationHelper
       NavItem.new("Tipos de serviço", :service_types_path, :settings, :work_orders_manage, %w[service_types])
     ]],
     ["Gestão", [
+      NavItem.new("Relatórios", :reports_path, :reports, :reports_view, %w[reports]),
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),
       NavItem.new("Técnicos e equipes", :technicians_path, :wrench, :schedule_manage, %w[technicians teams]),
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),

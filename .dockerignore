@@ -33,6 +33,11 @@
 /coverage/
 /spec/examples.txt
 /backups/
+*.dump
+*.sql.gz
+*.backup
+*.bak
+/*.sql
 
 # Editors and operating systems
 /.idea/
