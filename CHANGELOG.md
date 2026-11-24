@@ -5,6 +5,13 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.2.1] - 2026-11-24
+
+### Corrigido
+
+- A página inicial não exibia os acessos: agora apresenta Entrar e Criar conta a visitantes e Abrir o painel a
+  quem já entrou, e o fundo ocupa toda a altura da tela.
+
 ## [1.2.0] - 2026-11-24
 
 Relatórios gerenciais e correções de conclusão de ordens e de proteção de arquivos.
@@ -133,7 +140,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.2.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.2.1...develop
+[1.2.1]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/ricartefelipe/servora/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ricartefelipe/servora/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ricartefelipe/servora/compare/v0.1.0...v1.0.0
