@@ -236,6 +236,29 @@ Aba "Materiais": reservas (com liberação manual), consumo a partir de reserva 
 devolução. `work_order.canceled` e `work_order.completed` acionam
 `Inventory::Handlers::ReleaseWorkOrderReservations` pela outbox.
 
+## Anexos e documentos
+
+- **Armazenamento isolado por organização**: as tabelas do Active Storage têm `organization_id` preenchido pelo
+  banco a partir do contexto da transação (`DEFAULT servora_current_organization_id()`) e RLS; anexos referenciam
+  blobs pela chave composta da organização. Um id ou chave de blob vazado não é visível em outra organização.
+- Rotas padrão do Active Storage, análises, prévias e variantes estão desligadas; nenhum job do Active Storage
+  roda fora do contexto de tenant (remoção síncrona).
+- **Upload** (`Evidences::Upload`): limite de 15 MB e de 100 anexos por ordem; o tipo é detectado pela
+  assinatura do conteúdo (JPEG, PNG, WebP, PDF), nunca pelo nome ou pelo tipo declarado; nome de arquivo
+  saneado com a extensão do tipo detectado.
+- **Download** apenas pelo controller da ordem, após autorização (técnicos só nas ordens atribuídas), com
+  `Cache-Control: private, no-store`, `nosniff`, CSP com `sandbox` e `inline` apenas para imagens.
+- Anexos de ordens encerradas são mantidos; a remoção é do escritório e auditada.
+- Desenvolvimento usa disco local compartilhado entre web e worker; produção usa bucket privado compatível com
+  S3, com criptografia no servidor (`config/storage.yml`).
+
+### PDFs
+
+- `Documents::QuoteProposal` (proposta comercial) é gerado a partir do `snapshot` congelado da versão enviada;
+  `Documents::ExecutionReport` a partir dos dados de cada versão do relatório de execução. Como as fontes são
+  imutáveis, o PDF de uma versão é sempre o mesmo conteúdo; o rodapé traz o início do digest para conferência.
+- Ambos informam que não são nota fiscal. Gerados com Prawn sob demanda, sem armazenamento.
+
 ## SLA
 
 - **Calendário** (`Sla::BusinessCalendar`, domínio puro): expediente semanal com até dois intervalos por dia,

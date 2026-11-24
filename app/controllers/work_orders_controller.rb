@@ -97,6 +97,8 @@ class WorkOrdersController < TenantController
     load_approvers if wo_policy.decide_item?
     @coverage = Contracts::Coverage.new(@work_order).call if @work_order.contract_id
     @sla_clocks = tenant_relation(SlaClock).where(work_order_id: @work_order.id).order(:metric).to_a
+    @evidences = tenant_relation(WorkOrderEvidence).where(work_order_id: @work_order.id).includes(uploaded_by: :user)
+      .recent_first.to_a
   end
 
   def load_approvers

@@ -165,7 +165,10 @@
           <li class="flex items-center justify-between gap-2 rounded-xl px-3 py-2 <%= 'bg-brand-50' if version.id == @version.id %>">
             <span class="text-sm text-ink-800"><%= version.label %></span>
             <span class="flex items-center gap-2"><span class="sv-num text-sm text-ink-600"><%= money(version.total) %></span>
-              <%= badge(version.status_label, tone: { "approved" => :success, "rejected" => :danger, "sent" => :warning }.fetch(version.status, :neutral), dot: false) %></span>
+              <%= badge(version.status_label, tone: { "approved" => :success, "rejected" => :danger, "sent" => :warning }.fetch(version.status, :neutral), dot: false) %>
+              <% unless version.status == "draft" %>
+                <%= link_to pdf_quote_path(@quote, version: version.version_number), class: "rounded-lg p-1 text-ink-500 hover:bg-ink-100 hover:text-ink-800", data: { turbo: false } do %><%= icon(:download, size: 16, label: "Baixar PDF da #{version.label}") %><% end %>
+              <% end %></span>
           </li>
         <% end %>
       </ol>

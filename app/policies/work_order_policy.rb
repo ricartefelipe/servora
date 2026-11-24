@@ -27,6 +27,8 @@ class WorkOrderPolicy < ApplicationPolicy
   def view_finance? = can?(:finance_view) && show?
   def bill? = can?(:finance_manage) && !record.canceled?
   def record_expense? = can?(:finance_manage) && !record.canceled?
+  def add_evidence? = update_execution?
+  def remove_evidence? = can?(:work_orders_manage) && !record.finished?
   def view_prices? = can?(:quotes_view) || can?(:finance_view)
   def view_costs? = can?(:costs_view)
 

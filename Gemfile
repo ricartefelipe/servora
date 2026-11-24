@@ -63,6 +63,7 @@ end
 group :test do
   gem "capybara", "~> 3.40"
   gem "cuprite", "~> 0.20"
+  gem "pdf-reader", "~> 2.16", require: false
   gem "simplecov", "~> 1.3", require: false
   gem "webmock", "~> 3.40"
 end
