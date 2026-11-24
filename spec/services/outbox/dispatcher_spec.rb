@@ -108,7 +108,7 @@ RSpec.describe Outbox::Dispatcher, :committed do
   end
 
   it "lets concurrent dispatchers claim disjoint events" do
-    5.times { |index| issue_invitation("pessoa#{index}@servora.test") }
+    5.times { |index| issue_invitation("convite-concorrente#{index}@servora.test") }
 
     claims = ConcurrencyHelpers.run_in_parallel(2) do |index|
       described_class.new(worker_id: "worker-#{index}", batch_size: 5).claim.map(&:first)
