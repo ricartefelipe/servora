@@ -1,0 +1,85 @@
+<% content_for :title, "Prazos (SLA)" %>
+<%= page_header("Prazos de atendimento (SLA)", subtitle: "Prazos por prioridade contados no expediente da organização (#{current_organization.time_zone}). Pausas: aguardando aprovação, cliente ou peças.") %>
+
+<%= form_with url: sla_settings_path, method: :patch, scope: :sla, class: "space-y-6" do |f| %>
+  <section class="sv-card overflow-hidden" aria-labelledby="prazos-title">
+    <div class="border-b border-ink-100 px-5 py-4">
+      <h2 id="prazos-title" class="font-semibold text-ink-900">Prazos por prioridade</h2>
+      <p class="text-sm text-ink-500">Durações em horas e minutos (HH:MM). Prioridades sem prazo não têm SLA.</p>
+    </div>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead><tr><th scope="col">Prioridade</th><th scope="col">Com SLA</th><th scope="col">Primeira resposta</th><th scope="col">Resolução</th><th scope="col">Só no expediente</th><th scope="col">Alerta de risco</th></tr></thead>
+        <tbody class="divide-y divide-ink-100">
+          <% WorkOrder::PRIORITIES.each do |priority, label| %>
+            <% fields = @form.policies.fetch(priority, {}) %>
+            <% base = "sla[policies][#{priority}]" %>
+            <tr>
+              <th scope="row" class="font-medium text-ink-900"><%= label %></th>
+              <td>
+                <%= hidden_field_tag "#{base}[enabled]", "0", id: nil %>
+                <%= check_box_tag "#{base}[enabled]", "1", fields["enabled"] == "1", id: "sla-#{priority}-ativo", class: "rounded border-ink-300 text-brand-600", aria: { label: "SLA para prioridade #{label}" } %>
+              </td>
+              <td><%= text_field_tag "#{base}[first_response]", fields["first_response"], id: "sla-#{priority}-resposta", class: "sv-input w-28", placeholder: "02:00", inputmode: "numeric", aria: { label: "Primeira resposta, prioridade #{label}" } %></td>
+              <td><%= text_field_tag "#{base}[resolution]", fields["resolution"], id: "sla-#{priority}-resolucao", class: "sv-input w-28", placeholder: "08:00", inputmode: "numeric", aria: { label: "Resolução, prioridade #{label}" } %></td>
+              <td>
+                <%= hidden_field_tag "#{base}[business_hours_only]", "0", id: nil %>
+                <%= check_box_tag "#{base}[business_hours_only]", "1", fields["business_hours_only"] == "1", id: "sla-#{priority}-expediente", class: "rounded border-ink-300 text-brand-600", aria: { label: "Contar só no expediente, prioridade #{label}" } %>
+              </td>
+              <td><%= select_tag "#{base}[warning_percent]", options_for_select([50, 60, 70, 75, 80, 85, 90, 95].map { |v| ["#{v}% do prazo", v] }, fields["warning_percent"].to_i), id: "sla-#{priority}-alerta", class: "sv-input", aria: { label: "Alerta de risco, prioridade #{label}" } %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sv-card overflow-hidden" aria-labelledby="expediente-title">
+    <div class="border-b border-ink-100 px-5 py-4">
+      <h2 id="expediente-title" class="font-semibold text-ink-900">Expediente</h2>
+      <p class="text-sm text-ink-500">Até dois intervalos por dia (ex.: 08:00–12:00 e 13:00–18:00). Dias em branco não contam prazo. Use 24:00 para fim do dia.</p>
+    </div>
+    <div class="divide-y divide-ink-100">
+      <% BusinessHour::WEEKDAYS.each_with_index do |day, weekday| %>
+        <% fields = @form.hours.fetch(weekday.to_s, {}) %>
+        <fieldset class="flex flex-wrap items-center gap-3 px-5 py-3">
+          <legend class="w-24 float-left text-sm font-medium text-ink-800"><%= day %></legend>
+          <% 2.times do |index| %>
+            <div class="flex items-center gap-1">
+              <%= text_field_tag "sla[hours][#{weekday}][start#{index + 1}]", fields["start#{index + 1}"], id: "expediente-#{weekday}-#{index}-inicio", class: "sv-input w-24", placeholder: "08:00", aria: { label: "#{day}, intervalo #{index + 1}, início" } %>
+              <span class="text-ink-400" aria-hidden="true">–</span>
+              <%= text_field_tag "sla[hours][#{weekday}][end#{index + 1}]", fields["end#{index + 1}"], id: "expediente-#{weekday}-#{index}-fim", class: "sv-input w-24", placeholder: "12:00", aria: { label: "#{day}, intervalo #{index + 1}, fim" } %>
+            </div>
+          <% end %>
+        </fieldset>
+      <% end %>
+    </div>
+  </section>
+
+  <div class="flex justify-end"><%= f.button "Salvar prazos e expediente", type: "submit", class: "sv-btn-primary", data: { turbo_submits_with: "Salvando…" } %></div>
+<% end %>
+
+<section id="feriados" class="sv-card mt-6 overflow-hidden" aria-labelledby="feriados-title">
+  <div class="border-b border-ink-100 px-5 py-4">
+    <h2 id="feriados-title" class="font-semibold text-ink-900">Feriados</h2>
+    <p class="text-sm text-ink-500">Dias sem expediente para a contagem dos prazos.</p>
+  </div>
+  <%= form_with model: @holiday, url: holidays_path, class: "flex flex-wrap items-end gap-3 border-b border-ink-100 px-5 py-4" do |f| %>
+    <div><%= f.label :date, "Data", class: "sv-label" %><%= f.date_field :date, class: "sv-input", required: true %></div>
+    <div class="min-w-56 flex-1"><%= f.label :name, "Nome", class: "sv-label" %><%= f.text_field :name, class: "sv-input", required: true %></div>
+    <%= f.button "Adicionar feriado", type: "submit", class: "sv-btn-secondary" %>
+  <% end %>
+  <% if @holidays.empty? %>
+    <p class="px-5 py-6 text-sm text-ink-500">Nenhum feriado cadastrado para este ano em diante.</p>
+  <% else %>
+    <ul class="divide-y divide-ink-100" role="list">
+      <% @holidays.each do |holiday| %>
+        <li class="flex items-center gap-3 px-5 py-2 text-sm">
+          <span class="sv-num w-28 text-ink-600"><%= date(holiday.date) %></span>
+          <span class="flex-1 text-ink-900"><%= holiday.name %></span>
+          <%= button_to "Remover", holiday_path(holiday), method: :delete, class: "sv-btn-ghost sv-btn-sm", form: { data: { turbo_confirm: "Remover o feriado #{holiday.name}?" } } %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>
