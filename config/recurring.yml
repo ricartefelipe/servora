@@ -5,6 +5,11 @@ default: &default
     queue: outbox
     schedule: every 10 seconds
 
+  payment_reconciliation:
+    class: Payments::ReconcileJob
+    queue: integrations
+    schedule: every 5 minutes
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default
