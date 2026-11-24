@@ -25,6 +25,35 @@ COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiS
 
 
 --
+-- Name: servora_claim_outbox_events(text, integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_claim_outbox_events(p_worker text, p_limit integer, p_lease_seconds integer) RETURNS TABLE(event_id uuid, organization_id uuid)
+    LANGUAGE sql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+    WITH candidates AS (
+      SELECT e.id
+      FROM outbox_events e
+      WHERE (e.status = 'pending' AND e.available_at <= clock_timestamp())
+         OR (e.status = 'processing' AND e.locked_until < clock_timestamp())
+      ORDER BY e.available_at, e.id
+      LIMIT LEAST(GREATEST(p_limit, 1), 100)
+      FOR UPDATE SKIP LOCKED
+    )
+    UPDATE outbox_events e
+    SET status = 'processing',
+        locked_by = left(p_worker, 120),
+        locked_until = clock_timestamp() + make_interval(secs => LEAST(GREATEST(p_lease_seconds, 10), 900)),
+        attempts = e.attempts + 1,
+        updated_at = clock_timestamp()
+    FROM candidates c
+    WHERE e.id = c.id
+    RETURNING e.id, e.organization_id
+  $$;
+
+
+--
 -- Name: servora_current_organization_id(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -40,6 +69,21 @@ CREATE FUNCTION public.servora_current_organization_id() RETURNS uuid
 CREATE FUNCTION public.servora_current_user_id() RETURNS uuid
     LANGUAGE sql STABLE PARALLEL SAFE
     AS $$ SELECT NULLIF(current_setting('servora.user_id', true), '')::uuid $$;
+
+
+--
+-- Name: servora_outbox_backlog(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_outbox_backlog() RETURNS TABLE(status text, total bigint, oldest_available_at timestamp with time zone)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+    SELECT e.status::text, count(*), min(e.available_at)
+    FROM outbox_events e
+    WHERE e.status IN ('pending', 'processing', 'dead')
+    GROUP BY e.status
+  $$;
 
 
 --
@@ -135,6 +179,25 @@ CREATE TABLE public.memberships (
 
 
 --
+-- Name: notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notifications (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    title character varying NOT NULL,
+    body character varying,
+    path character varying,
+    read_at timestamp(6) with time zone,
+    outbox_event_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    recipient_membership_id uuid NOT NULL
+);
+
+
+--
 -- Name: organizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -154,6 +217,50 @@ CREATE TABLE public.organizations (
     CONSTRAINT organizations_document_digits CHECK (((document IS NULL) OR ((document)::text ~ '^([0-9]{11}|[0-9A-Z]{12}[0-9]{2})$'::text))),
     CONSTRAINT organizations_status CHECK (((status)::text = ANY (ARRAY['active'::text, 'suspended'::text]))),
     CONSTRAINT organizations_travel_buffer CHECK (((travel_buffer_minutes >= 0) AND (travel_buffer_minutes <= 480)))
+);
+
+
+--
+-- Name: outbox_event_failures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.outbox_event_failures (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    attempt integer NOT NULL,
+    error_class character varying NOT NULL,
+    error_message character varying,
+    transient boolean NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    outbox_event_id uuid NOT NULL
+);
+
+
+--
+-- Name: outbox_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.outbox_events (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    event_type character varying NOT NULL,
+    aggregate_type character varying NOT NULL,
+    aggregate_id uuid NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    dedup_key character varying,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    max_attempts integer DEFAULT 8 NOT NULL,
+    available_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    locked_by character varying,
+    locked_until timestamp(6) with time zone,
+    processed_at timestamp(6) with time zone,
+    last_error character varying,
+    request_id character varying,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT outbox_events_attempts CHECK (((attempts >= 0) AND ((max_attempts >= 1) AND (max_attempts <= 50)))),
+    CONSTRAINT outbox_events_status CHECK (((status)::text = ANY (ARRAY['pending'::text, 'processing'::text, 'processed'::text, 'dead'::text])))
 );
 
 
@@ -250,11 +357,35 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: outbox_event_failures outbox_event_failures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_event_failures
+    ADD CONSTRAINT outbox_event_failures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: outbox_events outbox_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events
+    ADD CONSTRAINT outbox_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -293,6 +424,20 @@ CREATE INDEX idx_on_organization_id_auditable_type_auditable_id_b2857e335c ON pu
 --
 
 CREATE INDEX idx_on_organization_id_invited_by_membership_id_24eab2f90c ON public.invitations USING btree (organization_id, invited_by_membership_id);
+
+
+--
+-- Name: idx_on_organization_id_outbox_event_id_4fefddfda1; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_outbox_event_id_4fefddfda1 ON public.outbox_event_failures USING btree (organization_id, outbox_event_id);
+
+
+--
+-- Name: idx_on_organization_id_status_created_at_1118c31bba; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_status_created_at_1118c31bba ON public.outbox_events USING btree (organization_id, status, created_at);
 
 
 --
@@ -359,6 +504,62 @@ CREATE INDEX index_memberships_on_user_id ON public.memberships USING btree (use
 
 
 --
+-- Name: index_notifications_dedup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_notifications_dedup ON public.notifications USING btree (organization_id, outbox_event_id, recipient_membership_id, kind);
+
+
+--
+-- Name: index_notifications_inbox; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notifications_inbox ON public.notifications USING btree (organization_id, recipient_membership_id, created_at DESC);
+
+
+--
+-- Name: index_notifications_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_notifications_on_tenant_key ON public.notifications USING btree (organization_id, id);
+
+
+--
+-- Name: index_outbox_event_failures_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_outbox_event_failures_on_tenant_key ON public.outbox_event_failures USING btree (organization_id, id);
+
+
+--
+-- Name: index_outbox_events_due; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_outbox_events_due ON public.outbox_events USING btree (available_at, id) WHERE ((status)::text = 'pending'::text);
+
+
+--
+-- Name: index_outbox_events_leases; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_outbox_events_leases ON public.outbox_events USING btree (locked_until) WHERE ((status)::text = 'processing'::text);
+
+
+--
+-- Name: index_outbox_events_on_organization_id_and_dedup_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_outbox_events_on_organization_id_and_dedup_key ON public.outbox_events USING btree (organization_id, dedup_key) WHERE (dedup_key IS NOT NULL);
+
+
+--
+-- Name: index_outbox_events_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_outbox_events_on_tenant_key ON public.outbox_events USING btree (organization_id, id);
+
+
+--
 -- Name: index_user_sessions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -409,6 +610,22 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: notifications fk_notifications_recipient_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT fk_notifications_recipient_membership_id_tenant FOREIGN KEY (organization_id, recipient_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: outbox_event_failures fk_outbox_event_failures_outbox_event_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_event_failures
+    ADD CONSTRAINT fk_outbox_event_failures_outbox_event_id_tenant FOREIGN KEY (organization_id, outbox_event_id) REFERENCES public.outbox_events(organization_id, id);
+
+
+--
 -- Name: invitations fk_rails_0fe4c14f0e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -417,11 +634,27 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: notifications fk_rails_394d9847aa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT fk_rails_394d9847aa FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: memberships fk_rails_64267aab58; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT fk_rails_64267aab58 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: outbox_event_failures fk_rails_93d0f08c9e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_event_failures
+    ADD CONSTRAINT fk_rails_93d0f08c9e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -438,6 +671,14 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT fk_rails_9fa262d742 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: outbox_events fk_rails_b6cb24ddb3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events
+    ADD CONSTRAINT fk_rails_b6cb24ddb3 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -496,6 +737,12 @@ CREATE POLICY memberships_update ON public.memberships FOR UPDATE USING ((organi
 
 
 --
+-- Name: notifications; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: organizations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -525,6 +772,18 @@ CREATE POLICY organizations_update ON public.organizations FOR UPDATE USING ((id
 
 
 --
+-- Name: outbox_event_failures; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.outbox_event_failures ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: outbox_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.outbox_events ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -539,12 +798,35 @@ CREATE POLICY tenant_isolation ON public.invitations USING ((organization_id = p
 
 
 --
+-- Name: notifications tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.notifications USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: outbox_event_failures tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.outbox_event_failures USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: outbox_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.outbox_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124002100'),
+('20261124002000'),
 ('20261124001300'),
 ('20261124001200'),
 ('20261124001100'),
