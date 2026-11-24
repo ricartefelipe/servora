@@ -33,6 +33,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   organização, pausas por espera de aprovação, cliente ou peças, retomada na reabertura, alertas de risco e de
   estouro sem duplicidade, painel na ordem de serviço e indicador no painel inicial.
 
+- Anexos da ordem de serviço (fotos e documentos) com validação do conteúdo pela assinatura do arquivo,
+  limites de tamanho, download autorizado com cabeçalhos privados e Active Storage isolado por organização.
+- PDFs da proposta comercial (versão enviada) e do relatório de execução (cada versão), gerados a partir dos
+  dados congelados.
+
 ### Corrigido
 
 - A aba selecionada é mantida após enviar formulários (o redirecionamento descartava o fragmento da URL).
