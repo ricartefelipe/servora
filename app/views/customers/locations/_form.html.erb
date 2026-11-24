@@ -1,0 +1,20 @@
+<%= form_with model: location, url: (location.persisted? ? customer_location_path(customer, location) : customer_locations_path(customer)),
+      scope: :service_location, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-6">
+    <%= f.field :name, label: "Identificação", required: true, wrapper: { class: "sm:col-span-3" }, autofocus: true %>
+    <%= f.field :postal_code, label: "CEP", value: Addresses::BrazilianStates.format_postal_code(location.postal_code),
+          wrapper: { class: "sm:col-span-3" }, inputmode: "numeric" %>
+    <%= f.field :street, label: "Logradouro", required: true, wrapper: { class: "sm:col-span-4" } %>
+    <%= f.field :number, label: "Número", wrapper: { class: "sm:col-span-2" } %>
+    <%= f.field :complement, label: "Complemento", wrapper: { class: "sm:col-span-3" } %>
+    <%= f.field :district, label: "Bairro", wrapper: { class: "sm:col-span-3" } %>
+    <%= f.field :city, label: "Cidade", required: true, wrapper: { class: "sm:col-span-4" } %>
+    <%= f.select_field :state, Addresses::BrazilianStates::STATES.map { |code, name| [name, code] }, label: "UF",
+          include_blank: "Selecione", wrapper: { class: "sm:col-span-2" } %>
+  </div>
+  <%= f.text_area_field :access_instructions, label: "Instruções de acesso", rows: 2 %>
+  <div class="flex justify-end gap-3">
+    <%= f.submit_button(location.persisted? ? "Salvar local" : "Adicionar local") %>
+  </div>
+<% end %>

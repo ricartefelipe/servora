@@ -59,6 +59,30 @@ Rails.application.routes.draw do
     resource :settings, path: "configuracoes", only: %i[edit update] do
       patch :complete_onboarding, path: "concluir-primeiros-passos"
     end
+    resources :customers, path: "clientes", except: :destroy do
+      member do
+        patch :archive, path: "arquivar"
+        patch :restore, path: "reativar"
+      end
+      scope module: :customers do
+        resources :locations, path: "locais", only: %i[new create edit update] do
+          patch :archive, on: :member, path: "arquivar"
+          get :options, on: :collection, path: "opcoes"
+        end
+        resources :contacts, path: "contatos", only: %i[new create edit update] do
+          patch :archive, on: :member, path: "arquivar"
+        end
+      end
+    end
+    resources :equipment, path: "equipamentos" do
+      member do
+        get :move, path: "mover"
+        patch :relocate, path: "mover"
+        patch :change_status, path: "estado"
+        patch :archive, path: "arquivar"
+        patch :restore, path: "reativar"
+      end
+    end
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"

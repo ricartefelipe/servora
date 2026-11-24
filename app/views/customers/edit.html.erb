@@ -1,0 +1,19 @@
+<% content_for :title, "Editar cliente" %>
+<%= page_header("Editar cliente", eyebrow: @customer.display_name) %>
+<%= form_with model: @customer, url: customer_path(@customer), class: "sv-card max-w-3xl space-y-5 p-6" do |f| %>
+  <%= f.error_summary %>
+  <%= f.hidden_field :lock_version %>
+  <%= f.select_field :kind, Customer::KINDS.map { |value, label| [label, value] }, label: "Tipo" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.field :name, label: "Nome ou razão social", required: true %>
+    <%= f.field :trade_name, label: "Nome fantasia" %>
+    <%= f.field :document, label: "CPF ou CNPJ", value: format_document(@customer.document) %>
+    <%= f.field :email, label: "E-mail", as: :email_field %>
+    <%= f.field :phone, label: "Telefone", as: :telephone_field %>
+  </div>
+  <%= f.text_area_field :notes, label: "Observações", rows: 3 %>
+  <div class="flex gap-3">
+    <%= f.submit_button "Salvar" %>
+    <%= link_to "Cancelar", customer_path(@customer), class: "sv-btn-secondary" %>
+  </div>
+<% end %>

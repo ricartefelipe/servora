@@ -14,7 +14,7 @@
   <% if @pagination.records.empty? %>
     <%= empty_state("Nada por aqui", description: "Nenhum evento nesta situação.", icon_name: :check) %>
   <% else %>
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><th scope="col">Evento</th><th scope="col">Situação</th><th scope="col">Tentativas</th><th scope="col">Criado</th><th scope="col"><span class="sr-only">Detalhes</span></th></tr></thead>
         <tbody class="divide-y divide-ink-100">

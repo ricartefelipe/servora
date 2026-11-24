@@ -9,6 +9,10 @@ module NavigationHelper
     ["Operação", [
       NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards])
     ]],
+    ["Cadastros", [
+      NavItem.new("Clientes", :customers_path, :customers, :customers_view, %w[customers locations contacts]),
+      NavItem.new("Equipamentos", :equipment_index_path, :equipment, :equipment_view, %w[equipment])
+    ]],
     ["Gestão", [
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),

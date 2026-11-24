@@ -13,7 +13,7 @@
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhum evento encontrado", description: "As ações registradas aparecerão aqui.", icon_name: :audit) %>
   <% else %>
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col">Detalhes</th></tr></thead>
         <tbody class="divide-y divide-ink-100">
