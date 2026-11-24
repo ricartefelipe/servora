@@ -1,0 +1,8 @@
+Olá, <%= @contact.name %>.
+
+<% if @quote %><%= @organization.name %> enviou a proposta <%= @quote.number %> — <%= @quote.title %> para sua análise.<% else %>Você recebeu acesso ao portal de clientes de <%= @organization.name %>.<% end %>
+O link é pessoal, pode ser usado uma única vez e vale até <%= l(@grant.expires_at, format: :long) %>.
+
+Acesse: <%= @url %>
+
+Não encaminhe este e-mail. Se não esperava esta mensagem, ignore-a.
