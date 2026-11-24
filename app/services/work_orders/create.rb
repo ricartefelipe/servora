@@ -13,7 +13,7 @@ module WorkOrders
 
     def call
       ActiveRecord::Base.transaction(requires_new: true) do
-        work_order = @organization.work_orders.create!(@attributes.merge(
+        work_order = @organization.work_orders.create!(with_contract(@attributes).merge(
           number: Numbering.next!(organization: @organization, scope: "work_order"), created_by: @actor,
           requested_at: @attributes[:requested_at] || Time.current, status: "open"
         ))
@@ -23,6 +23,18 @@ module WorkOrders
         Outbox::Publisher.publish!(event_type: "work_order.created", aggregate: work_order)
         work_order
       end
+    end
+
+    private
+
+    # A work order without an explicit contract is linked to the customer's
+    # contract in force that covers the service type, when there is one.
+    def with_contract(attributes)
+      return attributes if attributes.key?(:contract_id) || attributes[:customer_id].blank?
+
+      contract = Contracts::Coverage.resolve(customer_id: attributes[:customer_id], service_type_id: attributes[:service_type_id],
+        on: (attributes[:requested_at] || Time.current).to_date)
+      contract ? attributes.merge(contract_id: contract.id) : attributes
     end
   end
 end

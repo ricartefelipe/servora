@@ -354,6 +354,67 @@ CREATE TABLE public.catalog_items (
 
 
 --
+-- Name: contract_service_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_service_types (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    contract_id uuid NOT NULL,
+    service_type_id uuid NOT NULL
+);
+
+
+--
+-- Name: contract_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_versions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    version_number integer NOT NULL,
+    terms jsonb NOT NULL,
+    reason text,
+    created_by_membership_id uuid,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    contract_id uuid NOT NULL
+);
+
+
+--
+-- Name: contracts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contracts (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    number character varying NOT NULL,
+    title character varying NOT NULL,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    starts_on date NOT NULL,
+    ends_on date,
+    monthly_fee numeric(14,2) DEFAULT 0.0 NOT NULL,
+    monthly_visit_limit integer,
+    covers_parts boolean DEFAULT false NOT NULL,
+    scope text,
+    current_version integer DEFAULT 1 NOT NULL,
+    activated_at timestamp(6) with time zone,
+    suspended_at timestamp(6) with time zone,
+    ended_at timestamp(6) with time zone,
+    status_reason text,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    customer_id uuid NOT NULL,
+    created_by_membership_id uuid,
+    CONSTRAINT contracts_status CHECK (((status)::text = ANY (ARRAY['draft'::text, 'active'::text, 'suspended'::text, 'ended'::text]))),
+    CONSTRAINT contracts_status_timestamps CHECK (((((status)::text <> 'active'::text) OR (activated_at IS NOT NULL)) AND (((status)::text <> 'suspended'::text) OR (suspended_at IS NOT NULL)) AND (((status)::text <> 'ended'::text) OR (ended_at IS NOT NULL)))),
+    CONSTRAINT contracts_values CHECK ((((ends_on IS NULL) OR (ends_on >= starts_on)) AND (monthly_fee >= (0)::numeric) AND ((monthly_visit_limit IS NULL) OR (monthly_visit_limit > 0)) AND (current_version > 0)))
+);
+
+
+--
 -- Name: customer_contacts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -508,6 +569,71 @@ CREATE TABLE public.invitations (
     invited_by_membership_id uuid NOT NULL,
     CONSTRAINT invitations_email_lowercase CHECK (((email)::text = lower((email)::text))),
     CONSTRAINT invitations_single_outcome CHECK ((NOT ((accepted_at IS NOT NULL) AND (revoked_at IS NOT NULL))))
+);
+
+
+--
+-- Name: maintenance_occurrences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.maintenance_occurrences (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    sequence integer NOT NULL,
+    due_on date NOT NULL,
+    generated_at timestamp(6) with time zone NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    maintenance_plan_id uuid NOT NULL,
+    work_order_id uuid NOT NULL,
+    CONSTRAINT maintenance_occurrences_sequence CHECK ((sequence >= 1))
+);
+
+
+--
+-- Name: maintenance_plan_equipment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.maintenance_plan_equipment (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    equipment_id uuid NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    maintenance_plan_id uuid NOT NULL
+);
+
+
+--
+-- Name: maintenance_plans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.maintenance_plans (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    title character varying NOT NULL,
+    priority character varying DEFAULT 'normal'::character varying NOT NULL,
+    frequency_unit character varying NOT NULL,
+    frequency_interval integer DEFAULT 1 NOT NULL,
+    schedule_mode character varying DEFAULT 'calendar'::character varying NOT NULL,
+    anchor_date date NOT NULL,
+    anchor_sequence integer DEFAULT 1 NOT NULL,
+    last_sequence integer DEFAULT 0 NOT NULL,
+    lead_days integer DEFAULT 7 NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    instructions text,
+    lock_version integer DEFAULT 0 NOT NULL,
+    customer_id uuid NOT NULL,
+    service_location_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    contract_id uuid NOT NULL,
+    service_type_id uuid,
+    created_by_membership_id uuid,
+    CONSTRAINT maintenance_plans_mode CHECK (((schedule_mode)::text = ANY (ARRAY['calendar'::text, 'after_completion'::text]))),
+    CONSTRAINT maintenance_plans_priority CHECK (((priority)::text = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text]))),
+    CONSTRAINT maintenance_plans_unit CHECK (((frequency_unit)::text = ANY (ARRAY['week'::text, 'month'::text, 'year'::text]))),
+    CONSTRAINT maintenance_plans_values CHECK (((frequency_interval >= 1) AND (frequency_interval <= 104) AND (lead_days >= 0) AND (lead_days <= 90) AND (anchor_sequence >= 1) AND (last_sequence >= 0) AND (anchor_sequence <= (last_sequence + 1))))
 );
 
 
@@ -1424,6 +1550,7 @@ CREATE TABLE public.work_orders (
     quote_version_id uuid,
     service_type_id uuid,
     created_by_membership_id uuid NOT NULL,
+    contract_id uuid,
     CONSTRAINT work_orders_cancel_reason CHECK ((((status)::text <> 'canceled'::text) OR ((canceled_at IS NOT NULL) AND (cancel_reason IS NOT NULL)))),
     CONSTRAINT work_orders_completed_at CHECK ((((status)::text <> 'completed'::text) OR (completed_at IS NOT NULL))),
     CONSTRAINT work_orders_origin CHECK (((origin)::text = ANY (ARRAY['phone'::text, 'email'::text, 'whatsapp'::text, 'portal'::text, 'quote'::text, 'preventive'::text, 'internal'::text]))),
@@ -1472,6 +1599,30 @@ ALTER TABLE ONLY public.audit_events
 
 ALTER TABLE ONLY public.catalog_items
     ADD CONSTRAINT catalog_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contract_service_types contract_service_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_service_types
+    ADD CONSTRAINT contract_service_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contract_versions contract_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_versions
+    ADD CONSTRAINT contract_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contracts contracts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contracts
+    ADD CONSTRAINT contracts_pkey PRIMARY KEY (id);
 
 
 --
@@ -1528,6 +1679,30 @@ ALTER TABLE ONLY public.financial_events
 
 ALTER TABLE ONLY public.invitations
     ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: maintenance_occurrences maintenance_occurrences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_occurrences
+    ADD CONSTRAINT maintenance_occurrences_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: maintenance_plan_equipment maintenance_plan_equipment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plan_equipment
+    ADD CONSTRAINT maintenance_plan_equipment_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: maintenance_plans maintenance_plans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT maintenance_plans_pkey PRIMARY KEY (id);
 
 
 --
@@ -1891,6 +2066,13 @@ ALTER TABLE ONLY public.work_schedules
 
 
 --
+-- Name: idx_on_contract_id_service_type_id_4f53b748d2; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_contract_id_service_type_id_4f53b748d2 ON public.contract_service_types USING btree (contract_id, service_type_id);
+
+
+--
 -- Name: idx_on_organization_id_auditable_type_auditable_id_b2857e335c; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1944,6 +2126,13 @@ CREATE INDEX idx_on_organization_id_membership_id_765e54b84e ON public.work_orde
 --
 
 CREATE INDEX idx_on_organization_id_outbox_event_id_4fefddfda1 ON public.outbox_event_failures USING btree (organization_id, outbox_event_id);
+
+
+--
+-- Name: idx_on_organization_id_service_type_id_0173a78480; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_service_type_id_0173a78480 ON public.contract_service_types USING btree (organization_id, service_type_id);
 
 
 --
@@ -2042,6 +2231,55 @@ CREATE UNIQUE INDEX index_catalog_items_on_organization_id_and_sku ON public.cat
 --
 
 CREATE UNIQUE INDEX index_catalog_items_on_tenant_key ON public.catalog_items USING btree (organization_id, id);
+
+
+--
+-- Name: index_contract_service_types_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contract_service_types_on_tenant_key ON public.contract_service_types USING btree (organization_id, id);
+
+
+--
+-- Name: index_contract_versions_on_contract_id_and_version_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contract_versions_on_contract_id_and_version_number ON public.contract_versions USING btree (contract_id, version_number);
+
+
+--
+-- Name: index_contract_versions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contract_versions_on_tenant_key ON public.contract_versions USING btree (organization_id, id);
+
+
+--
+-- Name: index_contracts_on_customer_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contracts_on_customer_key ON public.contracts USING btree (organization_id, customer_id, id);
+
+
+--
+-- Name: index_contracts_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_contracts_on_organization_id_and_customer_id ON public.contracts USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_contracts_on_organization_id_and_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contracts_on_organization_id_and_number ON public.contracts USING btree (organization_id, number);
+
+
+--
+-- Name: index_contracts_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_contracts_on_tenant_key ON public.contracts USING btree (organization_id, id);
 
 
 --
@@ -2189,6 +2427,62 @@ CREATE UNIQUE INDEX index_invitations_on_token_digest ON public.invitations USIN
 --
 
 CREATE UNIQUE INDEX index_invitations_pending_email ON public.invitations USING btree (organization_id, email) WHERE ((accepted_at IS NULL) AND (revoked_at IS NULL));
+
+
+--
+-- Name: index_maintenance_occurrences_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_occurrences_identity ON public.maintenance_occurrences USING btree (maintenance_plan_id, sequence);
+
+
+--
+-- Name: index_maintenance_occurrences_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_occurrences_on_tenant_key ON public.maintenance_occurrences USING btree (organization_id, id);
+
+
+--
+-- Name: index_maintenance_occurrences_on_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_occurrences_on_work_order_id ON public.maintenance_occurrences USING btree (work_order_id);
+
+
+--
+-- Name: index_maintenance_plan_equipment_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_plan_equipment_on_tenant_key ON public.maintenance_plan_equipment USING btree (organization_id, id);
+
+
+--
+-- Name: index_maintenance_plan_equipment_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_plan_equipment_unique ON public.maintenance_plan_equipment USING btree (maintenance_plan_id, equipment_id);
+
+
+--
+-- Name: index_maintenance_plans_on_organization_id_and_contract_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_maintenance_plans_on_organization_id_and_contract_id ON public.maintenance_plans USING btree (organization_id, contract_id);
+
+
+--
+-- Name: index_maintenance_plans_on_organization_id_and_service_type_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_maintenance_plans_on_organization_id_and_service_type_id ON public.maintenance_plans USING btree (organization_id, service_type_id);
+
+
+--
+-- Name: index_maintenance_plans_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_maintenance_plans_on_tenant_key ON public.maintenance_plans USING btree (organization_id, id);
 
 
 --
@@ -2934,6 +3228,13 @@ CREATE UNIQUE INDEX index_work_order_transitions_on_tenant_key ON public.work_or
 
 
 --
+-- Name: index_work_orders_on_contract_usage; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_work_orders_on_contract_usage ON public.work_orders USING btree (organization_id, contract_id, requested_at);
+
+
+--
 -- Name: index_work_orders_on_customer_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3011,6 +3312,46 @@ CREATE TRIGGER stock_balances_guard BEFORE INSERT OR UPDATE ON public.stock_bala
 
 
 --
+-- Name: contract_service_types fk_contract_service_types_contract_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_service_types
+    ADD CONSTRAINT fk_contract_service_types_contract_id_tenant FOREIGN KEY (organization_id, contract_id) REFERENCES public.contracts(organization_id, id);
+
+
+--
+-- Name: contract_service_types fk_contract_service_types_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_service_types
+    ADD CONSTRAINT fk_contract_service_types_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id);
+
+
+--
+-- Name: contract_versions fk_contract_versions_contract_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_versions
+    ADD CONSTRAINT fk_contract_versions_contract_id_tenant FOREIGN KEY (organization_id, contract_id) REFERENCES public.contracts(organization_id, id);
+
+
+--
+-- Name: contracts fk_contracts_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contracts
+    ADD CONSTRAINT fk_contracts_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: contracts fk_contracts_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contracts
+    ADD CONSTRAINT fk_contracts_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
 -- Name: customer_contacts fk_customer_contacts_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3080,6 +3421,78 @@ ALTER TABLE ONLY public.financial_events
 
 ALTER TABLE ONLY public.invitations
     ADD CONSTRAINT fk_invitations_invited_by_membership_id_tenant FOREIGN KEY (organization_id, invited_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: maintenance_occurrences fk_maintenance_occurrences_maintenance_plan_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_occurrences
+    ADD CONSTRAINT fk_maintenance_occurrences_maintenance_plan_id_tenant FOREIGN KEY (organization_id, maintenance_plan_id) REFERENCES public.maintenance_plans(organization_id, id);
+
+
+--
+-- Name: maintenance_occurrences fk_maintenance_occurrences_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_occurrences
+    ADD CONSTRAINT fk_maintenance_occurrences_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: maintenance_plan_equipment fk_maintenance_plan_equipment_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plan_equipment
+    ADD CONSTRAINT fk_maintenance_plan_equipment_customer FOREIGN KEY (organization_id, customer_id, equipment_id) REFERENCES public.equipment(organization_id, customer_id, id);
+
+
+--
+-- Name: maintenance_plan_equipment fk_maintenance_plan_equipment_maintenance_plan_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plan_equipment
+    ADD CONSTRAINT fk_maintenance_plan_equipment_maintenance_plan_id_tenant FOREIGN KEY (organization_id, maintenance_plan_id) REFERENCES public.maintenance_plans(organization_id, id);
+
+
+--
+-- Name: maintenance_plans fk_maintenance_plans_contract_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_maintenance_plans_contract_customer FOREIGN KEY (organization_id, customer_id, contract_id) REFERENCES public.contracts(organization_id, customer_id, id);
+
+
+--
+-- Name: maintenance_plans fk_maintenance_plans_contract_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_maintenance_plans_contract_id_tenant FOREIGN KEY (organization_id, contract_id) REFERENCES public.contracts(organization_id, id);
+
+
+--
+-- Name: maintenance_plans fk_maintenance_plans_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_maintenance_plans_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: maintenance_plans fk_maintenance_plans_location_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_maintenance_plans_location_customer FOREIGN KEY (organization_id, customer_id, service_location_id) REFERENCES public.service_locations(organization_id, customer_id, id);
+
+
+--
+-- Name: maintenance_plans fk_maintenance_plans_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_maintenance_plans_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id);
 
 
 --
@@ -3379,6 +3792,22 @@ ALTER TABLE ONLY public.work_order_assignments
 
 
 --
+-- Name: maintenance_plan_equipment fk_rails_22cbc11974; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plan_equipment
+    ADD CONSTRAINT fk_rails_22cbc11974 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: maintenance_plans fk_rails_249b0e4599; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_plans
+    ADD CONSTRAINT fk_rails_249b0e4599 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: payment_charges fk_rails_2b518ebdf9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3472,6 +3901,14 @@ ALTER TABLE ONLY public.equipment
 
 ALTER TABLE ONLY public.customers
     ADD CONSTRAINT fk_rails_58234c715e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: contract_service_types fk_rails_5cd6448630; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_service_types
+    ADD CONSTRAINT fk_rails_5cd6448630 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3587,11 +4024,27 @@ ALTER TABLE ONLY public.team_members
 
 
 --
+-- Name: maintenance_occurrences fk_rails_9e9a70410b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.maintenance_occurrences
+    ADD CONSTRAINT fk_rails_9e9a70410b FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: user_sessions fk_rails_9fa262d742; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT fk_rails_9fa262d742 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: contracts fk_rails_a48f7202cc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contracts
+    ADD CONSTRAINT fk_rails_a48f7202cc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3696,6 +4149,14 @@ ALTER TABLE ONLY public.quote_versions
 
 ALTER TABLE ONLY public.catalog_items
     ADD CONSTRAINT fk_rails_d72295177d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: contract_versions fk_rails_d7d5b6fcc4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_versions
+    ADD CONSTRAINT fk_rails_d7d5b6fcc4 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -4059,6 +4520,14 @@ ALTER TABLE ONLY public.work_order_transitions
 
 
 --
+-- Name: work_orders fk_work_orders_contract_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_contract_customer FOREIGN KEY (organization_id, customer_id, contract_id) REFERENCES public.contracts(organization_id, customer_id, id);
+
+
+--
 -- Name: work_orders fk_work_orders_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4119,6 +4588,24 @@ ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalog_items ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: contract_service_types; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contract_service_types ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: contract_versions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contract_versions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: contracts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: customer_contacts; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -4159,6 +4646,24 @@ ALTER TABLE public.financial_events ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: maintenance_occurrences; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.maintenance_occurrences ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: maintenance_plan_equipment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.maintenance_plan_equipment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: maintenance_plans; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.maintenance_plans ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: material_consumptions; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4393,6 +4898,27 @@ CREATE POLICY tenant_isolation ON public.catalog_items USING ((organization_id =
 
 
 --
+-- Name: contract_service_types tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.contract_service_types USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: contract_versions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.contract_versions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: contracts tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.contracts USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: customer_contacts tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -4439,6 +4965,27 @@ CREATE POLICY tenant_isolation ON public.financial_events USING ((organization_i
 --
 
 CREATE POLICY tenant_isolation ON public.invitations USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: maintenance_occurrences tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.maintenance_occurrences USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: maintenance_plan_equipment tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.maintenance_plan_equipment USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: maintenance_plans tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.maintenance_plans USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -4793,6 +5340,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124009000'),
 ('20261124008000'),
 ('20261124007000'),
 ('20261124006100'),

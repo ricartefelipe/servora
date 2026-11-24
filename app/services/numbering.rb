@@ -4,7 +4,7 @@
 # ORC-2026-00042. Allocation is atomic; numbers consumed by a rolled back
 # transaction are not reused (gaps are acceptable, duplicates are not).
 module Numbering
-  PREFIXES = { "quote" => "ORC", "work_order" => "OS", "receivable" => "FAT" }.freeze
+  PREFIXES = { "quote" => "ORC", "work_order" => "OS", "receivable" => "FAT", "contract" => "CTR" }.freeze
 
   module_function
 

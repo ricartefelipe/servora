@@ -16,6 +16,7 @@ module Servora
     # Immutable history: rows are only ever inserted.
     APPEND_ONLY_TABLES = %w[
       audit_events
+      contract_versions
       equipment_events
       financial_events
       quote_events
