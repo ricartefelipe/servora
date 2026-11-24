@@ -2,6 +2,8 @@
 
 module Contracts
   class PlansController < TenantController
+    requires_module :preventive
+
     FIELDS = %i[title service_location_id service_type_id priority frequency_unit frequency_interval schedule_mode
                 anchor_date lead_days instructions active].freeze
 

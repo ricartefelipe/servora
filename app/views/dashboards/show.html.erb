@@ -27,6 +27,13 @@
   </section>
 <% end %>
 
+<% if current_subscription&.status == "trialing" && can?(:subscription_manage) %>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900" role="status">
+    <span><% if current_subscription.trial_expired? %>A avaliação terminou. Os dados seguem disponíveis para consulta.<% else %>Avaliação: <%= pluralize(current_subscription.trial_days_left, "dia restante", plural: "dias restantes") %> com todos os módulos.<% end %></span>
+    <%= link_to "Ver assinatura", subscription_path, class: "sv-btn-primary sv-btn-sm" %>
+  </div>
+<% end %>
+
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <% if (customers = @overview.active_customers_count) %>
     <%= stat_tile("Clientes ativos", customers) %>

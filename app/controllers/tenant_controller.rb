@@ -13,13 +13,20 @@ class TenantController < ApplicationController
   before_action :authenticate_user!
   around_action :within_organization
   before_action :enforce_mfa_enrollment
+  before_action :enforce_subscription_access
   # Every action must call authorize; index actions must also use a policy scope.
   after_action :verify_authorized
   after_action :verify_policy_scoped, if: -> { action_name == "index" }
 
   layout "app"
 
-  helper_method :current_membership, :current_organization, :can?
+  helper_method :current_membership, :current_organization, :can?, :module_enabled?, :current_subscription
+
+  # Restricts a controller to organizations whose subscription includes the
+  # module (inventory, preventive, finance, api).
+  def self.requires_module(code)
+    before_action { require_module!(code) }
+  end
 
   private
 
@@ -31,6 +38,33 @@ class TenantController < ApplicationController
 
   def can?(permission)
     current_membership&.can?(permission) || false
+  end
+
+  def current_subscription
+    return @current_subscription if defined?(@current_subscription)
+
+    @current_subscription = current_organization && Subscription.includes(:plan).find_by(organization_id: current_organization.id)
+  end
+
+  def module_enabled?(code) = current_subscription.nil? || current_subscription.module_enabled?(code)
+
+  def require_module!(code)
+    return if module_enabled?(code)
+
+    redirect_to dashboard_path,
+      alert: "Este recurso não faz parte do plano atual. Fale com o proprietário da conta para incluí-lo."
+  end
+
+  # After the trial (or with a pending/canceled subscription) the organization
+  # keeps reading its data but cannot register changes, except on the
+  # subscription page.
+  def enforce_subscription_access
+    return if request.get? || request.head? || !current_subscription&.read_only?
+    return if controller_name == "subscriptions"
+
+    redirect_back_or_to dashboard_path, status: :see_other,
+      alert: "A avaliação terminou ou a assinatura está pendente: os dados seguem disponíveis para consulta. " \
+             "Ative a assinatura para voltar a registrar."
   end
 
   # Explicitly tenant-scoped relation (RLS enforces the same rule). Used to load

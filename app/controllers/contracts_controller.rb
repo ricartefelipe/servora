@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ContractsController < TenantController
+  requires_module :preventive
+
   FIELDS = %i[customer_id title starts_on ends_on monthly_fee monthly_visit_limit covers_parts scope].freeze
 
   before_action :load_contract, only: %i[show edit update change_status]

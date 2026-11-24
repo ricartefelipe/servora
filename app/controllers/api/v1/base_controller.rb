@@ -38,8 +38,14 @@ module Api
 
         Servora::Tenancy.with_organization(organization_id) do
           @current_credential = ApiCredential.includes(created_by: :user).find_by!(token_digest: ApiCredential.digest(token))
+          organization = Organization.find(organization_id)
+          unless organization.module_enabled?(:api)
+            next render_error(:forbidden, "module_not_enabled",
+              "A API não faz parte do plano atual.")
+          end
+
           touch_usage
-          Current.set(api_credential: @current_credential, organization: Organization.find(organization_id), &)
+          Current.set(api_credential: @current_credential, organization:, &)
         end
       end
 

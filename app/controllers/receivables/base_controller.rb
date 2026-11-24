@@ -2,6 +2,8 @@
 
 module Receivables
   class BaseController < TenantController
+    requires_module :finance
+
     include ModalForms
 
     before_action :load_receivable

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ReceivablesController < TenantController
+  requires_module :finance
+
   include ModalForms
 
   FILTERS = %w[open partially_paid paid canceled overdue].freeze

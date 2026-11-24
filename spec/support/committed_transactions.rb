@@ -8,7 +8,8 @@ module TestSupport
     self.abstract_class = true
     connects_to database: { writing: :maintenance }
 
-    PRESERVED_TABLES = %w[schema_migrations ar_internal_metadata].freeze
+    # Platform reference data (plans, modules) is loaded once by db:privileges:apply.
+    PRESERVED_TABLES = %w[schema_migrations ar_internal_metadata plans plan_modules].freeze
 
     def self.truncate_all!
       tables = connection.tables - PRESERVED_TABLES

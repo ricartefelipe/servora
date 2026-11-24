@@ -53,7 +53,7 @@
     <%= render "shared/tabs", label: "Seções da ordem", tabs: [
           ["execucao", "Execução", nil], ["visitas", "Visitas", @work_order.visits.size],
           ["itens", "Serviços e materiais", @work_order.items.size],
-          *([["materiais", "Materiais", @consumptions.size]] if wo_policy.view_materials?),
+          *([["materiais", "Materiais", @consumptions.size]] if @consumptions),
           ["anexos", "Anexos", @evidences.size],
           ["historico", "Histórico", nil], ["relatorios", "Relatórios", @work_order.reports.size]] %>
 
@@ -208,7 +208,7 @@
       <% end %>
     </section>
 
-    <% if wo_policy.view_materials? %><%= render "work_orders/materials", wo_policy: %><% end %>
+    <% if @consumptions %><%= render "work_orders/materials", wo_policy: %><% end %>
     <%= render "work_orders/evidences", wo_policy: %>
 
     <section id="painel-historico" role="tabpanel" aria-labelledby="aba-historico" data-tabs-target="panel" hidden>

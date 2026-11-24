@@ -4,6 +4,8 @@ module Stock
   # Shared flow of the stock operation modals: options come from policy scopes
   # and the same scopes resolve the submitted identifiers.
   class BaseController < TenantController
+    requires_module :inventory
+
     include ModalForms
 
     private
