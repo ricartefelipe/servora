@@ -28,7 +28,8 @@ module Outbox
       "payment_refund.requested" => ["Payments::Handlers::SubmitRefund"],
       "sla.warning" => ["Notifications::Handlers::SlaAlert"],
       "sla.breached" => ["Notifications::Handlers::SlaAlert"],
-      "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"]
+      "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"],
+      "subscription_invoice.created" => ["Subscriptions::Handlers::SubmitInvoiceCharge"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

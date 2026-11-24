@@ -50,6 +50,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
 | Estornos no provedor | Envio após commit, aceite, recusa, resposta ambígua sem reenvio automático, resolução humana, pagamentos manuais sinalizados | `spec/services/payments/submit_refund_spec.rb`, `spec/requests/receivables_spec.rb` |
 | NFS-e | Emissão pelo provedor sem duplicidade após resposta perdida, rejeição, acompanhamento, cancelamento, emissão automática única | `spec/services/invoices_spec.rb`, `spec/requests/invoices_spec.rb`, `spec/services/payments/gateways/asaas_spec.rb` |
+| Cobrança da plataforma | Faturas por período sem duplicidade, implantação na primeira fatura, cobrança após commit, notificação autenticada e deduplicada, inadimplência e reativação | `spec/services/subscriptions/bill_spec.rb`, `spec/requests/platform_billing_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -61,8 +62,8 @@ demonstração em `docs/`.
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 84 exemplos (regras puras) + 479 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,52%, branches 83,38% |
+| `bash bin/test-all` | 84 exemplos (regras puras) + 486 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,45%, branches 83,04% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -83,8 +84,9 @@ demonstração em `docs/`.
 
 ## Em andamento
 
-- Cobrança automática da mensalidade da plataforma.
+- Release 1.1.0 (estornos no provedor, NFS-e, cobrança da plataforma).
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/cobranca-da-plataforma` a partir de `develop`.
+Após a integração: `release/1.1.0`. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos,
+NFS-e e cobrança da plataforma).

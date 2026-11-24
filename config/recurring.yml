@@ -25,6 +25,11 @@ default: &default
     queue: integrations
     schedule: every 10 minutes
 
+  subscription_billing:
+    class: Subscriptions::BillingJob
+    queue: default
+    schedule: every day at 02:00
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default

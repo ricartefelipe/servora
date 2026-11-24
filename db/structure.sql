@@ -1569,6 +1569,38 @@ CREATE TABLE public.stock_reservations (
 
 
 --
+-- Name: subscription_invoices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.subscription_invoices (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    subscription_id uuid NOT NULL,
+    period_start date NOT NULL,
+    period_end date NOT NULL,
+    due_on date NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    lines jsonb DEFAULT '[]'::jsonb NOT NULL,
+    status character varying DEFAULT 'open'::character varying NOT NULL,
+    provider character varying NOT NULL,
+    external_reference character varying NOT NULL,
+    external_id character varying,
+    charge_status character varying DEFAULT 'pending'::character varying NOT NULL,
+    payment_url character varying,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    paid_at timestamp(6) with time zone,
+    last_synced_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT subscription_invoices_charge_status CHECK (((charge_status)::text = ANY (ARRAY['pending'::text, 'submitted'::text, 'unknown'::text, 'confirmed'::text, 'failed'::text]))),
+    CONSTRAINT subscription_invoices_status CHECK (((status)::text = ANY (ARRAY['open'::text, 'paid'::text, 'void'::text]))),
+    CONSTRAINT subscription_invoices_values CHECK (((amount >= (0)::numeric) AND (period_end > period_start) AND (attempts >= 0)))
+);
+
+
+--
 -- Name: subscriptions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1588,6 +1620,7 @@ CREATE TABLE public.subscriptions (
     plan_id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
+    current_period_end date,
     CONSTRAINT subscriptions_implementation_status CHECK (((implementation_status)::text = ANY (ARRAY['not_applicable'::text, 'pending'::text, 'paid'::text, 'waived'::text]))),
     CONSTRAINT subscriptions_status CHECK (((status)::text = ANY (ARRAY['trialing'::text, 'active'::text, 'past_due'::text, 'canceled'::text]))),
     CONSTRAINT subscriptions_values CHECK (((technician_seats > 0) AND (monthly_amount >= (0)::numeric) AND (implementation_fee >= (0)::numeric) AND (((status)::text <> 'trialing'::text) OR (trial_ends_on IS NOT NULL))))
@@ -2507,6 +2540,14 @@ ALTER TABLE ONLY public.stock_reservations
 
 
 --
+-- Name: subscription_invoices subscription_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscription_invoices
+    ADD CONSTRAINT subscription_invoices_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2725,6 +2766,13 @@ CREATE UNIQUE INDEX idx_on_organization_id_external_reference_564cb051a0 ON publ
 
 
 --
+-- Name: idx_on_organization_id_external_reference_5f228312af; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_organization_id_external_reference_5f228312af ON public.subscription_invoices USING btree (organization_id, external_reference);
+
+
+--
 -- Name: idx_on_organization_id_invited_by_membership_id_24eab2f90c; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2781,6 +2829,13 @@ CREATE INDEX idx_on_organization_id_status_created_at_7c7e187d71 ON public.webho
 
 
 --
+-- Name: idx_on_organization_id_status_due_on_a1d7524e32; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_status_due_on_a1d7524e32 ON public.subscription_invoices USING btree (organization_id, status, due_on);
+
+
+--
 -- Name: idx_on_organization_id_status_priority_requested_at_20346fbe18; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2827,6 +2882,13 @@ CREATE INDEX idx_on_organization_id_work_order_id_8b9dd6799b ON public.work_orde
 --
 
 CREATE INDEX idx_on_organization_id_work_order_id_abfa99dc1a ON public.work_order_checklist_items USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: idx_on_subscription_id_period_start_806596f228; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_subscription_id_period_start_806596f228 ON public.subscription_invoices USING btree (subscription_id, period_start);
 
 
 --
@@ -3884,6 +3946,13 @@ CREATE INDEX index_stock_reservations_on_organization_id_and_work_order_id ON pu
 --
 
 CREATE UNIQUE INDEX index_stock_reservations_on_tenant_key ON public.stock_reservations USING btree (organization_id, id);
+
+
+--
+-- Name: index_subscription_invoices_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_subscription_invoices_on_tenant_key ON public.subscription_invoices USING btree (organization_id, id);
 
 
 --
@@ -5019,6 +5088,14 @@ ALTER TABLE ONLY public.contract_service_types
 
 
 --
+-- Name: subscription_invoices fk_rails_5d152dcc3c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscription_invoices
+    ADD CONSTRAINT fk_rails_5d152dcc3c FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: subscriptions fk_rails_63d3df128b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5536,6 +5613,14 @@ ALTER TABLE ONLY public.stock_reservations
 
 ALTER TABLE ONLY public.stock_reservations
     ADD CONSTRAINT fk_stock_reservations_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: subscription_invoices fk_subscription_invoices_subscription_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscription_invoices
+    ADD CONSTRAINT fk_subscription_invoices_subscription_id_tenant FOREIGN KEY (organization_id, subscription_id) REFERENCES public.subscriptions(organization_id, id);
 
 
 --
@@ -6199,6 +6284,12 @@ ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock_reservations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: subscription_invoices; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.subscription_invoices ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: subscriptions; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -6601,6 +6692,13 @@ CREATE POLICY tenant_isolation ON public.stock_reservations USING ((organization
 
 
 --
+-- Name: subscription_invoices tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.subscription_invoices USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: subscriptions tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -6830,6 +6928,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261125030000'),
 ('20261125020000'),
 ('20261125010000'),
 ('20261124015000'),

@@ -15,6 +15,8 @@ module Webhooks
       notification = Servora::Tenancy.with_organization(@organization_id) { InboundWebhook.find(@inbound_webhook_id) }
       return if %w[processed ignored].include?(notification.status)
 
+      return settle_platform_invoice(notification) if notification.provider == "asaas_platform"
+
       charge_id = confirmable_charge_id(notification)
       if charge_id
         paid_at = notification.payload.dig("payment", "paymentDate").presence&.then { |date| Time.zone.parse(date) }
@@ -30,6 +32,18 @@ module Webhooks
 
       reference = notification.payload.dig("payment", "externalReference")
       Servora::Tenancy.with_organization(@organization_id) { PaymentCharge.find_by(external_reference: reference)&.id }
+    end
+
+    # Subscription invoices of the platform account (confirmations only).
+    def settle_platform_invoice(notification)
+      reference = notification.payload.dig("payment", "externalReference")
+      invoice_id = CONFIRMATIONS.include?(notification.event_type) &&
+                   Servora::Tenancy.with_organization(@organization_id) { SubscriptionInvoice.find_by(external_reference: reference)&.id }
+      if invoice_id
+        paid_at = notification.payload.dig("payment", "paymentDate").presence&.then { |date| Time.zone.parse(date) }
+        Subscriptions::ConfirmInvoice.new(organization_id: @organization_id, invoice_id:, paid_at:).call
+      end
+      finish(invoice_id ? "processed" : "ignored")
     end
 
     def finish(status)
