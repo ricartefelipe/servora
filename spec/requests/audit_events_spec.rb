@@ -17,7 +17,7 @@ RSpec.describe "Audit trail" do
     record("work_order.assigned", { membership_id: technician.id, visit_id: SecureRandom.uuid })
     record("organization.updated", {
       "id" => [nil, organization.id], "organization_id" => organization.id, "travel_buffer_minutes" => [30, 45],
-      "webhook_token_digest" => %w[a1b2c3d4e5f6 f6e5d4c3b2a1], "updated_at" => [1.day.ago, Time.current]
+      "webhook_token_digest" => %w[resumo-anterior resumo-novo], "updated_at" => [1.day.ago, Time.current]
     }, auditable: organization)
     record("legacy_module.synced", { note: "Importado da versão anterior" })
   end
@@ -42,7 +42,7 @@ RSpec.describe "Audit trail" do
 
     expect(table).to include("Deslocamento padrão")
     expect(table).not_to include(technician.id, organization.id)
-    expect(table).not_to include("webhook_token_digest", "a1b2c3d4e5f6", "[FILTRADO]")
+    expect(table).not_to include("webhook_token_digest", "resumo-anterior", "[FILTRADO]")
     expect(table).not_to include("organization_id", "updated_at", "visit_id")
   end
 

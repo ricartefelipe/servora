@@ -3,6 +3,8 @@
 # Renders audit events for people: action labels (Audit::Labels) and the
 # changeset as "Campo: de → para" lines (AuditEventsHelper::Changeset).
 module AuditEventsHelper
+  SCREEN_READER_ONLY = "sr-only"
+
   TRUNCATE_AT = 80
 
   def audit_action_label(key) = Audit::Labels.action(key)
@@ -40,7 +42,7 @@ module AuditEventsHelper
     parts = [
       audit_value_tag(entry.before),
       tag.span("→", class: "px-0.5 text-ink-500", aria: { hidden: true }),
-      tag.span("para", class: "sr-only"),
+      tag.span("para", class: SCREEN_READER_ONLY),
       tag.span(audit_value_tag(entry.after), class: "text-ink-900")
     ]
     safe_join(parts, " ")
@@ -49,11 +51,11 @@ module AuditEventsHelper
   # "—" for empty values; long values are cut on screen, read in full by
   # screen readers and kept whole in the title.
   def audit_value_tag(text)
-    return safe_join([tag.span("—", aria: { hidden: true }), tag.span("vazio", class: "sr-only")]) if text.nil?
+    return safe_join([tag.span("—", aria: { hidden: true }), tag.span("vazio", class: SCREEN_READER_ONLY)]) if text.nil?
     return text if text.length <= TRUNCATE_AT
 
     tag.span(title: text) do
-      tag.span(text.truncate(TRUNCATE_AT, omission: "…"), aria: { hidden: true }) + tag.span(text, class: "sr-only")
+      tag.span(text.truncate(TRUNCATE_AT, omission: "…"), aria: { hidden: true }) + tag.span(text, class: SCREEN_READER_ONLY)
     end
   end
 

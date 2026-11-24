@@ -50,7 +50,7 @@ RSpec.describe Audit::Labels do
       expression = action_expression(call).to_s
       literals = expression.scan(/"([a-z_]+\.[a-z_]+)"/).flatten
       dynamic = expression.scan(/"([a-z_]+\.[a-z_]*)#\{/).flatten.map do |prefix|
-        dynamic_suffixes.fetch(prefix) { raise "#{location}: declare the values of \"#{prefix}…\" in this spec" }
+        dynamic_suffixes.fetch(prefix) { raise KeyError, "#{location}: declare the values of \"#{prefix}…\" in this spec" }
           .map { |suffix| "#{prefix}#{suffix}" }
       end
       keys = literals + dynamic.flatten
