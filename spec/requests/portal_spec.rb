@@ -62,6 +62,21 @@ RSpec.describe "Customer portal" do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  it "signs out to a portal page instead of the staff sign-in form" do
+    enter_portal(scenario[:approver])
+
+    delete portal_sign_out_path
+    expect(response).to redirect_to(portal_signed_out_path)
+
+    follow_redirect!
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Você saiu do portal", "link enviado pela empresa")
+    expect(response.body).not_to include("Entrar no Servora")
+
+    get portal_root_path
+    expect(response).to have_http_status(:unauthorized)
+  end
+
   it "requires a portal session" do
     get portal_quotes_path
 

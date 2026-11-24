@@ -20,12 +20,25 @@ Rails.application.routes.draw do
         cancel: "cancelar"
       },
       controllers: {
-        sessions: "users/sessions", registrations: "users/registrations", confirmations: "users/confirmations",
+        registrations: "users/registrations", confirmations: "users/confirmations",
         unlocks: "users/unlocks", passwords: "users/passwords"
-      }
+      },
+      skip: :sessions
+  end
+
+  # The sign-in form is the front door of the application: "/" renders it for
+  # visitors and sends authenticated users to their organizations.
+  authenticated :user do
+    root to: redirect("/organizacoes", status: 302), as: :authenticated_root
   end
 
   devise_scope :user do
+    root "users/sessions#new"
+    get "/", to: "users/sessions#new", as: :new_user_session
+    # Former sign-in address, kept as a permanent redirect for bookmarks and old e-mails.
+    get "conta/entrar", to: redirect("/", status: 301), as: nil
+    post "conta/entrar", to: "users/sessions#create", as: :user_session, format: false
+    delete "conta/sair", to: "users/sessions#destroy", as: :destroy_user_session, format: false
     get "conta/verificacao", to: "users/sessions#two_factor", as: :user_two_factor_challenge
     post "conta/verificacao", to: "users/sessions#verify_two_factor", as: nil
     post "conta/confirmacao/confirmar", to: "users/confirmations#confirm", as: :confirm_user_confirmation
@@ -211,6 +224,7 @@ Rails.application.routes.draw do
     get "acesso/:token", to: "access#show", as: :access
     post "acesso/:token", to: "access#create", as: nil
     delete "sair", to: "sessions#destroy", as: :sign_out
+    get "saiu", to: "sessions#show", as: :signed_out
     root "home#show"
     resources :quotes, path: "orcamentos", only: %i[index show] do
       post :decide, on: :member, path: "decisao"
@@ -238,6 +252,4 @@ Rails.application.routes.draw do
   # Provider notifications (authenticated by provider token).
   post "webhooks/asaas", to: "webhooks/asaas#create", as: :asaas_webhook
   post "webhooks/plataforma/asaas", to: "webhooks/platform_asaas#create", as: :platform_asaas_webhook
-
-  root "pages#home"
 end
