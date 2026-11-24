@@ -1,7 +1,8 @@
 <% content_for :title, "Nova ordem de serviço" %>
 <%= page_header("Nova ordem de serviço", eyebrow: "Operação · Ordens de serviço", size: :md, subtitle: "Registre a solicitação do cliente. Agendamento e técnicos vêm em seguida.") %>
-<%= form_with url: work_orders_path, scope: :work_order, class: "max-w-3xl space-y-6" do |f| %>
-  <section class="sv-card space-y-5 p-5 sm:p-6">
+<%= form_with url: work_orders_path, scope: :work_order, class: "sv-card max-w-5xl p-6" do |f| %>
+  <%= render "shared/form_section", title: "Cliente e local",
+        description: "Onde o serviço será executado e os equipamentos envolvidos." do %>
     <div>
       <%= f.label :service_location_id, "Cliente e local", class: "sv-label" %>
       <%= f.select :service_location_id, grouped_options_for_select(@customers.map { |customer|
@@ -11,7 +12,7 @@
     <fieldset>
       <legend class="sv-label">Equipamentos envolvidos</legend>
       <p class="sv-hint -mt-1 mb-2">Apenas equipamentos do cliente selecionado são aceitos.</p>
-      <div class="grid max-h-56 gap-1 overflow-y-auto rounded-lg border border-ink-200 bg-ink-25 p-2 sm:grid-cols-2">
+      <div class="grid max-h-56 gap-1 overflow-y-auto rounded-lg border border-ink-200 bg-ink-25 p-2 @sm:grid-cols-2">
         <% @customers.each do |customer| %>
           <% customer.equipment.select { |e| e.archived_at.nil? }.each do |equipment| %>
             <label class="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white has-[:checked]:bg-select has-[:checked]:shadow-[inset_2px_0_0_var(--color-brand-600)]">
@@ -22,17 +23,25 @@
         <% end %>
       </div>
     </fieldset>
-    <div class="grid gap-5 sm:grid-cols-3">
+  <% end %>
+
+  <%= render "shared/form_section", title: "Classificação",
+        description: "Origem, prioridade e o tipo de serviço que define o checklist da ordem." do %>
+    <div class="grid gap-5 @sm:grid-cols-2 @xl:grid-cols-3">
       <div><%= f.label :origin, "Origem", class: "sv-label" %><%= f.select :origin, WorkOrder::ORIGINS.except("quote", "preventive").map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
       <div><%= f.label :priority, "Prioridade", class: "sv-label" %><%= f.select :priority, WorkOrder::PRIORITIES.map { |v, l| [l, v] }, { selected: "normal" }, class: "sv-input" %></div>
       <div><%= f.label :service_type_id, "Tipo de serviço", class: "sv-label" %><%= f.select :service_type_id, @service_types.map { |t| [t.name, t.id] }, { include_blank: "Sem checklist" }, class: "sv-input" %></div>
     </div>
+  <% end %>
+
+  <%= render "shared/form_section", title: "Solicitação",
+        description: "Título e descrição do problema relatado pelo cliente." do %>
     <div><%= f.label :title, "Título", class: "sv-label" %><%= f.text_field :title, class: "sv-input", required: true, maxlength: 160, placeholder: "Ex.: Split da recepção não gela" %></div>
     <div><%= f.label :problem_description, "Descrição do problema", class: "sv-label" %><%= f.text_area :problem_description, rows: 4, class: "sv-input", required: true %></div>
     <label class="flex items-start gap-3 text-sm">
       <%= f.check_box :requires_approval, class: "mt-1 rounded border-ink-400" %>
       <span><span class="font-medium text-ink-900">Exige aprovação antes da execução</span><span class="block text-ink-600">A ordem fica aguardando aprovação.</span></span>
     </label>
-  </section>
-  <%= render "shared/form_footer", f:, submit: "Abrir ordem de serviço", cancel_url: work_orders_path, submits_with: false, sticky: true, within: :stacked %>
+  <% end %>
+  <%= render "shared/form_footer", f:, submit: "Abrir ordem de serviço", cancel_url: work_orders_path, submits_with: false, sticky: true %>
 <% end %>

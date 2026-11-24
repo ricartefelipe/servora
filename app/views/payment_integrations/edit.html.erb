@@ -1,14 +1,19 @@
 <% content_for :title, "Pagamentos" %>
 <%= page_header("Integração de pagamentos", eyebrow: "Gestão · Pagamentos", subtitle: "Provedor usado para emitir cobranças Pix e boleto. Dados de cartão nunca passam pelo Servora.", size: :md) %>
 
-<section class="sv-card max-w-3xl p-6">
-  <%= form_with model: @integration, url: payment_integration_path, method: :patch, class: "space-y-5" do |f| %>
-    <%= f.error_summary %>
+<%= form_with model: @integration, url: payment_integration_path, method: :patch, class: "sv-card max-w-5xl p-6" do |f| %>
+  <%= f.error_summary %>
+  <%= render "shared/form_section", title: "Provedor e cobrança",
+        description: "Provedor que emite as cobranças e a forma de cobrança usada por padrão." do %>
     <%= f.select_field :provider, PaymentCharge::PROVIDERS.map { |value, label| [label, value] }, label: "Provedor",
           hint: "O simulador responde de forma determinística: valores terminados em ,13 simulam resposta perdida e ,66 recusa." %>
-    <%= f.select_field :default_billing_type, PaymentCharge::BILLING_TYPES.map { |value, label| [label, value] }, label: "Forma de cobrança padrão" %>
+    <%= f.select_field :default_billing_type, PaymentCharge::BILLING_TYPES.map { |value, label| [label, value] }, label: "Forma de cobrança padrão",
+          wrapper: { class: "max-w-sm" } %>
+  <% end %>
+  <%= render "shared/form_section", title: "Credenciais",
+        description: "A chave é armazenada com criptografia e nunca é exibida novamente." do %>
     <%= f.field :api_key, label: "Chave de API do Asaas (sandbox)", as: :password_field, value: nil, autocomplete: "off",
           hint: @integration.credential_configured? ? "Chave configurada e armazenada com criptografia. Deixe em branco para mantê-la." : "Necessária apenas para o Asaas." %>
-    <%= render "shared/form_footer", f:, submit: "Salvar integração", cancel_url: edit_payment_integration_path %>
   <% end %>
-</section>
+  <%= render "shared/form_footer", f:, submit: "Salvar integração", cancel_url: edit_payment_integration_path %>
+<% end %>
