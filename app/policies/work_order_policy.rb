@@ -22,6 +22,11 @@ class WorkOrderPolicy < ApplicationPolicy
   def consume_material? = !record.finished? && (can?(:inventory_manage) || executor?)
   def return_material? = can?(:inventory_manage) && !record.canceled?
   def view_materials? = can?(:inventory_view) && show?
+  # Finance on the work order: billing and expenses are financial actions;
+  # margins require the internal cost permission.
+  def view_finance? = can?(:finance_view) && show?
+  def bill? = can?(:finance_manage) && !record.canceled?
+  def record_expense? = can?(:finance_manage) && !record.canceled?
   def view_prices? = can?(:quotes_view) || can?(:finance_view)
   def view_costs? = can?(:costs_view)
 

@@ -1,0 +1,3 @@
+<% tone = { "open" => :info, "partially_paid" => :warning, "paid" => :success, "canceled" => :neutral }.fetch(receivable.status) %>
+<%= badge(receivable.status_label, tone:) %>
+<% if receivable.overdue? %> <%= badge("Vencida", tone: :danger) %><% end %>

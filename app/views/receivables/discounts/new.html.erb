@@ -1,0 +1,4 @@
+<% content_for :title, "Conceder desconto" %>
+<%= render layout: "shared/modal", locals: { title: "Conceder desconto", subtitle: @receivable.number } do %>
+  <%= render "receivables/discounts/form", form: @form, receivable: @receivable %>
+<% end %>
