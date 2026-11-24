@@ -45,6 +45,29 @@ module Payments
         found && remote(found)
       end
 
+      INVOICE_STATUS = {
+        "SCHEDULED" => "scheduled", "SYNCHRONIZED" => "scheduled", "AUTHORIZATION_PENDING" => "scheduled",
+        "AUTHORIZED" => "authorized", "PROCESSING_CANCELLATION" => "canceling", "CANCELED" => "canceled",
+        "CANCELLATION_DENIED" => "authorized", "ERROR" => "error"
+      }.freeze
+
+      # POST /invoices (linked to the provider payment when there is one, else
+      # to the customer) followed by POST /invoices/{id}/authorize to issue now.
+      def issue_invoice(invoice, customer, settings, charge)
+        created = request(:post, "/invoices", invoice_payload(invoice, customer, settings, charge))
+        remote_invoice(request(:post, "/invoices/#{URI.encode_www_form_component(created.fetch("id"))}/authorize"))
+      end
+
+      def find_invoice(invoice)
+        body = request(:get, "/invoices?#{URI.encode_www_form(externalReference: invoice.external_reference)}")
+        found = Array(body["data"]).first
+        found && remote_invoice(found)
+      end
+
+      def cancel_invoice(invoice)
+        remote_invoice(request(:post, "/invoices/#{URI.encode_www_form_component(invoice.external_id)}/cancel"))
+      end
+
       # POST /payments/{id}/refund (full or partial). The response is the payment;
       # a 2xx means the provider accepted the refund.
       def refund_charge(charge, refund)
@@ -72,6 +95,23 @@ module Payments
 
         request(:post, "/customers", { name: customer.name, cpfCnpj: document, email: customer.email.presence,
                                        externalReference: customer.id }.compact)["id"]
+      end
+
+      def invoice_payload(invoice, customer, settings, charge)
+        link = charge&.external_id ? { payment: charge.external_id } : { customer: customer_id(customer) }
+        link.merge(
+          serviceDescription: invoice.description.first(2000), observations: "Servora #{invoice.external_reference}",
+          value: invoice.amount.to_s("F"), deductions: 0, effectiveDate: Time.zone.today.iso8601,
+          externalReference: invoice.external_reference, municipalServiceCode: settings.municipal_service_code,
+          municipalServiceName: settings.municipal_service_name,
+          taxes: { retainIss: settings.retain_iss, iss: settings.iss_rate.to_s("F"), cofins: 0, csll: 0, inss: 0, ir: 0, pis: 0 }
+        )
+      end
+
+      def remote_invoice(body)
+        RemoteInvoice.new(external_id: body.fetch("id"), status: INVOICE_STATUS.fetch(body["status"], "scheduled"),
+          number: body["number"], verification_code: body["validationCode"], pdf_url: body["pdfUrl"], xml_url: body["xmlUrl"],
+          message: body["statusDescription"])
       end
 
       def remote(body)

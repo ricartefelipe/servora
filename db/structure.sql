@@ -694,6 +694,25 @@ CREATE TABLE public.financial_events (
 
 
 --
+-- Name: fiscal_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fiscal_settings (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    municipal_service_code character varying NOT NULL,
+    municipal_service_name character varying NOT NULL,
+    iss_rate numeric(5,2) NOT NULL,
+    retain_iss boolean DEFAULT false NOT NULL,
+    auto_issue_on_payment boolean DEFAULT false NOT NULL,
+    default_description character varying,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT fiscal_settings_iss_rate CHECK (((iss_rate >= (0)::numeric) AND (iss_rate <= (5)::numeric)))
+);
+
+
+--
 -- Name: holidays; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1292,6 +1311,38 @@ CREATE TABLE public.receivables (
 
 CREATE TABLE public.schema_migrations (
     version character varying NOT NULL
+);
+
+
+--
+-- Name: service_invoices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.service_invoices (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    external_reference character varying NOT NULL,
+    external_id character varying,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    amount numeric(14,2) NOT NULL,
+    description text NOT NULL,
+    number character varying,
+    verification_code character varying,
+    pdf_url character varying,
+    xml_url character varying,
+    last_error text,
+    attempts integer DEFAULT 0 NOT NULL,
+    issued_at timestamp(6) with time zone,
+    last_synced_at timestamp(6) with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    receivable_id uuid NOT NULL,
+    requested_by_membership_id uuid,
+    CONSTRAINT service_invoices_provider CHECK (((provider)::text = ANY (ARRAY['simulator'::text, 'asaas'::text]))),
+    CONSTRAINT service_invoices_status CHECK (((status)::text = ANY (ARRAY['pending'::text, 'scheduled'::text, 'authorized'::text, 'unknown'::text, 'error'::text, 'canceling'::text, 'canceled'::text]))),
+    CONSTRAINT service_invoices_values CHECK (((amount > (0)::numeric) AND (attempts >= 0)))
 );
 
 
@@ -2128,6 +2179,14 @@ ALTER TABLE ONLY public.financial_events
 
 
 --
+-- Name: fiscal_settings fiscal_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_settings
+    ADD CONSTRAINT fiscal_settings_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: holidays holidays_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2349,6 +2408,14 @@ ALTER TABLE ONLY public.receivables
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: service_invoices service_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_invoices
+    ADD CONSTRAINT service_invoices_pkey PRIMARY KEY (id);
 
 
 --
@@ -2641,6 +2708,13 @@ CREATE INDEX idx_on_organization_id_custodian_membership_id_bc36378208 ON public
 --
 
 CREATE INDEX idx_on_organization_id_equipment_id_occurred_at_c8e2c7ae7c ON public.equipment_events USING btree (organization_id, equipment_id, occurred_at);
+
+
+--
+-- Name: idx_on_organization_id_external_reference_47282767bc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_organization_id_external_reference_47282767bc ON public.service_invoices USING btree (organization_id, external_reference);
 
 
 --
@@ -3075,6 +3149,20 @@ CREATE INDEX index_financial_events_on_organization_id_and_receivable_id ON publ
 --
 
 CREATE UNIQUE INDEX index_financial_events_on_tenant_key ON public.financial_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_fiscal_settings_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_fiscal_settings_on_tenant_key ON public.fiscal_settings USING btree (organization_id, id);
+
+
+--
+-- Name: index_fiscal_settings_single; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_fiscal_settings_single ON public.fiscal_settings USING btree (organization_id);
 
 
 --
@@ -3586,6 +3674,27 @@ CREATE INDEX index_receivables_on_organization_id_and_work_order_id ON public.re
 --
 
 CREATE UNIQUE INDEX index_receivables_on_tenant_key ON public.receivables USING btree (organization_id, id);
+
+
+--
+-- Name: index_service_invoices_on_organization_id_and_receivable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_service_invoices_on_organization_id_and_receivable_id ON public.service_invoices USING btree (organization_id, receivable_id);
+
+
+--
+-- Name: index_service_invoices_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_invoices_on_tenant_key ON public.service_invoices USING btree (organization_id, id);
+
+
+--
+-- Name: index_service_invoices_single_valid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_invoices_single_valid ON public.service_invoices USING btree (receivable_id) WHERE ((status)::text = ANY (ARRAY['pending'::text, 'scheduled'::text, 'authorized'::text, 'unknown'::text]));
 
 
 --
@@ -4766,6 +4875,14 @@ ALTER TABLE ONLY public.stock_balances
 
 
 --
+-- Name: service_invoices fk_rails_3449d84ba5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_invoices
+    ADD CONSTRAINT fk_rails_3449d84ba5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: business_hours fk_rails_35acd7f354; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5198,6 +5315,14 @@ ALTER TABLE ONLY public.quotes
 
 
 --
+-- Name: fiscal_settings fk_rails_e5b2015c6b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fiscal_settings
+    ADD CONSTRAINT fk_rails_e5b2015c6b FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: equipment_events fk_rails_e71dc665bc; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5275,6 +5400,22 @@ ALTER TABLE ONLY public.receivables
 
 ALTER TABLE ONLY public.receivables
     ADD CONSTRAINT fk_receivables_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: service_invoices fk_service_invoices_receivable_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_invoices
+    ADD CONSTRAINT fk_service_invoices_receivable_id_tenant FOREIGN KEY (organization_id, receivable_id) REFERENCES public.receivables(organization_id, id);
+
+
+--
+-- Name: service_invoices fk_service_invoices_requested_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_invoices
+    ADD CONSTRAINT fk_service_invoices_requested_by_membership_id_tenant FOREIGN KEY (organization_id, requested_by_membership_id) REFERENCES public.memberships(organization_id, id);
 
 
 --
@@ -5786,6 +5927,12 @@ ALTER TABLE public.field_operations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.financial_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: fiscal_settings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.fiscal_settings ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: holidays; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -5978,6 +6125,12 @@ ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.receivables ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: service_invoices; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.service_invoices ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: service_locations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -6196,6 +6349,13 @@ CREATE POLICY tenant_isolation ON public.financial_events USING ((organization_i
 
 
 --
+-- Name: fiscal_settings tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.fiscal_settings USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: holidays tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -6354,6 +6514,13 @@ CREATE POLICY tenant_isolation ON public.quotes USING ((organization_id = public
 --
 
 CREATE POLICY tenant_isolation ON public.receivables USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: service_invoices tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.service_invoices USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -6663,6 +6830,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261125020000'),
 ('20261125010000'),
 ('20261124015000'),
 ('20261124014000'),

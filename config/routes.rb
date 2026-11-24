@@ -164,6 +164,9 @@ Rails.application.routes.draw do
         end
         patch "estornos/:id/resolver", to: "refunds#resolve", as: :resolve_refund
         resources :discounts, path: "descontos", only: %i[new create]
+        resources :invoices, path: "notas-fiscais", only: :create
+        post "notas-fiscais/:id/consultar", to: "invoices#sync", as: :sync_invoice
+        patch "notas-fiscais/:id/cancelar", to: "invoices#cancel", as: :cancel_invoice
         resources :charges, path: "cobrancas", only: :create do
           member do
             post :simulate, path: "simular-pagamento"
@@ -173,6 +176,7 @@ Rails.application.routes.draw do
       end
     end
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
+    resource :fiscal_settings, path: "configuracoes/nota-fiscal", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
     resource :subscription, path: "configuracoes/assinatura", only: %i[show update]
     resource :integrations, path: "configuracoes/integracoes", only: :show do

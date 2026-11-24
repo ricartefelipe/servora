@@ -144,6 +144,8 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
 - **RF-FIN-06** Resposta perdida do provedor é resolvida por consulta pela referência externa; a
   cobrança não é repetida cegamente.
 - **RF-FIN-07** Fatura comercial não é apresentada como nota fiscal. Dados de cartão nunca são armazenados.
+- **RF-FIN-09** NFS-e emitida pelo provedor de pagamentos, sem duplicidade após respostas perdidas, com
+  acompanhamento da prefeitura, cancelamento e emissão automática opcional na quitação.
 - **RF-FIN-08** Chamadas ao provedor nunca ocorrem dentro de transações; o envio é disparado pela outbox
   após o commit e uma conciliação periódica cobre confirmações perdidas.
 

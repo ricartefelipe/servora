@@ -319,3 +319,12 @@ status atualizado.
   ambíguas ficam "em verificação" até uma pessoa confirmar no provedor ou autorizar o reenvio.
 - **Consequências**: nenhum estorno em dobro por falha de rede; casos raros exigem uma ação explícita, auditada.
 
+## DEC-040 — NFS-e pelo provedor de pagamentos
+
+- **Contexto**: a emissão de NFS-e depende da integração com cada prefeitura; o provedor de pagamentos já mantém
+  essa integração e o vínculo da nota com a cobrança.
+- **Decisão**: emitir pelo provedor configurado, com o mesmo protocolo de segurança das cobranças (referência
+  externa, consulta antes de reenviar, envio fora de transações, acompanhamento periódico).
+- **Alternativas**: integração direta com prefeituras ou emissor fiscal dedicado (maior custo por município).
+- **Consequências**: municípios suportados são os do provedor; o simulador permite demonstrar o fluxo completo.
+

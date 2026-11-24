@@ -12,6 +12,7 @@ class Receivable < TenantRecord
   belongs_to :created_by, class_name: "Membership", foreign_key: :created_by_membership_id, optional: true, inverse_of: false
   has_many :payments, -> { order(:paid_at) }, dependent: nil, inverse_of: :receivable
   has_many :charges, -> { order(:created_at) }, class_name: "PaymentCharge", dependent: nil, inverse_of: :receivable
+  has_many :service_invoices, -> { order(:created_at) }, dependent: nil, inverse_of: :receivable
   has_many :events, -> { order(:occurred_at, :id) }, class_name: "FinancialEvent", dependent: nil, inverse_of: :receivable
 
   validates :description, presence: true, length: { maximum: 200 }

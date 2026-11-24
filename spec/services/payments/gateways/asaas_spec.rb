@@ -100,6 +100,42 @@ RSpec.describe Payments::Gateways::Asaas do
     expect(stub).to have_been_requested.once
   end
 
+  describe "NFS-e" do
+    let(:invoice) do
+      instance_double(ServiceInvoice, external_reference: "srv-nfse-1", amount: BigDecimal("800.00"), description: "Manutenção",
+        external_id: "inv_1")
+    end
+    let(:settings) do
+      instance_double(FiscalSetting, municipal_service_code: "14.01", municipal_service_name: "Manutenção de equipamentos",
+        iss_rate: BigDecimal("2.5"), retain_iss: false)
+    end
+    let(:paid_charge) { instance_double(PaymentCharge, external_id: "pay_123") }
+
+    it "creates the invoice linked to the provider payment and authorizes it" do
+      create = stub_request(:post, "#{base}/invoices")
+        .with(body: hash_including("payment" => "pay_123", "externalReference" => "srv-nfse-1", "value" => "800.0",
+          "municipalServiceCode" => "14.01", "taxes" => hash_including("iss" => "2.5", "retainIss" => false)))
+        .to_return(status: 200, body: { id: "inv_1", status: "SCHEDULED" }.to_json, headers: json)
+      stub_request(:post, "#{base}/invoices/inv_1/authorize")
+        .to_return(status: 200, headers: json, body: { id: "inv_1", status: "AUTHORIZED", number: "1234", validationCode: "AB-12",
+                                                       pdfUrl: "https://asaas.test/nfse/inv_1.pdf" }.to_json)
+
+      remote = gateway.issue_invoice(invoice, customer, settings, paid_charge)
+
+      expect(remote).to have_attributes(status: "authorized", number: "1234", verification_code: "AB-12",
+        pdf_url: "https://asaas.test/nfse/inv_1.pdf")
+      expect(create).to have_been_requested.once
+    end
+
+    it "finds invoices by external reference and maps provider errors" do
+      stub_request(:get, "#{base}/invoices?externalReference=srv-nfse-1")
+        .to_return(status: 200, headers: json,
+          body: { data: [{ id: "inv_1", status: "ERROR", statusDescription: "Código de serviço inválido" }] }.to_json)
+
+      expect(gateway.find_invoice(invoice)).to have_attributes(status: "error", message: "Código de serviço inválido")
+    end
+  end
+
   it "requires the customer document to create customers" do
     stub_customer_lookup([])
     allow(customer).to receive(:document).and_return(nil)
