@@ -13,7 +13,7 @@ import { PREFIX, RETRY_EVENT, announce, enqueue, flush, readQueue, takeParked } 
 // [data-field-sync-queued-for] hint is shown; once the server answers, the
 // screen is reloaded so the state-driven actions follow the server.
 const NOTICE = "notice"
-const VISIT_KIND = /^visit_/
+const isVisitKind = (kind) => typeof kind === "string" && kind.startsWith("visit_")
 const VISIT_APPLIED = {
   visit_travel: "Deslocamento iniciado.",
   visit_no_show: "Visita registrada como não atendida: cliente ausente."
@@ -79,7 +79,7 @@ export default class extends Controller {
     event.preventDefault()
     const form = event.target
     const draft = this.draftKey(form)
-    if (VISIT_KIND.test(form.dataset.kind) && this.queue().some((operation) => operation.draft === draft)) return
+    if (isVisitKind(form.dataset.kind) && this.queue().some((operation) => operation.draft === draft)) return
     const operation = {
       id: crypto.randomUUID(),
       kind: form.dataset.kind,
@@ -128,7 +128,7 @@ export default class extends Controller {
       contextKey: this.contextKeyValue,
       onOutcome: (operation, outcome) => {
         this.render()
-        if (VISIT_KIND.test(operation.kind) && operation.work_order_id === this.workOrderIdValue) {
+        if (isVisitKind(operation.kind) && operation.work_order_id === this.workOrderIdValue) {
           reload = true
           this.keepNotice(this.visitMessage(operation, outcome))
         } else {
@@ -148,7 +148,7 @@ export default class extends Controller {
   report(operation, outcome) {
     const form = [...this.element.querySelectorAll("form[data-draft-id]")]
       .find((candidate) => this.draftKey(candidate) === operation.draft)
-    if (VISIT_KIND.test(operation.kind)) {
+    if (isVisitKind(operation.kind)) {
       this.show(this.visitMessage(operation, outcome))
     } else if (outcome.status === "applied") {
       if (form && outcome.result?.version !== undefined) form.dataset.version = outcome.result.version
@@ -167,7 +167,8 @@ export default class extends Controller {
     if (outcome.status === "applied") return VISIT_APPLIED[operation.kind] || "Sincronizado com sucesso."
     if (outcome.status === "conflict") {
       const label = outcome.result?.status_label
-      return `A visita foi alterada por outra pessoa${label ? ` e agora está ${label.toLowerCase()}` : ""}. Confira a situação atual.`
+      const now = label ? ` e agora está ${label.toLowerCase()}` : ""
+      return `A visita foi alterada por outra pessoa${now}. Confira a situação atual.`
     }
     return `Não foi possível registrar: ${outcome.result?.error || "operação recusada"}`
   }
@@ -201,7 +202,7 @@ export default class extends Controller {
       this.pendingTarget.textContent = count === 1 ? "1 registro aguardando envio." : `${count} registros aguardando envio.`
     }
     this.element.querySelectorAll("form[data-draft-id]").forEach((form) => {
-      if (!VISIT_KIND.test(form.dataset.kind)) return
+      if (!isVisitKind(form.dataset.kind)) return
       const queued = queue.some((operation) => operation.draft === this.draftKey(form))
       for (const element of form.elements) {
         if (element.type === "submit") element.disabled = queued

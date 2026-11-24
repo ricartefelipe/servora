@@ -36,7 +36,7 @@ RSpec.describe "Indicador de sincronização e situação da visita no campo", :
   it "mostra sincronizado, offline com pendências e a falha com nova tentativa" do
     sign_in_as(diego)
     visit field_work_order_path(work_order)
-    expect(chip).to have_css("[role='status'][aria-live='polite']", text: "Sincronizado")
+    expect(chip).to have_css("output[aria-live='polite']", text: "Sincronizado")
     expect(chip).to have_no_button("Tentar")
 
     server(available: false)

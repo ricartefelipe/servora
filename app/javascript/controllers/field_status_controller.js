@@ -8,21 +8,22 @@ import { RETRY_EVENT, STATUS_EVENT, currentStatus, flush, park } from "controlle
 // and sends it when the device is online, so the chip never shows a state the
 // queue does not have. "Tentar" asks for a new attempt through
 // "field-sync:retry". Nothing is shown until the real state is known.
-export default class extends Controller {
+export default class FieldStatusController extends Controller {
   static targets = ["region", "variant", "offlineText", "pendingText", "retry"]
   static values = { url: String, contextKey: String }
 
   connect() {
     this.onStatus = (event) => this.render(event.detail)
     this.onOffline = () => this.refresh()
-    this.onOnline = () => (this.standalone ? this.send() : this.refresh())
-    this.onRetry = () => { if (this.standalone) this.send() }
+    // send() reports its own failures through the status event; nothing to await here.
+    this.onOnline = () => (this.standalone ? void this.send() : this.refresh())
+    this.onRetry = () => { if (this.standalone) void this.send() }
     window.addEventListener(STATUS_EVENT, this.onStatus)
     window.addEventListener("offline", this.onOffline)
     window.addEventListener("online", this.onOnline)
     window.addEventListener(RETRY_EVENT, this.onRetry)
     this.refresh()
-    if (this.standalone && navigator.onLine) this.send()
+    if (this.standalone && navigator.onLine) void this.send()
   }
 
   disconnect() {

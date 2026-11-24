@@ -25,7 +25,7 @@
         <%# Sync chip: every variant stays hidden until field-status knows the real state of the device queue. %>
         <div class="flex shrink-0 items-center gap-2" data-controller="field-status"
              data-field-status-url-value="<%= field_operations_path %>" data-field-status-context-key-value="<%= local_context_key %>">
-          <p role="status" aria-live="polite" tabindex="-1" class="flex rounded-md" data-field-status-target="region">
+          <output aria-live="polite" tabindex="-1" class="flex rounded-md" data-field-status-target="region">
             <span class="sr-only">Sincronização: </span>
             <span data-field-status-target="variant" data-state="synced" hidden
                   class="inline-flex h-7 items-center gap-1.5 rounded-md bg-emerald-50 px-2 text-[13px] font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20">
@@ -48,7 +48,7 @@
                   class="inline-flex h-7 items-center gap-1.5 rounded-md bg-rose-50 px-2 text-[13px] font-medium text-rose-800 ring-1 ring-inset ring-rose-600/20">
               <%= icon(:alert, size: 14, css: "text-rose-600") %>Falha ao sincronizar
             </span>
-          </p>
+          </output>
           <button type="button" class="sv-btn-secondary h-11 px-3 text-[13px]" data-field-status-target="retry"
                   data-action="field-status#retry" hidden>Tentar</button>
         </div>
