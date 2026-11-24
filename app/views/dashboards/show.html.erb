@@ -172,3 +172,12 @@
     <%= strip %>
   </section>
 <% end %>
+
+<% orders_by_status = @today.open_orders_by_status %>
+<% daily_receipts = @today.daily_receipts %>
+<% if orders_by_status || daily_receipts %>
+  <div class="mt-6 grid grid-cols-1 gap-6 <%= orders_by_status && daily_receipts ? 'lg:grid-cols-2' : '' %>">
+    <%= render "dashboards/orders_by_status", slices: orders_by_status if orders_by_status %>
+    <%= render "dashboards/daily_receipts", receipts: daily_receipts if daily_receipts %>
+  </div>
+<% end %>
