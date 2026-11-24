@@ -1,0 +1,52 @@
+<%= form_with model: [contract, plan], url: (plan.persisted? ? contract_plan_path(contract, plan) : contract_plans_path(contract)),
+      scope: :maintenance_plan, class: "space-y-6" do |f| %>
+  <%= f.error_summary %>
+  <section class="sv-card space-y-5 p-6">
+    <h2 class="font-semibold text-ink-900">O que e onde</h2>
+    <%= f.field :title, label: "Título", required: true, hint: "Ex.: Preventiva mensal dos splits da loja" %>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= f.select_field :service_location_id, locations.map { |l| [l.name, l.id] }, label: "Local", include_blank: "Selecione", required: true %>
+      <%= f.select_field :service_type_id, service_types.map { |t| [t.name, t.id] }, label: "Tipo de serviço", include_blank: "Nenhum",
+            hint: "Define o checklist das ordens geradas" %>
+    </div>
+    <fieldset>
+      <legend class="sv-label">Equipamentos</legend>
+      <% selected = plan.plan_equipment.map(&:equipment_id) %>
+      <% if equipment.empty? %>
+        <p class="sv-hint">O cliente não tem equipamentos ativos cadastrados.</p>
+      <% else %>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <% equipment.each do |item| %>
+            <label class="flex items-center gap-2 text-sm text-ink-700">
+              <%= check_box_tag "maintenance_plan[equipment_ids][]", item.id, selected.include?(item.id), id: "equipamento-#{item.id}", class: "rounded border-ink-300 text-brand-600" %>
+              <%= item.title %>
+            </label>
+          <% end %>
+        </div>
+      <% end %>
+      <%= hidden_field_tag "maintenance_plan[equipment_ids][]", "" %>
+    </fieldset>
+    <%= f.text_area_field :instructions, label: "Instruções para a equipe", rows: 3 %>
+  </section>
+
+  <section class="sv-card space-y-5 p-6">
+    <h2 class="font-semibold text-ink-900">Quando</h2>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= f.field :frequency_interval, label: "A cada", as: :number_field, min: 1, max: 104, required: true %>
+      <%= f.select_field :frequency_unit, [["semana(s)", "week"], ["mês(es)", "month"], ["ano(s)", "year"]], label: "Período" %>
+      <%= f.select_field :priority, WorkOrder::PRIORITIES.map { |v, l| [l, v] }, label: "Prioridade das ordens" %>
+    </div>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= f.select_field :schedule_mode, MaintenancePlan::MODES.map { |v, l| [l, v] }, label: "Modo" %>
+      <%= f.field :anchor_date, label: plan.persisted? && plan.last_sequence.positive? ? "Nova data base" : "Primeira data", as: :date_field, required: true,
+            hint: "Dias 29 a 31 são mantidos (último dia em meses mais curtos)" %>
+      <%= f.field :lead_days, label: "Gerar com antecedência (dias)", as: :number_field, min: 0, max: 90 %>
+    </div>
+    <% if plan.persisted? && plan.last_sequence.positive? %>
+      <p class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Alterar período, modo ou data base vale a partir da próxima ocorrência (nº <%= plan.next_sequence %>). As <%= plan.last_sequence %> ocorrências já geradas e suas ordens não mudam.</p>
+      <%= f.toggle_field :active, label: "Plano ativo" %>
+    <% end %>
+  </section>
+
+  <div class="flex justify-end"><%= f.submit_button(plan.persisted? ? "Salvar plano" : "Criar plano") %></div>
+<% end %>

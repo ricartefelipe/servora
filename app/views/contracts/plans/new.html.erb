@@ -1,0 +1,3 @@
+<% content_for :title, "Novo plano preventivo" %>
+<%= page_header("Novo plano preventivo", eyebrow: @contract.number, subtitle: @contract.customer.display_name) %>
+<div class="max-w-3xl"><%= render "contracts/plans/form", contract: @contract, plan: @plan, locations: @locations, equipment: @equipment, service_types: @service_types %></div>
