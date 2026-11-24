@@ -174,6 +174,8 @@ Rails.application.routes.draw do
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
     resource :subscription, path: "configuracoes/assinatura", only: %i[show update]
+    post "configuracoes/assinatura/faturas/:id/simular-pagamento", to: "subscriptions#simulate_invoice_payment",
+      as: :simulate_subscription_invoice_payment
     resource :integrations, path: "configuracoes/integracoes", only: :show do
       post :create_credential, path: "credenciais"
       patch "credenciais/:id/revogar", action: :revoke_credential, as: :revoke_credential
@@ -228,6 +230,7 @@ Rails.application.routes.draw do
 
   # Provider notifications (authenticated by provider token).
   post "webhooks/asaas", to: "webhooks/asaas#create", as: :asaas_webhook
+  post "webhooks/plataforma/asaas", to: "webhooks/platform_asaas#create", as: :platform_asaas_webhook
 
   root "pages#home"
 end
