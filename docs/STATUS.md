@@ -70,6 +70,7 @@ demonstração em `docs/`.
 | Versão | Conteúdo |
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+| 1.0.0 | Estoque, financeiro e cobranças, contratos e preventiva, SLA, anexos e PDFs, área do técnico offline, portal ampliado, API e webhooks, observabilidade, assinaturas da plataforma e documentação de operação |
 
 ## Integrações não exercitadas
 
@@ -79,8 +80,10 @@ demonstração em `docs/`.
 
 ## Em andamento
 
-- Release 1.0.0.
+- Nenhum item. Evoluções futuras entram como `feature/*` a partir de `develop`.
 
 ## Ponto de continuidade
 
-Próximo passo: `release/1.0.0` a partir de `develop` após a integração da documentação final.
+Versão 1.0.0 publicada. Próximas evoluções candidatas: confirmação de pagamento exercitada no Asaas sandbox com
+credencial real, cobrança automatizada da assinatura da plataforma, execução de estornos no provedor e emissão de
+nota fiscal por integração dedicada.
