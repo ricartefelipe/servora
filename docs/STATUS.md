@@ -20,21 +20,25 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Clientes | PF/PJ com CPF/CNPJ, locais, contatos (aprovação, acompanhamento, portal), busca, arquivamento, bloqueio otimista | `spec/requests/customers_spec.rb`, `spec/services/customers/**` |
 | Equipamentos | Cadastro, local do mesmo cliente garantido no banco, mudança de local, transferência, estado operacional, histórico, arquivamento | `spec/services/equipment_lifecycle/**`, `spec/database/customer_integrity_spec.rb` |
 | Responsividade | Sem rolagem horizontal nas telas principais em 390 px | `spec/system/responsive_spec.rb` |
+| Catálogo | Serviços e peças, preço de venda, custo restrito, busca | `spec/requests/quotes_spec.rb`, `spec/queries/catalog_search_query_spec.rb` |
+| Orçamentos | Numeração atômica, versões, snapshot e digest, triggers de imutabilidade, descontos, validade, cancelamento, histórico | `spec/services/quotes_spec.rb`, `spec/services/numbering_spec.rb` |
+| Aprovação | Decisão pelo portal ou registro interno com evidências; recusa de versão substituída, expirada, digest divergente e contato não autorizado | `spec/services/quotes_spec.rb`, `spec/system/quote_approval_flow_spec.rb` |
+| Portal do cliente | Link de uso único (GET não consome), sessão restrita revogável, isolamento por cliente | `spec/requests/portal_spec.rb`, `spec/services/portal/**` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `ruby bin/test-all` | 25 exemplos (regras puras) + 126 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,97%, branches 85,71% |
+| `ruby bin/test-all` | 40 exemplos (regras puras) + 213 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 99,46%, branches 89,31% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
 
 ## Em andamento
 
-- Catálogo de serviços e peças, orçamentos versionados e aprovação pelo portal do cliente.
+- Ordens de serviço (conversão idempotente do orçamento aprovado, máquinas de estados, checklists).
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/catalogo-e-orcamentos` a partir de `develop`.
+Próxima branch: `feature/ordens-de-servico` a partir de `develop`.

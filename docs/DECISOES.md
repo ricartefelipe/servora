@@ -140,3 +140,31 @@ status atualizado.
 - **Decisão**: `bin/db-structure` move o dump, executa todas as migrations num banco temporário e valida
   rollback e recarga; a CI executa `bin/db-structure --check`. Constraints de domínio usam
   `add_inclusion_constraint`, cuja forma canônica é estável.
+
+## DEC-019 — Arredondamento monetário e precisão
+
+- **Decisão**: valores em BRL com `decimal(14,2)` e arredondamento comercial (half up), igual ao
+  `round(numeric, 2)` do PostgreSQL usado nas constraints; quantidades `decimal(14,3)`; custos unitários
+  `decimal(14,4)`. A camada `Pricing` (regras puras) recusa `Float`.
+- **Consequências**: o total de cada linha é verificado pelo banco (`line_total = round(qtd × preço, 2) − desconto`).
+
+## DEC-020 — Versões de orçamento imutáveis por trigger
+
+- **Decisão**: além das regras nos casos de uso, triggers rejeitam alterações em itens, totais, condições,
+  snapshot e dados da decisão de versões que saíram de `draft`.
+- **Consequências**: nem um bug na aplicação nem um acesso direto com o papel de aplicação alteram o que o
+  cliente aprovou.
+
+## DEC-021 — Portal com concessão de uso único trocada por sessão
+
+- **Decisão**: link por e-mail (uso único, 72 h) consumido por POST; sessão própria do portal (12 h) com
+  revalidação a cada requisição. Sem senhas para contatos de clientes nesta versão.
+- **Consequências**: links pré-visualizados por clientes de e-mail não consomem o acesso; revogar o contato ou
+  desabilitar o portal encerra a sessão na próxima requisição.
+
+## DEC-022 — Carregamento de registros únicos por relação explícita
+
+- **Contexto**: registros carregados por um `has_many` da organização são marcados pelo Rails como estritos
+  (suspeita de N+1), mesmo em buscas de um único registro.
+- **Decisão**: listagens partem das associações da organização (detecção de N+1 ativa); buscas de um registro
+  usam `tenant_relation(Model)` (`where(organization_id: …)`) combinado com `policy_scope`.

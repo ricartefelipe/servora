@@ -21,3 +21,7 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - Notificações internas em tempo real por stream privado de cada vínculo.
 - Clientes PF/PJ com locais de atendimento e contatos; equipamentos com histórico de localização, proprietário e
   estado operacional, arquivamento e garantia informada.
+- Catálogo de serviços e peças com custo restrito; orçamentos numerados e versionados com snapshot imutável,
+  digest do conteúdo, descontos, validade, histórico de negociação e cancelamento.
+- Portal do cliente com link de uso único, sessão restrita e aprovação ou recusa da versão vigente com evidências;
+  registro interno de decisões comunicadas por outros canais.
