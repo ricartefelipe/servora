@@ -1,0 +1,2 @@
+<% tones = { "low" => :neutral, "normal" => :info, "high" => :warning, "urgent" => :danger } %>
+<%= badge(work_order.priority_label, tone: tones.fetch(work_order.priority), dot: false) %>

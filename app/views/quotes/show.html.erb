@@ -10,7 +10,12 @@
       <%= icon(:mail, size: 18) %> Enviar ao cliente
     <% end %>
   <% end %>
-  <% if policy(@quote).new_version? %>
+  <% if policy(@quote).convert? %>
+    <%= button_to convert_quote_path(@quote), method: :post, class: "sv-btn-primary" do %>
+      <%= icon(:orders, size: 18) %> <%= @quote.converted? ? "Ver ordem de serviço" : "Gerar ordem de serviço" %>
+    <% end %>
+  <% end %>
+  <% if policy(@quote).new_version? && !@quote.converted? %>
     <%= button_to "Criar nova versão", new_version_quote_path(@quote), method: :post, class: "sv-btn-secondary" %>
   <% end %>
 <% end %>

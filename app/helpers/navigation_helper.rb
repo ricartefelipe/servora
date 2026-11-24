@@ -8,12 +8,14 @@ module NavigationHelper
   NAVIGATION = [
     ["Operação", [
       NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards]),
-      NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes items decisions])
+      NavItem.new("Ordens de serviço", :work_orders_path, :orders, nil, %w[work_orders checklist_items assignments]),
+      NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes decisions])
     ]],
     ["Cadastros", [
       NavItem.new("Clientes", :customers_path, :customers, :customers_view, %w[customers locations contacts]),
       NavItem.new("Equipamentos", :equipment_index_path, :equipment, :equipment_view, %w[equipment]),
-      NavItem.new("Catálogo", :catalog_items_path, :catalog, :catalog_view, %w[catalog_items])
+      NavItem.new("Catálogo", :catalog_items_path, :catalog, :catalog_view, %w[catalog_items]),
+      NavItem.new("Tipos de serviço", :service_types_path, :settings, :work_orders_manage, %w[service_types])
     ]],
     ["Gestão", [
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),
@@ -25,9 +27,16 @@ module NavigationHelper
 
   def navigation_groups
     NAVIGATION.filter_map do |title, items|
-      visible = items.select { |item| item.permission.nil? || can?(item.permission) }
+      visible = items.select { |item| item_visible?(item) }
       [title, visible] if visible.any?
     end
+  end
+
+  # Work orders are visible to office roles and to technicians (own orders).
+  def item_visible?(item)
+    return can?(:work_orders_view_all) || can?(:work_orders_execute) if item.route == :work_orders_path
+
+    item.permission.nil? || can?(item.permission)
   end
 
   def nav_item_active?(item)

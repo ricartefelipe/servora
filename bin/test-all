@@ -7,6 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 rm -rf coverage
+ruby bin/rails tailwindcss:build
 COVERAGE_SUITE=unit ruby bin/rspec-unit "$@"
 COVERAGE_SUITE=rails bundle exec rspec --exclude-pattern "spec/unit/**/*_spec.rb" "$@"
 ruby bin/coverage-check
