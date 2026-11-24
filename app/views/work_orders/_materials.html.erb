@@ -1,0 +1,128 @@
+<%# "Materiais" tab: reservations, consumption with historical cost, returns. %>
+<% show_costs = wo_policy.view_costs? %>
+<section id="painel-materiais" role="tabpanel" aria-labelledby="aba-materiais" data-tabs-target="panel" class="space-y-6" hidden>
+  <div class="sv-card overflow-hidden">
+    <div class="border-b border-ink-100 px-5 py-4">
+      <h2 class="font-semibold text-ink-900">Reservas</h2>
+      <p class="text-sm text-ink-500">Separam o material para esta ordem. O saldo não consumido volta ao disponível no cancelamento ou na conclusão.</p>
+    </div>
+    <% if @reservations.empty? %>
+      <p class="px-5 py-6 text-sm text-ink-500">Nenhuma reserva para esta ordem.</p>
+    <% else %>
+      <ul class="divide-y divide-ink-100" role="list">
+        <% @reservations.each do |reservation| %>
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-ink-900"><%= reservation.catalog_item.name %></p>
+              <p class="text-xs text-ink-500">
+                <%= reservation.warehouse.name %> · reservado <%= quantity(reservation.quantity, reservation.catalog_item.unit) %>
+                · consumido <%= quantity(reservation.consumed_quantity) %> · liberado <%= quantity(reservation.released_quantity) %>
+              </p>
+            </div>
+            <% if reservation.active? %>
+              <%= badge("Pendente: #{quantity(reservation.remaining)}", tone: :warning) %>
+              <% if wo_policy.release_material? %>
+                <%= button_to "Liberar", release_work_order_stock_reservation_path(@work_order, reservation), method: :patch,
+                      class: "sv-btn-ghost sv-btn-sm", form: { data: { turbo_confirm: "Devolver o saldo reservado ao disponível?" } } %>
+              <% end %>
+            <% else %>
+              <%= badge("Encerrada", tone: :neutral) %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+
+  <div class="sv-card overflow-hidden">
+    <div class="flex flex-wrap items-end justify-between gap-3 border-b border-ink-100 px-5 py-4">
+      <div>
+        <h2 class="font-semibold text-ink-900">Material consumido</h2>
+        <p class="text-sm text-ink-500">O custo é o custo médio do momento do consumo e não muda com compras posteriores.</p>
+      </div>
+      <% if show_costs && @consumptions.any? %>
+        <p class="text-sm text-ink-600">Custo total <strong class="sv-num text-ink-900"><%= money(@consumptions.sum(&:net_cost)) %></strong></p>
+      <% end %>
+    </div>
+    <% if @consumptions.empty? %>
+      <p class="px-5 py-6 text-sm text-ink-500">Nenhum material consumido.</p>
+    <% else %>
+      <ul class="divide-y divide-ink-100" role="list">
+        <% @consumptions.each do |consumption| %>
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-ink-900"><%= consumption.catalog_item.name %></p>
+              <p class="text-xs text-ink-500">
+                <%= consumption.warehouse.name %> · <%= quantity(consumption.net_quantity, consumption.catalog_item.unit) %>
+                <% if consumption.returned_quantity.positive? %>(devolvido <%= quantity(consumption.returned_quantity) %>)<% end %>
+                <% if show_costs %> · <%= unit_cost(consumption.unit_cost) %>/un · <%= money(consumption.net_cost) %><% end %>
+              </p>
+            </div>
+            <% if wo_policy.return_material? && consumption.net_quantity.positive? %>
+              <details class="relative">
+                <summary class="sv-btn-ghost sv-btn-sm cursor-pointer list-none">Devolver</summary>
+                <%= form_with url: restock_work_order_material_consumption_path(@work_order, consumption), method: :patch, scope: :restock,
+                      class: "absolute right-0 z-10 mt-2 w-60 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
+                  <div>
+                    <%= f.label :quantity, "Quantidade devolvida", class: "sv-label", for: "devolucao-#{consumption.id}" %>
+                    <%= f.number_field :quantity, id: "devolucao-#{consumption.id}", value: consumption.net_quantity.to_s("F"), step: "0.001", min: "0.001",
+                          max: consumption.net_quantity.to_s("F"), class: "sv-input", required: true %>
+                  </div>
+                  <%= f.button "Registrar devolução", type: "submit", class: "sv-btn-primary w-full" %>
+                <% end %>
+              </details>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+
+  <% if @stock_items && @stock_items.empty? && (wo_policy.reserve_material? || wo_policy.consume_material?) %>
+    <div class="sv-card p-5 text-sm text-ink-600">Nenhuma peça do catálogo controla estoque.</div>
+  <% elsif @stock_items %>
+    <div class="grid gap-6 xl:grid-cols-2">
+      <% if wo_policy.consume_material? %>
+        <div class="sv-card p-5">
+          <h2 class="mb-1 font-semibold text-ink-900">Registrar consumo</h2>
+          <p class="mb-3 text-sm text-ink-500">Use uma reserva desta ordem ou retire de um depósito disponível para você.</p>
+          <%= form_with url: work_order_material_consumptions_path(@work_order), scope: :consumption, class: "space-y-3" do |f| %>
+            <%= f.hidden_field :operation_key, value: SecureRandom.uuid_v7 %>
+            <% active_reservations = @reservations.select(&:active?) %>
+            <% if active_reservations.any? %>
+              <div>
+                <%= f.label :reservation_id, "Reserva", class: "sv-label" %>
+                <%= f.select :reservation_id, active_reservations.map { |r| ["#{r.catalog_item.name} · #{r.warehouse.name} (pendente #{quantity(r.remaining)})", r.id] },
+                      { include_blank: "Sem reserva — escolher abaixo" }, class: "sv-input" %>
+              </div>
+            <% end %>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div><%= f.label :warehouse_id, "Depósito", class: "sv-label" %><%= f.select :warehouse_id, @stock_warehouses.map { |w| [w.name, w.id] }, { include_blank: "Selecione" }, class: "sv-input" %></div>
+              <div><%= f.label :catalog_item_id, "Peça", class: "sv-label" %><%= f.select :catalog_item_id, @stock_items.map { |i| [i.name, i.id] }, { include_blank: "Selecione" }, class: "sv-input" %></div>
+            </div>
+            <div class="flex items-end gap-3">
+              <div class="flex-1"><%= f.label :quantity, "Quantidade", class: "sv-label" %><%= f.number_field :quantity, step: "0.001", min: "0.001", class: "sv-input", required: true %></div>
+              <%= f.button "Registrar consumo", type: "submit", class: "sv-btn-primary", data: { turbo_submits_with: "Registrando…" } %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+      <% if wo_policy.reserve_material? %>
+        <div class="sv-card p-5">
+          <h2 class="mb-1 font-semibold text-ink-900">Reservar material</h2>
+          <p class="mb-3 text-sm text-ink-500">A reserva só é aceita se houver saldo disponível no depósito.</p>
+          <%= form_with url: work_order_stock_reservations_path(@work_order), scope: :reservation, class: "space-y-3" do |f| %>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div><%= f.label :warehouse_id, "Depósito", class: "sv-label", for: "reserva_deposito" %><%= f.select :warehouse_id, @stock_warehouses.map { |w| [w.name, w.id] }, { include_blank: "Selecione" }, id: "reserva_deposito", class: "sv-input", required: true %></div>
+              <div><%= f.label :catalog_item_id, "Peça", class: "sv-label", for: "reserva_peca" %><%= f.select :catalog_item_id, @stock_items.map { |i| [i.name, i.id] }, { include_blank: "Selecione" }, id: "reserva_peca", class: "sv-input", required: true %></div>
+            </div>
+            <div class="flex items-end gap-3">
+              <div class="flex-1"><%= f.label :quantity, "Quantidade", class: "sv-label", for: "reserva_quantidade" %><%= f.number_field :quantity, id: "reserva_quantidade", step: "0.001", min: "0.001", class: "sv-input", required: true %></div>
+              <%= f.button "Reservar", type: "submit", class: "sv-btn-secondary" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</section>

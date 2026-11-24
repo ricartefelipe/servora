@@ -113,6 +113,12 @@ Rails.application.routes.draw do
         end
         resources :checklist_items, path: "checklist", only: :update
         resources :assignments, path: "tecnicos", only: %i[create destroy]
+        resources :stock_reservations, path: "reservas", only: :create do
+          patch :release, on: :member, path: "liberar"
+        end
+        resources :material_consumptions, path: "consumos", only: :create do
+          patch :restock, on: :member, path: "devolver"
+        end
       end
       resources :visits, path: "visitas", only: %i[new create edit update] do
         get :suggestions, on: :collection, path: "sugestoes"

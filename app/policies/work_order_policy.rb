@@ -15,6 +15,13 @@ class WorkOrderPolicy < ApplicationPolicy
   def add_item? = update_execution?
   def decide_item? = can?(:additional_services_authorize) && !record.finished?
   def assign? = can?(:work_orders_manage) && !record.finished?
+  # Materials: office stock roles reserve, release and return; whoever
+  # executes the order may also record consumption.
+  def reserve_material? = can?(:inventory_manage) && !record.finished?
+  def release_material? = can?(:inventory_manage)
+  def consume_material? = !record.finished? && (can?(:inventory_manage) || executor?)
+  def return_material? = can?(:inventory_manage) && !record.canceled?
+  def view_materials? = can?(:inventory_view) && show?
   def view_prices? = can?(:quotes_view) || can?(:finance_view)
   def view_costs? = can?(:costs_view)
 
