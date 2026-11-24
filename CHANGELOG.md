@@ -5,6 +5,10 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.3.0] - 2026-11-24
+
+Acesso pela raiz da aplicação e nova identidade visual.
+
 ### Alterado
 
 - A raiz da aplicação (`/`) passa a abrir diretamente o formulário de acesso; quem já entrou é encaminhado às suas
@@ -146,7 +150,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.2.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.3.0...develop
+[1.3.0]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ricartefelipe/servora/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ricartefelipe/servora/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ricartefelipe/servora/compare/v0.1.0...v1.0.0
