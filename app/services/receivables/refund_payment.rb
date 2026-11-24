@@ -4,8 +4,9 @@ module Receivables
   # Records money given back to the customer. Never above what the payment (and
   # the receivable) still holds. Lock order: receivable → payment.
   #
-  # The refund is registered in Servora; executing it at the payment provider
-  # is an operational step outside this use case.
+  # Refunds of provider charges are then executed at the provider after commit
+  # (payment_refund.requested); refunds of manual payments are flagged for the
+  # finance team (PaymentRefund "manual").
   class RefundPayment
     def initialize(payment:, amount:, reason:, actor:)
       @payment = payment
@@ -36,7 +37,18 @@ module Receivables
       FinancialEvent.record!(receivable:, kind: "refund", amount: refunded, payment: @payment, actor: @actor,
         details: { reason: @reason })
       AuditEvent.record!(action: "receivable.refunded", auditable: receivable, changes: { amount: refunded, reason: @reason })
+      schedule_execution(receivable, refunded)
       @payment
+    end
+
+    def schedule_execution(receivable, amount)
+      via_provider = @payment.payment_charge_id.present?
+      refund = PaymentRefund.create!(organization_id: receivable.organization_id, payment: @payment, receivable:, amount:,
+        reason: @reason, status: via_provider ? "pending" : "manual", requested_by_membership_id: @actor&.id)
+      return unless via_provider
+
+      Outbox::Publisher.publish!(event_type: "payment_refund.requested", aggregate: refund,
+        dedup_key: "payment_refund.requested:#{refund.id}")
     end
   end
 end

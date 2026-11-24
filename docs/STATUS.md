@@ -48,6 +48,9 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
+| Estornos no provedor | Envio após commit, aceite, recusa, resposta ambígua sem reenvio automático, resolução humana, pagamentos manuais sinalizados | `spec/services/payments/submit_refund_spec.rb`, `spec/requests/receivables_spec.rb` |
+| NFS-e | Emissão pelo provedor sem duplicidade após resposta perdida, rejeição, acompanhamento, cancelamento, emissão automática única | `spec/services/invoices_spec.rb`, `spec/requests/invoices_spec.rb`, `spec/services/payments/gateways/asaas_spec.rb` |
+| Cobrança da plataforma | Faturas por período sem duplicidade, implantação na primeira fatura, cobrança após commit, notificação autenticada e deduplicada, inadimplência e reativação | `spec/services/subscriptions/bill_spec.rb`, `spec/requests/platform_billing_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -59,8 +62,8 @@ demonstração em `docs/`.
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 84 exemplos (regras puras) + 463 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,51%, branches 84,17% |
+| `bash bin/test-all` | 84 exemplos (regras puras) + 486 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,45%, branches 83,04% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -70,20 +73,21 @@ demonstração em `docs/`.
 | Versão | Conteúdo |
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+| 1.1.0 | Estornos executados no provedor, NFS-e pelo provedor de pagamentos e cobrança automática da mensalidade da plataforma |
 | 1.0.0 | Estoque, financeiro e cobranças, contratos e preventiva, SLA, anexos e PDFs, área do técnico offline, portal ampliado, API e webhooks, observabilidade, assinaturas da plataforma e documentação de operação |
 
 ## Integrações não exercitadas
 
 | Integração | Situação |
 |---|---|
+| Asaas sandbox (NFS-e) | Emissão, consulta e cancelamento cobertos com WebMock; não exercitados no sandbox real. Requer serviço municipal configurado na conta do Asaas e dados fiscais em Configurações → Nota fiscal. |
 | Asaas sandbox | Adapter e webhook de entrada implementados e cobertos com WebMock e payloads gravados. Não foram executados contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; gerar o token em Configurações → Integrações e cadastrá-lo no Asaas com a URL `/webhooks/asaas`; emitir uma conta, gerar a cobrança e pagar no sandbox. |
 
 ## Em andamento
 
-- Nenhum item. Evoluções futuras entram como `feature/*` a partir de `develop`.
+- Nenhum item.
 
 ## Ponto de continuidade
 
-Versão 1.0.0 publicada. Próximas evoluções candidatas: confirmação de pagamento exercitada no Asaas sandbox com
-credencial real, cobrança automatizada da assinatura da plataforma, execução de estornos no provedor e emissão de
-nota fiscal por integração dedicada.
+Versão 1.1.0 publicada. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos, NFS-e e
+cobrança da plataforma) — chave apenas no `.env` local (`ASAAS_SANDBOX_API_KEY`), nunca no repositório.

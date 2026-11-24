@@ -20,10 +20,12 @@ class ReceivablesController < TenantController
 
   def show
     authorize @receivable
-    @payments = tenant_relation(Payment).where(receivable_id: @receivable.id).includes(recorded_by: :user).order(:paid_at)
+    @payments = tenant_relation(Payment).where(receivable_id: @receivable.id).includes(:refunds,
+      recorded_by: :user).order(:paid_at)
     @charges = tenant_relation(PaymentCharge).where(receivable_id: @receivable.id).order(created_at: :desc).to_a
     @events = tenant_relation(FinancialEvent).where(receivable_id: @receivable.id).order(:occurred_at, :id)
     @integration = PaymentIntegration.for(current_organization.id)
+    load_invoices
   end
 
   def new
@@ -58,6 +60,11 @@ class ReceivablesController < TenantController
 
   def load_receivable
     @receivable = policy_scope(tenant_relation(Receivable)).includes(:customer, :work_order).find(params.expect(:id))
+  end
+
+  def load_invoices
+    @invoices = tenant_relation(ServiceInvoice).where(receivable_id: @receivable.id).order(created_at: :desc).to_a
+    @fiscal_ready = FiscalSetting.for(current_organization.id).present?
   end
 
   def billable_work_order(id)

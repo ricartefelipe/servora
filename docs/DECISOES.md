@@ -311,3 +311,28 @@ status atualizado.
 - **Consequências**: nenhum dado fica inacessível ao cliente; a decisão comercial não interrompe consultas
   operacionais.
 
+## DEC-039 — Estornos no provedor sem reenvio automático em caso de dúvida
+
+- **Contexto**: diferentemente da criação de cobranças (deduplicada pela referência externa), um estorno parcial
+  pode ser executado duas vezes pelo provedor.
+- **Decisão**: reenviar automaticamente apenas quando a requisição comprovadamente não chegou; respostas
+  ambíguas ficam "em verificação" até uma pessoa confirmar no provedor ou autorizar o reenvio.
+- **Consequências**: nenhum estorno em dobro por falha de rede; casos raros exigem uma ação explícita, auditada.
+
+## DEC-040 — NFS-e pelo provedor de pagamentos
+
+- **Contexto**: a emissão de NFS-e depende da integração com cada prefeitura; o provedor de pagamentos já mantém
+  essa integração e o vínculo da nota com a cobrança.
+- **Decisão**: emitir pelo provedor configurado, com o mesmo protocolo de segurança das cobranças (referência
+  externa, consulta antes de reenviar, envio fora de transações, acompanhamento periódico).
+- **Alternativas**: integração direta com prefeituras ou emissor fiscal dedicado (maior custo por município).
+- **Consequências**: municípios suportados são os do provedor; o simulador permite demonstrar o fluxo completo.
+
+## DEC-041 — Cobrança da plataforma por conta própria e períodos ancorados
+
+- **Decisão**: faturas mensais pré-pagas por assinatura, únicas por período, cobradas pela conta de pagamentos da
+  plataforma configurada por variáveis de ambiente; a referência externa carrega a organização para que a
+  notificação da plataforma seja processada no contexto correto.
+- **Consequências**: nenhum dado de pagamento da plataforma fica nas organizações; repetir o faturamento é inofensivo;
+  inadimplência reduz a conta a somente leitura sem bloquear o acesso aos dados.
+

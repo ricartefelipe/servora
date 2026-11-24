@@ -5,6 +5,17 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.1.0] - 2026-11-24
+
+Execução financeira completa no provedor de pagamentos e cobrança da própria plataforma.
+
+### Adicionado
+
+- Estornos executados no provedor de pagamento: envio após o commit, situação por estorno, verificação humana
+  obrigatória quando a resposta é ambígua e sinalização dos estornos de pagamentos manuais.
+- Nota fiscal de serviço (NFS-e) emitida pelo provedor de pagamentos: dados fiscais, emissão manual ou automática
+  na quitação, acompanhamento da prefeitura, cancelamento e link da nota no portal do cliente.
+
 ## [1.0.0] - 2026-11-24
 
 Ciclo completo da operação de serviços de campo: da solicitação à execução e ao resultado financeiro, com
@@ -104,6 +115,7 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.0.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.1.0...develop
+[1.1.0]: https://github.com/ricartefelipe/servora/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ricartefelipe/servora/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/ricartefelipe/servora/releases/tag/v0.1.0

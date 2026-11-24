@@ -22,9 +22,14 @@ module Outbox
       "visit.finished" => [],
       "payment_charge.requested" => ["Payments::Handlers::SubmitCharge"],
       "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"],
+      "receivable.settled" => ["Invoices::Handlers::AutoIssue"],
+      "service_invoice.requested" => ["Invoices::Handlers::Submit"],
+      "service_invoice.cancel_requested" => ["Invoices::Handlers::CancelRemote"],
+      "payment_refund.requested" => ["Payments::Handlers::SubmitRefund"],
       "sla.warning" => ["Notifications::Handlers::SlaAlert"],
       "sla.breached" => ["Notifications::Handlers::SlaAlert"],
-      "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"]
+      "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"],
+      "subscription_invoice.created" => ["Subscriptions::Handlers::SubmitInvoiceCharge"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

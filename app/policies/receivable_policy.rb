@@ -11,6 +11,7 @@ class ReceivablePolicy < ApplicationPolicy
   def refund? = can?(:finance_refund)
   def cancel? = can?(:finance_manage) && outstanding?
   def charge? = can?(:finance_manage) && outstanding?
+  def invoice? = can?(:finance_manage) && record.is_a?(Receivable) && !record.canceled?
 
   private
 

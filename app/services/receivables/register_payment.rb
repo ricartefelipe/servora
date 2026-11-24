@@ -44,6 +44,10 @@ module Receivables
         details: { method: @payment_method, balance: position.balance })
       AuditEvent.record!(action: "receivable.payment_registered", auditable: @receivable,
         changes: { amount: @amount, method: @payment_method, status: position.status })
+      if position.settled?
+        Outbox::Publisher.publish!(event_type: "receivable.settled", aggregate: @receivable,
+          dedup_key: "receivable.settled:#{@receivable.id}:#{@receivable.paid_amount}")
+      end
       payment
     end
   end
