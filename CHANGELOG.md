@@ -41,6 +41,12 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   checklist, registro técnico e apontamentos com sincronização idempotente, revalidação de acesso e detecção de
   conflitos; service worker restrito a assets estáticos.
 
+- API pública v1 com OpenAPI, credenciais com escopos, validade e revogação, paginação limitada, filtros e
+  idempotência por `Idempotency-Key` na criação de ordens.
+- Webhooks de saída assinados (HMAC-SHA256), com id de evento estável, retentativas, reenvio manual e proteção
+  contra SSRF; webhooks de entrada do Asaas autenticados, gravados antes da confirmação e deduplicados.
+- Tela de integrações com segredos exibidos uma única vez.
+
 ### Corrigido
 
 - CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),

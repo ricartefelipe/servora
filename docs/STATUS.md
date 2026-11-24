@@ -43,6 +43,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Anexos | Upload validado por assinatura, limites, download autorizado com cabeçalhos privados, blobs isolados por RLS | `spec/unit/files/signature_spec.rb`, `spec/requests/evidences_spec.rb` |
 | PDFs | Proposta comercial da versão enviada e relatório de execução por versão | `spec/requests/documents_spec.rb` |
 | Área do técnico | Agenda e execução móvel, fila offline idempotente, conflitos por versão, revalidação de acesso, rascunho recuperado, service worker restrito | `spec/services/field/sync_spec.rb`, `spec/requests/field_spec.rb`, `spec/system/field_offline_spec.rb` (rede desligada no navegador) |
+| API v1 | Credenciais com escopo, validade e revogação; isolamento; paginação limitada; filtros; idempotência; OpenAPI conferida contra as rotas | `spec/requests/api_spec.rb` |
+| Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
@@ -65,7 +67,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 | Integração | Situação |
 |---|---|
-| Asaas sandbox | Adapter implementado e coberto com WebMock. Não foi executado contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; emitir uma conta e gerar a cobrança. |
+| Asaas sandbox | Adapter e webhook de entrada implementados e cobertos com WebMock e payloads gravados. Não foram executados contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; gerar o token em Configurações → Integrações e cadastrá-lo no Asaas com a URL `/webhooks/asaas`; emitir uma conta, gerar a cobrança e pagar no sandbox. |
 
 ## Em andamento
 
