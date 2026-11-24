@@ -1,16 +1,23 @@
 import { Controller } from "@hotwired/stimulus"
+import { PREFIX, RETRY_EVENT, announce, enqueue, flush, readQueue, takeParked } from "controllers/field_queue"
 
-// Field operations with an offline queue.
+// Field operations with an offline queue (see controllers/field_queue).
 //
-// Submitting a form queues an operation (device-generated id, kind, the
-// version the technician saw, payload) in localStorage and tries to send it.
-// Without connection the operation stays queued and is sent when the browser
-// comes back online; the server stores the outcome per operation id, so a
-// resend never applies twice. Typed values are kept as drafts until synced.
+// Submitting a form queues an operation and tries to send it. Without
+// connection the operation stays queued and is sent when the browser comes
+// back online or when the sync chip asks for a retry. Typed values are kept as
+// drafts until synced.
 //
-// Keys use the "servora:" prefix plus the user/organization context key, so
-// the local-context controller removes everything on logout or context switch.
-const PREFIX = "servora:field:"
+// Visit forms (data-kind="visit_*", data-visit-id) change the visit state:
+// while queued their buttons are disabled and the matching
+// [data-field-sync-queued-for] hint is shown; once the server answers, the
+// screen is reloaded so the state-driven actions follow the server.
+const NOTICE = "notice"
+const VISIT_KIND = /^visit_/
+const VISIT_APPLIED = {
+  visit_travel: "Deslocamento iniciado.",
+  visit_no_show: "Visita registrada como não atendida: cliente ausente."
+}
 
 export default class extends Controller {
   static targets = ["status", "pending"]
@@ -18,18 +25,27 @@ export default class extends Controller {
 
   connect() {
     this.onOnline = () => this.flush()
+    this.onOffline = () => announce(this.contextKeyValue)
+    this.onRetry = () => this.flush()
     window.addEventListener("online", this.onOnline)
+    window.addEventListener("offline", this.onOffline)
+    window.addEventListener(RETRY_EVENT, this.onRetry)
     this.restoreDrafts()
+    this.showNotice()
+    takeParked(this.contextKeyValue, this.workOrderIdValue).forEach(({ operation, outcome }) => this.report(operation, outcome))
     this.render()
+    announce(this.contextKeyValue)
     this.flush()
   }
 
   disconnect() {
     window.removeEventListener("online", this.onOnline)
+    window.removeEventListener("offline", this.onOffline)
+    window.removeEventListener(RETRY_EVENT, this.onRetry)
   }
 
-  get queueKey() {
-    return `${PREFIX}${this.contextKeyValue}:queue`
+  get noticeKey() {
+    return `${PREFIX}${this.contextKeyValue}:${NOTICE}:${this.workOrderIdValue}`
   }
 
   draftKey(form) {
@@ -37,12 +53,7 @@ export default class extends Controller {
   }
 
   queue() {
-    try { return JSON.parse(localStorage.getItem(this.queueKey)) || [] } catch { return [] }
-  }
-
-  store(queue) {
-    localStorage.setItem(this.queueKey, JSON.stringify(queue))
-    this.render()
+    return readQueue(this.contextKeyValue)
   }
 
   remember(event) {
@@ -67,16 +78,19 @@ export default class extends Controller {
   submit(event) {
     event.preventDefault()
     const form = event.target
+    const draft = this.draftKey(form)
+    if (VISIT_KIND.test(form.dataset.kind) && this.queue().some((operation) => operation.draft === draft)) return
     const operation = {
       id: crypto.randomUUID(),
       kind: form.dataset.kind,
       version: form.dataset.version || null,
       work_order_id: this.workOrderIdValue,
       payload: this.payload(form),
-      draft: this.draftKey(form)
+      draft
     }
     if (!operation.payload) return
-    this.store([...this.queue(), operation])
+    enqueue(this.contextKeyValue, operation)
+    this.render()
     this.flush()
   }
 
@@ -87,6 +101,8 @@ export default class extends Controller {
       fields[key] = value
     })
     if (form.dataset.itemId) fields.item_id = form.dataset.itemId
+    if (form.dataset.visitId) fields.visit_id = form.dataset.visitId
+    if (form.dataset.kind === "visit_travel") fields.at = new Date().toISOString()
     if (form.dataset.kind === "time_entry") {
       if (!fields.started_at || !fields.ended_at) return null
       fields.started_at = new Date(fields.started_at).toISOString()
@@ -106,52 +122,35 @@ export default class extends Controller {
   }
 
   async flush() {
-    if (this.flushing) return
-    this.flushing = true
-    try {
-      for (const operation of this.queue()) {
-        const outcome = await this.send(operation)
-        if (outcome === null) {
-          this.show("Sem conexão. As informações estão salvas neste aparelho e serão enviadas quando a conexão voltar.")
-          break
+    let reload = false
+    const sent = await flush({
+      url: this.urlValue,
+      contextKey: this.contextKeyValue,
+      onOutcome: (operation, outcome) => {
+        this.render()
+        if (VISIT_KIND.test(operation.kind) && operation.work_order_id === this.workOrderIdValue) {
+          reload = true
+          this.keepNotice(this.visitMessage(operation, outcome))
+        } else {
+          this.report(operation, outcome)
         }
-        this.store(this.queue().filter((queued) => queued.id !== operation.id))
-        localStorage.removeItem(operation.draft)
-        this.report(operation, outcome)
+      },
+      onFailure: (kind) => {
+        this.show(kind === "server"
+          ? "O servidor não respondeu. As informações continuam salvas neste aparelho; tente novamente em instantes."
+          : "Sem conexão. As informações estão salvas neste aparelho e serão enviadas quando a conexão voltar.")
       }
-    } finally {
-      this.flushing = false
-      this.render()
-    }
-  }
-
-  async send(operation) {
-    const { draft, ...body } = operation
-    try {
-      const response = await fetch(this.urlValue, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content || ""
-        },
-        body: JSON.stringify({ operation: body })
-      })
-      if (response.status === 429 || response.status >= 500) return null
-      if (response.status === 403 || response.status === 404) {
-        return { status: "rejected", result: { error: "Você não tem mais acesso a esta ordem ou ela foi encerrada." } }
-      }
-      return await response.json()
-    } catch {
-      return null
-    }
+    })
+    if (sent) this.render()
+    if (reload && this.element.isConnected) this.reload()
   }
 
   report(operation, outcome) {
     const form = [...this.element.querySelectorAll("form[data-draft-id]")]
       .find((candidate) => this.draftKey(candidate) === operation.draft)
-    if (outcome.status === "applied") {
+    if (VISIT_KIND.test(operation.kind)) {
+      this.show(this.visitMessage(operation, outcome))
+    } else if (outcome.status === "applied") {
       if (form && outcome.result?.version !== undefined) form.dataset.version = outcome.result.version
       if (form && operation.kind === "time_entry") form.reset()
       this.show("Sincronizado com sucesso.")
@@ -164,14 +163,51 @@ export default class extends Controller {
     }
   }
 
+  visitMessage(operation, outcome) {
+    if (outcome.status === "applied") return VISIT_APPLIED[operation.kind] || "Sincronizado com sucesso."
+    if (outcome.status === "conflict") {
+      const label = outcome.result?.status_label
+      return `A visita foi alterada por outra pessoa${label ? ` e agora está ${label.toLowerCase()}` : ""}. Confira a situação atual.`
+    }
+    return `Não foi possível registrar: ${outcome.result?.error || "operação recusada"}`
+  }
+
+  // The message survives the reload that brings the new visit state.
+  keepNotice(message) {
+    sessionStorage.setItem(this.noticeKey, message)
+  }
+
+  showNotice() {
+    const message = sessionStorage.getItem(this.noticeKey)
+    if (!message) return
+    sessionStorage.removeItem(this.noticeKey)
+    this.show(message)
+  }
+
+  reload() {
+    if (window.Turbo) window.Turbo.visit(window.location.href, { action: "replace" })
+    else window.location.reload()
+  }
+
   show(message) {
     if (this.hasStatusTarget) this.statusTarget.textContent = message
   }
 
   render() {
-    if (!this.hasPendingTarget) return
-    const count = this.queue().filter((operation) => operation.work_order_id === this.workOrderIdValue).length
-    this.pendingTarget.hidden = count === 0
-    this.pendingTarget.textContent = count === 1 ? "1 registro aguardando envio." : `${count} registros aguardando envio.`
+    const queue = this.queue()
+    if (this.hasPendingTarget) {
+      const count = queue.filter((operation) => operation.work_order_id === this.workOrderIdValue).length
+      this.pendingTarget.hidden = count === 0
+      this.pendingTarget.textContent = count === 1 ? "1 registro aguardando envio." : `${count} registros aguardando envio.`
+    }
+    this.element.querySelectorAll("form[data-draft-id]").forEach((form) => {
+      if (!VISIT_KIND.test(form.dataset.kind)) return
+      const queued = queue.some((operation) => operation.draft === this.draftKey(form))
+      for (const element of form.elements) {
+        if (element.type === "submit") element.disabled = queued
+      }
+      this.element.querySelectorAll(`[data-field-sync-queued-for="${form.dataset.draftId}"]`)
+        .forEach((hint) => { hint.hidden = !queued })
+    })
   }
 }

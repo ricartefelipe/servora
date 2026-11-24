@@ -10,7 +10,7 @@
       <span class="font-mono text-xl font-semibold leading-7 tracking-tight text-ink-950">
         <%= l(visit.scheduled_start.in_time_zone(zone), format: "%H:%M") %><span class="text-ink-500"> – <%= l(visit.scheduled_end.in_time_zone(zone), format: "%H:%M") %></span>
       </span>
-      <%= badge(visit.status_label, tone: visit.status == "in_progress" ? :ember : :indigo) %>
+      <%= badge(visit.status_label, tone: visit.status_tone) %>
     </span>
     <span class="mt-2 block text-base font-semibold text-ink-950"><%= customer.display_name %></span>
     <span class="block text-[15px] text-ink-800"><%= order.title %></span>

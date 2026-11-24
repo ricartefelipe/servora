@@ -39,7 +39,7 @@ module Dashboards
       Cover.new(
         visits_total: todays.count,
         visits_done: todays.where(status: "completed").count,
-        in_field: @visits.where(status: "in_progress").count,
+        in_field: @visits.where(status: Visits::IN_FIELD).count,
         open_orders: (WorkOrder.open_work.count if can?(:work_orders_view_all)),
         upcoming: upcoming_scope.count
       )

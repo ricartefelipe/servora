@@ -14,14 +14,44 @@
   <body class="min-h-full text-base" data-controller="local-context" data-local-context-key-value="<%= local_context_key %>">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
     <%= render "shared/brand_rule" %>
-    <%# The toasts sit above the bottom tab bar instead of behind it. %>
-    <div id="flash" class="[&>div]:bottom-[calc(5rem+env(safe-area-inset-bottom))]"><%= render "shared/flash" %></div>
+    <%# Toasts sit under the top bar, clear of the sticky visit actions and the tab bar. %>
+    <div id="flash" class="[&>div]:top-[calc(3.5rem+0.5rem)] [&>div]:bottom-auto"><%= render "shared/flash" %></div>
 
     <header class="sticky top-0 z-20 border-b border-ink-200 bg-white">
       <div class="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4">
         <%= render "shared/logo", size: 24, mark_only: true %>
         <p class="min-w-0 flex-1 truncate text-[17px] font-semibold text-ink-950"><%= content_for(:field_title).presence || content_for(:title) %></p>
         <p class="hidden max-w-[40%] truncate text-[13px] text-ink-500 sm:block"><%= current_organization.name %></p>
+        <%# Sync chip: every variant stays hidden until field-status knows the real state of the device queue. %>
+        <div class="flex shrink-0 items-center gap-2" data-controller="field-status"
+             data-field-status-url-value="<%= field_operations_path %>" data-field-status-context-key-value="<%= local_context_key %>">
+          <p role="status" aria-live="polite" tabindex="-1" class="flex rounded-md" data-field-status-target="region">
+            <span class="sr-only">Sincronização: </span>
+            <span data-field-status-target="variant" data-state="synced" hidden
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md bg-emerald-50 px-2 text-[13px] font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20">
+              <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>Sincronizado
+            </span>
+            <span data-field-status-target="variant" data-state="pending" hidden
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md bg-ink-50 px-2 text-[13px] font-medium text-ink-700 ring-1 ring-inset ring-ink-950/10">
+              <%= icon(:switch, size: 14, css: "text-ink-500") %><span data-field-status-target="pendingText">Sincronizando</span>
+            </span>
+            <span data-field-status-target="variant" data-state="offline" hidden
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md bg-amber-50 px-2 text-[13px] font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+              <%# cloud-off %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                   stroke-linejoin="round" class="shrink-0 text-amber-700" aria-hidden="true" focusable="false">
+                <path d="M3 3l18 18"/><path d="M6.2 6.3A6 6 0 0 0 7 18h10.5c.5 0 1-.1 1.4-.2"/><path d="M21 15.8A4 4 0 0 0 17.5 9h-1.2A6 6 0 0 0 10.4 6"/>
+              </svg>
+              <span data-field-status-target="offlineText">Offline</span>
+            </span>
+            <span data-field-status-target="variant" data-state="error" hidden
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md bg-rose-50 px-2 text-[13px] font-medium text-rose-800 ring-1 ring-inset ring-rose-600/20">
+              <%= icon(:alert, size: 14, css: "text-rose-600") %>Falha ao sincronizar
+            </span>
+          </p>
+          <button type="button" class="sv-btn-secondary h-11 px-3 text-[13px]" data-field-status-target="retry"
+                  data-action="field-status#retry" hidden>Tentar</button>
+        </div>
       </div>
     </header>
 

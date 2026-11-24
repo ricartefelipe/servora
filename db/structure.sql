@@ -668,7 +668,7 @@ CREATE TABLE public.field_operations (
     created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     work_order_id uuid NOT NULL,
     membership_id uuid NOT NULL,
-    CONSTRAINT field_operations_kind CHECK (((kind)::text = ANY (ARRAY['time_entry'::text, 'technical_report'::text, 'checklist'::text]))),
+    CONSTRAINT field_operations_kind CHECK (((kind)::text = ANY (ARRAY['time_entry'::text, 'technical_report'::text, 'checklist'::text, 'visit_travel'::text, 'visit_no_show'::text]))),
     CONSTRAINT field_operations_status CHECK (((status)::text = ANY (ARRAY['applied'::text, 'conflict'::text, 'rejected'::text])))
 );
 
@@ -1794,8 +1794,9 @@ CREATE TABLE public.visits (
     work_order_id uuid NOT NULL,
     team_id uuid,
     scheduled_by_membership_id uuid NOT NULL,
+    travel_started_at timestamp(6) with time zone,
     CONSTRAINT visits_period CHECK ((scheduled_start < scheduled_end)),
-    CONSTRAINT visits_status CHECK (((status)::text = ANY (ARRAY['scheduled'::text, 'in_progress'::text, 'completed'::text, 'canceled'::text, 'no_show'::text]))),
+    CONSTRAINT visits_status CHECK (((status)::text = ANY (ARRAY['scheduled'::text, 'traveling'::text, 'in_progress'::text, 'completed'::text, 'canceled'::text, 'no_show'::text]))),
     CONSTRAINT visits_travel CHECK (((travel_minutes >= 0) AND (travel_minutes <= 480)))
 );
 
@@ -6928,6 +6929,7 @@ ALTER TABLE public.work_schedules ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261125041500'),
 ('20261125030000'),
 ('20261125020000'),
 ('20261125010000'),
