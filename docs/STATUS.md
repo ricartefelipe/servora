@@ -36,14 +36,17 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Cobranças | Simulador determinístico, envio pela outbox, resposta ambígua sem duplicação, recusa, confirmação idempotente, conciliação, cancelamento remoto | `spec/services/payments_spec.rb`, `spec/system/billing_flow_spec.rb` |
 | Asaas (sandbox) | Adapter com timeouts, clientes por referência, consulta por referência externa, classificação de falhas — **somente contra stubs (WebMock)** | `spec/services/payments/gateways/asaas_spec.rb` |
 | Margem | Prevista × realizada com material, mão de obra e despesas | `spec/services/receivables_spec.rb` |
+| Contratos | Condições versionadas append-only, ciclo de vida com motivos, cobertura por tipo e limite mensal, vínculo automático das ordens | `spec/services/contracts_spec.rb`, `spec/requests/contracts_spec.rb`, `spec/database/contract_integrity_spec.rb` |
+| Preventiva | Âncora de fim de mês e bissexto, catch-up limitado, reancoragem, modo após conclusão, suspensão e término, job diário | `spec/unit/preventive/schedule_spec.rb`, `spec/services/preventive_spec.rb`, `spec/system/preventive_flow_spec.rb` |
+| Concorrência preventiva | Três geradores simultâneos produzem cada ocorrência uma única vez | `spec/services/preventive_concurrency_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 65 exemplos (regras puras) + 360 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 98,64%, branches 84,03% |
+| `bash bin/test-all` | 71 exemplos (regras puras) + 388 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,74%, branches 84,98% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -62,9 +65,9 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Contratos de manutenção e planos preventivos (periodicidade de calendário, âncora, recuperação sem
-  duplicidade, identidade estável da ocorrência) e SLA.
+- SLA: prazos de primeira resposta e resolução por prioridade, calendário de trabalho, feriados, fuso da
+  organização, pausas por espera de cliente/peças e alertas sem duplicidade.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/contratos-e-preventiva` a partir de `develop`.
+Próxima branch: `feature/sla` a partir de `develop`.

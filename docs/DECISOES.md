@@ -222,3 +222,20 @@ status atualizado.
 - **Consequências**: uma cobrança por referência, sem locks durante I/O; o simulador reproduz os cenários de
   forma determinística para testes e demonstração.
 
+## DEC-029 — Ocorrências preventivas calculadas a partir da âncora, com identidade (plano, sequência)
+
+- **Contexto**: calcular cada data a partir da anterior acumula o ajuste de fim de mês (31 → 28 → 28…);
+  agendadores repetidos ou concorrentes podem duplicar ordens.
+- **Decisão**: datas sempre derivadas da âncora; mudanças de calendário reancoram na próxima sequência; cada
+  ocorrência tem identidade única `(plano, sequência)` no banco e a geração trava o plano. A recuperação após
+  indisponibilidade é limitada por execução.
+- **Consequências**: datas previsíveis e testáveis no domínio puro; repetir a geração é inofensivo; alterar o
+  plano não reescreve o passado.
+
+## DEC-030 — Plano preventivo sempre pertence a um contrato
+
+- **Decisão**: o plano exige contrato (e herda o cliente dele). A cobertura, os limites e a suspensão do
+  contrato governam a geração das ocorrências.
+- **Consequências**: uma única fonte para vigência e suspensão; manutenção preventiva avulsa é modelada como
+  um contrato sem mensalidade.
+
