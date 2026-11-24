@@ -48,6 +48,7 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
+| Cobrança da plataforma | Faturas por período sem duplicidade, implantação na primeira fatura, cobrança após commit, notificação autenticada e deduplicada, inadimplência e reativação | `spec/services/subscriptions/bill_spec.rb`, `spec/requests/platform_billing_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Documentação
@@ -80,10 +81,9 @@ demonstração em `docs/`.
 
 ## Em andamento
 
-- Nenhum item. Evoluções futuras entram como `feature/*` a partir de `develop`.
+- Release 1.1.0 (estornos no provedor, NFS-e, cobrança da plataforma).
 
 ## Ponto de continuidade
 
-Versão 1.0.0 publicada. Próximas evoluções candidatas: confirmação de pagamento exercitada no Asaas sandbox com
-credencial real, cobrança automatizada da assinatura da plataforma, execução de estornos no provedor e emissão de
-nota fiscal por integração dedicada.
+Após a integração: `release/1.1.0`. Pendente de credencial: execução real no Asaas sandbox (cobranças, estornos,
+NFS-e e cobrança da plataforma).

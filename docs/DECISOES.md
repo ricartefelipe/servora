@@ -311,3 +311,11 @@ status atualizado.
 - **Consequências**: nenhum dado fica inacessível ao cliente; a decisão comercial não interrompe consultas
   operacionais.
 
+## DEC-041 — Cobrança da plataforma por conta própria e períodos ancorados
+
+- **Decisão**: faturas mensais pré-pagas por assinatura, únicas por período, cobradas pela conta de pagamentos da
+  plataforma configurada por variáveis de ambiente; a referência externa carrega a organização para que a
+  notificação da plataforma seja processada no contexto correto.
+- **Consequências**: nenhum dado de pagamento da plataforma fica nas organizações; repetir o faturamento é inofensivo;
+  inadimplência reduz a conta a somente leitura sem bloquear o acesso aos dados.
+
