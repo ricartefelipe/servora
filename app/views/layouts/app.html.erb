@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-ink-50">
+  <head>
+    <title><%= [content_for(:title), current_organization&.name, "Servora"].compact_blank.join(" · ") %></title>
+    <%= render "layouts/head" %>
+  </head>
+  <body class="h-full" data-controller="shell local-context" data-local-context-key-value="<%= local_context_key %>"
+        data-action="keydown.esc@window->shell#close">
+    <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
+    <div id="flash"><%= render "shared/flash" %></div>
+
+    <div class="fixed inset-0 z-30 bg-ink-950/50 backdrop-blur-sm lg:hidden" data-shell-target="overlay" data-action="click->shell#close" hidden></div>
+    <%= render "layouts/sidebar" %>
+
+    <div class="flex min-h-full flex-col lg:pl-72">
+      <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-ink-200/70 bg-white/85 px-4 backdrop-blur sm:px-6 lg:px-8">
+        <button type="button" class="sv-btn-ghost -ml-2 p-2 lg:hidden" data-action="shell#open" data-shell-target="toggle"
+                aria-controls="navegacao" aria-expanded="false" aria-label="Abrir navegação">
+          <%= icon(:menu) %>
+        </button>
+        <p class="truncate text-sm font-semibold text-ink-700 lg:hidden"><%= current_organization.name %></p>
+        <div class="ml-auto flex items-center gap-2">
+          <%= turbo_stream_from current_membership, :notifications, channel: NotificationsChannel %>
+          <%= link_to notifications_path, class: "relative rounded-xl p-2 text-ink-600 hover:bg-ink-100 hover:text-ink-900", aria: { label: "Notificações" } do %>
+            <%= icon(:bell) %>
+            <%= render "notifications/counter", unread: current_organization.notifications.for_recipient(current_membership).unread.count %>
+          <% end %>
+          <details class="relative" data-controller="disclosure">
+            <summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-ink-100" aria-label="Menu da conta">
+              <%= avatar(current_user.name) %>
+              <span class="hidden text-left sm:block">
+                <span class="block text-sm font-semibold leading-tight text-ink-900"><%= current_user.name %></span>
+                <span class="block text-xs leading-tight text-ink-500"><%= current_membership.role_label %></span>
+              </span>
+              <%= icon(:chevron_down, size: 16, css: "text-ink-400") %>
+            </summary>
+            <div class="absolute right-0 mt-2 w-60 rounded-2xl border border-ink-200 bg-white p-1.5 shadow-[var(--shadow-float)] animate-fade-in">
+              <%= link_to account_security_path, class: "flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink-700 hover:bg-ink-50" do %>
+                <%= icon(:key, size: 18) %> Segurança da conta
+              <% end %>
+              <%= link_to organizations_path, class: "flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink-700 hover:bg-ink-50" do %>
+                <%= icon(:switch, size: 18) %> Trocar organização
+              <% end %>
+              <%= button_to destroy_user_session_path, method: :delete, form: { data: { turbo: false } },
+                    class: "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50" do %>
+                <%= icon(:logout, size: 18) %> Sair
+              <% end %>
+            </div>
+          </details>
+        </div>
+      </header>
+
+      <%= render "layouts/mfa_banner" %>
+
+      <main id="conteudo" class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
+        <%= yield %>
+      </main>
+      <%= turbo_frame_tag "modal" %>
+    </div>
+  </body>
+</html>

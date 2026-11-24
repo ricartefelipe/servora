@@ -1,0 +1,56 @@
+<% content_for :title, "Catálogo" %>
+<%= page_header("Catálogo", subtitle: "Serviços e peças com preço de venda. Custos internos aparecem apenas para perfis autorizados.") do %>
+  <% if policy(CatalogItem).create? %>
+    <%= link_to new_catalog_item_path(tipo: "service"), class: "sv-btn-secondary" do %><%= icon(:plus, size: 18) %> Serviço<% end %>
+    <%= link_to new_catalog_item_path(tipo: "part"), class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Peça<% end %>
+  <% end %>
+<% end %>
+
+<%= form_with url: catalog_items_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
+  <div class="min-w-64 flex-1">
+    <%= f.label :q, "Buscar", class: "sv-label" %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Nome ou código", class: "sv-input" %>
+  </div>
+  <div>
+    <%= f.label :tipo, "Tipo", class: "sv-label" %>
+    <%= f.select :tipo, [["Serviços", "service"], ["Peças", "part"]], { include_blank: "Todos", selected: @kind }, class: "sv-input" %>
+  </div>
+  <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-700">
+    <%= f.check_box :inativos, { checked: params[:inativos] == "1", class: "rounded border-ink-300 text-brand-600" }, "1", nil %> Incluir inativos
+  </label>
+  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
+<% end %>
+
+<section class="sv-card overflow-hidden">
+  <% if @pagination.records.empty? %>
+    <%= empty_state("Catálogo vazio", description: "Cadastre serviços e peças para montar orçamentos com rapidez.", icon_name: :catalog) %>
+  <% else %>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead>
+          <tr>
+            <th scope="col">Item</th><th scope="col">Tipo</th><th scope="col">Unidade</th><th scope="col" class="text-right">Preço</th>
+            <% if policy(CatalogItem).view_cost? %><th scope="col" class="text-right">Custo</th><% end %>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100">
+          <% @pagination.records.each do |item| %>
+            <tr class="<%= 'opacity-60' unless item.active? %>">
+              <td>
+                <span class="block font-medium text-ink-900"><%= item.name %></span>
+                <span class="text-xs text-ink-500"><%= [item.sku, (pluralize(item.estimated_minutes, "minuto") if item.estimated_minutes)].compact.join(" · ") %></span>
+              </td>
+              <td><%= badge(item.kind_label, tone: item.service? ? :info : :brand, dot: false) %><% unless item.active? %> <%= badge("Inativo") %><% end %></td>
+              <td><%= item.unit_label %></td>
+              <td class="sv-num text-right"><%= money(item.unit_price) %></td>
+              <% if policy(CatalogItem).view_cost? %><td class="sv-num text-right text-ink-600"><%= item.unit_cost ? number_to_currency(item.unit_cost, unit: "R$", separator: ",", delimiter: ".", precision: 4, format: "%u %n") : "—" %></td><% end %>
+              <td class="text-right"><% if policy(item).update? %><%= link_to "Editar", edit_catalog_item_path(item), class: "sv-btn-ghost sv-btn-sm" %><% end %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</section>
+<%= render "shared/pagination", pagination: @pagination %>

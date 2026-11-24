@@ -1,0 +1,6 @@
+Olá, <%= @resource.name %>.
+
+Sua conta foi bloqueada após várias tentativas de acesso sem sucesso. Para desbloquear:
+<%= user_unlock_url(unlock_token: @token) %>
+
+Se não reconhece essas tentativas, altere sua senha após o desbloqueio.

@@ -1,0 +1,3 @@
+<% content_for :title, "Editar tipo de serviço" %>
+<%= page_header(@service_type.name, eyebrow: "Tipo de serviço", subtitle: "Ordens já abertas mantêm o checklist copiado na abertura.") %>
+<%= render "service_types/form", service_type: @service_type %>

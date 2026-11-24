@@ -1,0 +1,75 @@
+<% content_for :title, @equipment.title %>
+<%= page_header(@equipment.title, eyebrow: "Equipamento", subtitle: "#{@equipment.customer.display_name} · #{@equipment.service_location.name}") do %>
+  <%= render "equipment/status_badge", equipment: @equipment %>
+  <% if @equipment.archived? %>
+    <%= badge("Arquivado") %>
+    <% if policy(@equipment).restore? %><%= button_to "Reativar", restore_equipment_path(@equipment), method: :patch, class: "sv-btn-secondary" %><% end %>
+  <% else %>
+    <% if policy(@equipment).update? %><%= link_to "Editar", edit_equipment_path(@equipment), class: "sv-btn-secondary" %><% end %>
+    <% if policy(@equipment).relocate? %><%= link_to "Mudar de local", move_equipment_path(@equipment), class: "sv-btn-secondary", data: { turbo_frame: "modal" } %><% end %>
+  <% end %>
+<% end %>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="sv-card p-6 lg:col-span-1" aria-labelledby="dados-title">
+    <h2 id="dados-title" class="mb-4 font-semibold text-ink-900">Dados</h2>
+    <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+      <% { "Fabricante" => @equipment.manufacturer, "Modelo" => @equipment.model, "Capacidade" => @equipment.capacity,
+           "Nº de série" => @equipment.serial_number, "Patrimônio" => @equipment.asset_tag,
+           "Instalação" => date(@equipment.installed_on), "Garantia até" => date(@equipment.warranty_until) }.each do |label, value| %>
+        <div><dt class="text-ink-500"><%= label %></dt><dd class="font-medium text-ink-900"><%= value.presence || "—" %></dd></div>
+      <% end %>
+    </dl>
+    <% if @equipment.under_warranty? %>
+      <p class="mt-4 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">Em garantia<%= ": #{@equipment.warranty_notes}" if @equipment.warranty_notes.present? %></p>
+    <% end %>
+    <% if @equipment.notes.present? %><p class="mt-4 whitespace-pre-line text-sm text-ink-700"><%= @equipment.notes %></p><% end %>
+
+    <% if policy(@equipment).change_status? %>
+      <%= form_with url: change_status_equipment_path(@equipment), method: :patch, scope: :status_change, class: "mt-6 space-y-3 border-t border-ink-100 pt-5" do |f| %>
+        <%= f.label :operational_status, "Atualizar estado operacional", class: "sv-label" %>
+        <%= f.select :operational_status, Equipment::STATUSES.map { |value, label| [label, value] }, { selected: @equipment.operational_status }, class: "sv-input" %>
+        <%= f.text_field :reason, placeholder: "Motivo (opcional)", class: "sv-input", aria: { label: "Motivo da mudança" } %>
+        <%= f.button "Atualizar estado", type: "submit", class: "sv-btn-secondary w-full" %>
+      <% end %>
+    <% end %>
+
+    <div class="mt-6 flex flex-wrap gap-2 border-t border-ink-100 pt-5">
+      <% if policy(@equipment).archive? %>
+        <%= button_to "Arquivar", archive_equipment_path(@equipment), method: :patch, class: "sv-btn-ghost sv-btn-sm",
+              form: { data: { turbo_confirm: "Arquivar este equipamento? O histórico é preservado." } } %>
+      <% end %>
+      <% if policy(@equipment).destroy? %>
+        <%= button_to "Excluir cadastro", equipment_path(@equipment), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700",
+              form: { data: { turbo_confirm: "Excluir definitivamente? Só é permitido para equipamentos sem atendimentos." } } %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="min-w-0 lg:col-span-2" aria-labelledby="historico-title">
+    <h2 id="historico-title" class="mb-3 font-semibold text-ink-900">Histórico</h2>
+    <ol class="relative space-y-4 border-l-2 border-ink-200 pl-6" role="list">
+      <% @events.each do |event| %>
+        <li class="relative">
+          <span class="absolute -left-[33px] top-1 grid size-4 place-items-center rounded-full border-2 border-white bg-brand-500" aria-hidden="true"></span>
+          <div class="sv-card p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold text-ink-900"><%= event.kind_label %></p>
+              <time class="sv-num text-xs text-ink-500" datetime="<%= event.occurred_at.iso8601 %>"><%= l(event.occurred_at, format: :short) %></time>
+            </div>
+            <% if event.from_location_id || event.to_location_id %>
+              <p class="mt-1 text-sm text-ink-600">
+                <% if event.from_location_id %><%= @locations_by_id[event.from_location_id]&.name || "Local anterior" %> → <% end %>
+                <%= @locations_by_id[event.to_location_id]&.name %>
+              </p>
+            <% end %>
+            <% if event.from_status || event.to_status %>
+              <p class="mt-1 text-sm text-ink-600"><%= [event.from_status, event.to_status].compact.map { |s| Equipment::STATUSES[s] }.join(" → ") %></p>
+            <% end %>
+            <% if event.description.present? %><p class="mt-1 text-sm text-ink-500"><%= event.description %></p><% end %>
+          </div>
+        </li>
+      <% end %>
+    </ol>
+  </section>
+</div>

@@ -1,0 +1,22 @@
+<% content_for :title, "Ativar verificação em duas etapas" %>
+<% content_for :container_width, "max-w-lg" %>
+<%= render "shared/auth_heading", title: "Ativar verificação em duas etapas",
+      subtitle: "Use um aplicativo autenticador compatível com TOTP (padrão RFC 6238)." %>
+
+<ol class="space-y-6">
+  <li class="sv-card p-5">
+    <p class="text-sm font-semibold text-ink-900">1. Escaneie o QR code</p>
+    <div class="mx-auto mt-4 w-48 rounded-xl bg-white p-2 ring-1 ring-ink-200"><%= @provisioning.qr_svg %></div>
+    <p class="mt-4 text-xs text-ink-500">Ou digite a chave manualmente:</p>
+    <p class="mt-1 select-all rounded-lg bg-ink-50 px-3 py-2 text-center font-mono text-sm tracking-wider text-ink-800"><%= @provisioning.formatted_secret %></p>
+  </li>
+  <li class="sv-card p-5">
+    <%= form_with url: account_two_factor_path, method: :post, class: "space-y-4" do |f| %>
+      <%= f.label :otp_attempt, "2. Digite o código exibido no aplicativo", class: "sv-label" %>
+      <%= f.text_field :otp_attempt, class: "sv-input text-center font-mono text-lg tracking-[0.4em]", inputmode: "numeric",
+            autocomplete: "one-time-code", maxlength: 6, required: true, autofocus: true %>
+      <%= f.button "Confirmar e ativar", type: "submit", class: "sv-btn-primary w-full" %>
+    <% end %>
+  </li>
+</ol>
+<p class="mt-6 text-sm"><%= link_to "Voltar", account_security_path, class: "sv-link" %></p>

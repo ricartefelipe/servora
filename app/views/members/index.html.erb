@@ -1,0 +1,73 @@
+<% content_for :title, "Equipe" %>
+<%= page_header("Equipe", subtitle: "Membros, perfis de acesso e convites.") %>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="sv-card min-w-0 overflow-hidden lg:col-span-2" aria-labelledby="members-title">
+    <h2 id="members-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Membros</h2>
+    <div class="relative overflow-x-auto">
+      <table class="sv-table">
+        <thead>
+          <tr><th scope="col">Pessoa</th><th scope="col">Perfil</th><th scope="col">Situação</th><th scope="col"><span class="sr-only">Ações</span></th></tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100">
+          <% @memberships.each do |membership| %>
+            <tr>
+              <td>
+                <div class="flex items-center gap-3">
+                  <%= avatar(membership.user.name) %>
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-ink-900"><%= membership.user.name %></p>
+                    <p class="truncate text-xs text-ink-500"><%= membership.user.email %></p>
+                  </div>
+                </div>
+              </td>
+              <td><%= membership.role_label %></td>
+              <td><%= membership.active? ? badge("Ativo", tone: :success) : badge("Desativado", tone: :neutral) %></td>
+              <td class="text-right">
+                <% if policy(membership).update? %>
+                  <%= link_to "Editar", edit_member_path(membership), class: "sv-btn-ghost sv-btn-sm" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="space-y-6">
+    <% if policy(@invitation).create? %>
+      <section class="sv-card p-5" aria-labelledby="invite-title">
+        <h2 id="invite-title" class="font-semibold text-ink-900">Convidar pessoa</h2>
+        <p class="mt-1 text-sm text-ink-600">O convite vale por 7 dias e pode ser usado uma vez.</p>
+        <%= form_with model: @invitation, url: team_invitations_path, class: "mt-4 space-y-4" do |f| %>
+          <%= f.field :email, label: "E-mail", as: :email_field, required: true, autocomplete: "off" %>
+          <%= f.select_field :role, policy(current_membership).assignable_roles.map { |role| [Membership::ROLE_LABELS[role], role] }, label: "Perfil" %>
+          <%= f.submit_button "Enviar convite", class: "w-full", data: { turbo_submits_with: "Enviando…" } %>
+        <% end %>
+      </section>
+    <% end %>
+
+    <section class="sv-card p-5" aria-labelledby="pending-title">
+      <h2 id="pending-title" class="font-semibold text-ink-900">Convites pendentes</h2>
+      <% if @invitations.empty? %>
+        <p class="mt-2 text-sm text-ink-500">Nenhum convite aguardando resposta.</p>
+      <% else %>
+        <ul class="mt-3 divide-y divide-ink-100" role="list">
+          <% @invitations.each do |invitation| %>
+            <li class="flex items-center gap-3 py-3">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-ink-800"><%= invitation.email %></p>
+                <p class="text-xs text-ink-500"><%= invitation.role_label %> · <%= invitation.state == :expired ? "expirado" : "expira #{l(invitation.expires_at, format: :short)}" %></p>
+              </div>
+              <% if policy(invitation).destroy? %>
+                <%= button_to "Revogar", team_invitation_path(invitation), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700",
+                      form: { data: { turbo_confirm: "Revogar o convite para #{invitation.email}?" } } %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+  </div>
+</div>

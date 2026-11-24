@@ -1,0 +1,21 @@
+<% content_for :title, "Cadastrar organização" %>
+<% content_for :container_width, "max-w-lg" %>
+<%= render "shared/auth_heading", title: "Cadastre sua empresa",
+      subtitle: "Você será o proprietário da organização e poderá convidar sua equipe em seguida." %>
+
+<%= form_with model: @registration, url: organizations_path, class: "space-y-5" do |f| %>
+  <%= f.error_summary %>
+  <%= f.field :name, label: "Nome da empresa", autofocus: true, required: true, placeholder: "Ex.: Clima Norte Manutenção" %>
+  <%= f.field :legal_name, label: "Razão social", hint: "Opcional." %>
+  <%= f.field :document, label: "CNPJ ou CPF", hint: "Opcional. Aceita CNPJ alfanumérico.", autocomplete: "off" %>
+  <%= f.select_field :segment, Organization::SEGMENTS.map { |key, label| [label, key] }, label: "Segmento" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.select_field :time_zone, Organization::TIME_ZONES.map { |zone, label| [label, zone] }, label: "Fuso horário" %>
+    <%= f.field :travel_buffer_minutes, label: "Deslocamento padrão (min)", as: :number_field, min: 0, max: 480,
+          hint: "Intervalo reservado após cada visita." %>
+  </div>
+  <%= f.submit_button "Criar organização", class: "w-full" %>
+<% end %>
+<% if current_user.memberships.any? %>
+  <p class="mt-6 text-sm"><%= link_to "Voltar às organizações", organizations_path(escolher: 1), class: "sv-link" %></p>
+<% end %>

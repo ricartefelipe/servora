@@ -1,0 +1,25 @@
+<%= form_with model: service_type, url: (service_type.persisted? ? service_type_path(service_type) : service_types_path), class: "sv-card max-w-3xl space-y-5 p-6" do |f| %>
+  <%= f.error_summary %>
+  <%= f.field :name, label: "Nome", required: true %>
+  <%= f.text_area_field :description, label: "Descrição", rows: 2 %>
+  <%= f.toggle_field :active, label: "Ativo" %>
+  <fieldset class="space-y-3">
+    <legend class="sv-label">Checklist</legend>
+    <%= f.fields_for :checklist_items do |item| %>
+      <div class="grid items-end gap-3 rounded-xl border border-ink-200 p-3 sm:grid-cols-12">
+        <%= item.hidden_field :id if item.object.persisted? %>
+        <div class="sm:col-span-6"><%= item.label :label, "Verificação", class: "sv-label" %><%= item.text_field :label, class: "sv-input" %></div>
+        <div class="sm:col-span-2"><%= item.label :response_kind, "Resposta", class: "sv-label" %><%= item.select :response_kind, ServiceTypeChecklistItem::KINDS.map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
+        <div class="sm:col-span-1"><%= item.label :position, "Ordem", class: "sv-label" %><%= item.number_field :position, class: "sv-input", min: 0 %></div>
+        <label class="flex items-center gap-2 pb-2.5 text-sm sm:col-span-2"><%= item.check_box :required, class: "rounded border-ink-300 text-brand-600" %> Obrigatório</label>
+        <% if item.object.persisted? %>
+          <label class="flex items-center gap-2 pb-2.5 text-sm text-rose-700 sm:col-span-1"><%= item.check_box :_destroy, class: "rounded border-ink-300" %> Remover</label>
+        <% end %>
+      </div>
+    <% end %>
+  </fieldset>
+  <div class="flex gap-3">
+    <%= f.submit_button "Salvar" %>
+    <%= link_to "Cancelar", service_types_path, class: "sv-btn-secondary" %>
+  </div>
+<% end %>

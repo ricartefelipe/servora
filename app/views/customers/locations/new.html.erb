@@ -1,0 +1,4 @@
+<% content_for :title, "Novo local" %>
+<%= render layout: "shared/modal", locals: { title: "Novo local de atendimento", subtitle: @customer.display_name } do %>
+  <%= render "customers/locations/form", customer: @customer, location: @location %>
+<% end %>

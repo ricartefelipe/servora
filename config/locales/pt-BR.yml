@@ -1,0 +1,90 @@
+pt-BR:
+  time:
+    formats:
+      short: "%d/%m/%Y %H:%M"
+      long: "%d de %B de %Y, %H:%M"
+  date:
+    formats:
+      default: "%d/%m/%Y"
+      long: "%d de %B de %Y"
+  activerecord:
+    models:
+      user: { one: "Usuário", other: "Usuários" }
+      organization: { one: "Organização", other: "Organizações" }
+      membership: { one: "Membro", other: "Membros" }
+      invitation: { one: "Convite", other: "Convites" }
+      customer: { one: "Cliente", other: "Clientes" }
+      service_location: { one: "Local de atendimento", other: "Locais de atendimento" }
+      customer_contact: { one: "Contato", other: "Contatos" }
+      equipment: { one: "Equipamento", other: "Equipamentos" }
+    attributes:
+      user:
+        name: "Nome"
+        email: "E-mail"
+        password: "Senha"
+        password_confirmation: "Confirmação da senha"
+        current_password: "Senha atual"
+      organization:
+        name: "Nome da empresa"
+        legal_name: "Razão social"
+        document: "CNPJ ou CPF"
+        segment: "Segmento"
+        time_zone: "Fuso horário"
+        travel_buffer_minutes: "Deslocamento padrão"
+        mfa_required_for_privileged: "Verificação em duas etapas obrigatória"
+      membership:
+        role: "Perfil"
+        status: "Situação"
+        job_title: "Cargo"
+        phone: "Telefone"
+        hourly_cost: "Custo por hora"
+        user_id: "Pessoa"
+      invitation:
+        email: "E-mail"
+        role: "Perfil"
+      customer:
+        kind: "Tipo"
+        name: "Nome"
+        trade_name: "Nome fantasia"
+        document: "CPF/CNPJ"
+        email: "E-mail"
+        phone: "Telefone"
+        notes: "Observações"
+        location_name: "Identificação do local"
+        street: "Logradouro"
+        number: "Número"
+        complement: "Complemento"
+        district: "Bairro"
+        city: "Cidade"
+        state: "UF"
+        postal_code: "CEP"
+        contact_name: "Nome do contato"
+        contact_email: "E-mail do contato"
+        contact_phone: "Telefone do contato"
+      service_location:
+        name: "Identificação"
+        street: "Logradouro"
+        number: "Número"
+        complement: "Complemento"
+        district: "Bairro"
+        city: "Cidade"
+        state: "UF"
+        postal_code: "CEP"
+        access_instructions: "Instruções de acesso"
+      customer_contact:
+        name: "Nome"
+        email: "E-mail"
+        phone: "Telefone"
+        position: "Cargo"
+      equipment:
+        customer: "Cliente"
+        service_location: "Local de instalação"
+        equipment_type: "Tipo"
+        manufacturer: "Fabricante"
+        model: "Modelo"
+        serial_number: "Número de série"
+        asset_tag: "Patrimônio"
+        capacity: "Capacidade"
+        installed_on: "Data de instalação"
+        warranty_until: "Garantia até"
+        operational_status: "Estado operacional"

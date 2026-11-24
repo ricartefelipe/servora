@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main, "release/**"]
+  push:
+    branches: [develop, main, "release/**", "hotfix/**"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  POSTGRES_IMAGE: postgres:18.7-trixie
+  DB_HOST: localhost
+  DB_PORT: "5432"
+  DB_OWNER_USER: servora_owner
+  DB_OWNER_PASSWORD: ci_owner_password
+  DB_APP_USER: servora_app
+  DB_APP_PASSWORD: ci_app_password
+
+jobs:
+  gitflow:
+    name: Fluxo de branches e commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validar nome da branch, destino e Conventional Commits
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: ruby script/ci/check_gitflow.rb
+
+  lint:
+    name: RuboCop
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18 # v1.343.0
+        with:
+          bundler-cache: true
+      - run: bundle exec rubocop --format github
+
+  security:
+    name: Segurança (Brakeman, Bundler Audit, importmap, segredos)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18 # v1.343.0
+        with:
+          bundler-cache: true
+      - name: Brakeman
+        run: bundle exec brakeman --no-pager --exit-on-warn --exit-on-error
+      - name: Bundler Audit
+        run: bundle exec bundler-audit check --update
+      - name: Auditoria do importmap
+        run: ruby bin/importmap audit
+      - name: Verificação de segredos (histórico completo)
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:v8.30.1 \
+            git --redact --no-banner --verbose --config .gitleaks.toml /repo
+
+  test:
+    name: Testes, cobertura e banco
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18.7-trixie
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      RAILS_ENV: test
+      CI: "true"
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18 # v1.343.0
+        with:
+          bundler-cache: true
+      - name: Cliente PostgreSQL 18
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y --no-install-recommends postgresql-client-18
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+      - name: Papéis do banco (owner e aplicação)
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          SERVORA_DB_OWNER_USER: ${{ env.DB_OWNER_USER }}
+          SERVORA_DB_OWNER_PASSWORD: ${{ env.DB_OWNER_PASSWORD }}
+          SERVORA_DB_APP_USER: ${{ env.DB_APP_USER }}
+          SERVORA_DB_APP_PASSWORD: ${{ env.DB_APP_PASSWORD }}
+        run: bash db/setup/create_roles.sh
+      - name: Reconstruir o banco a partir de db/structure.sql
+        run: ruby bin/db-prepare
+      - name: Validar migrations e structure.sql (migrations reais, rollback e recarga)
+        run: ruby bin/db-structure --check
+      - name: Build dos assets
+        run: ruby bin/rails tailwindcss:build
+      - name: Specs de regras puras (sem Rails, banco ou rede)
+        env:
+          COVERAGE_SUITE: unit
+        run: ruby bin/rspec-unit
+      - name: Specs Rails (models, services, policies, requests, jobs, integração)
+        env:
+          COVERAGE_SUITE: rails
+        run: bundle exec rspec --exclude-pattern "spec/{unit,system}/**/*_spec.rb"
+      - name: System specs (Chrome headless)
+        env:
+          COVERAGE_SUITE: system
+        run: bundle exec rspec spec/system
+      - name: Metas de cobertura
+        run: ruby bin/coverage-check
+      - name: Relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Capturas de falhas em system specs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: capybara
+          path: tmp/capybara/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  assets:
+    name: Build de assets (produção)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18 # v1.343.0
+        with:
+          bundler-cache: true
+      - run: RAILS_ENV=production SECRET_KEY_BASE_DUMMY=1 ruby bin/rails assets:precompile
+
+  image:
+    name: Imagem Docker (build e análise)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build da imagem de produção
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: production
+          tags: servora:ci
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Inicialização da aplicação na imagem
+        run: |
+          docker run --rm -e SECRET_KEY_BASE_DUMMY=1 -e ACTIVE_STORAGE_SERVICE=local servora:ci \
+            ./bin/rails runner 'require "json"; puts JSON::VERSION; puts Rails.application.class.name'
+          docker run --rm --entrypoint id servora:ci -u | grep -qx 1000
+      - name: Análise de vulnerabilidades (Trivy)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.2 \
+            image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress servora:ci

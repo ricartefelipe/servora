@@ -1,0 +1,6 @@
+<% content_for :title, "Confirmar e-mail" %>
+<%= render "shared/auth_heading", title: "Confirme seu e-mail", subtitle: "Clique no botão abaixo para concluir a confirmação da conta." %>
+<%= form_with url: confirm_user_confirmation_path, method: :post do |f| %>
+  <%= f.hidden_field :confirmation_token, value: @confirmation_token %>
+  <%= f.button "Confirmar e-mail", type: "submit", class: "sv-btn-primary w-full" %>
+<% end %>

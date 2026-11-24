@@ -1,0 +1,7 @@
+<% content_for :title, "Desbloquear conta" %>
+<%= render "shared/auth_heading", title: "Desbloquear conta", subtitle: "Após 5 tentativas incorretas a conta é bloqueada por 30 minutos. Você também pode desbloqueá-la pelo e-mail." %>
+<%= form_for resource, as: resource_name, url: unlock_path(resource_name), html: { method: :post, class: "space-y-5" } do |f| %>
+  <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "email", autofocus: true, required: true %>
+  <%= f.submit_button "Enviar instruções", class: "w-full" %>
+<% end %>
+<p class="mt-6 text-sm"><%= link_to "Voltar ao login", new_session_path(resource_name), class: "sv-link" %></p>

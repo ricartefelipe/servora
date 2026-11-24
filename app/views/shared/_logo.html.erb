@@ -1,0 +1,14 @@
+<%# Servora mark: a route that closes into a service node. %>
+<% size = local_assigns.fetch(:size, 32) %>
+<% tone = local_assigns.fetch(:tone, :dark) %>
+<span class="inline-flex items-center gap-2.5">
+  <svg width="<%= size %>" height="<%= size %>" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">
+    <rect width="40" height="40" rx="11" class="<%= tone == :light ? 'fill-white/10' : 'fill-brand-600' %>"/>
+    <path d="M27.5 13.2c-1.6-1.6-4.1-2.6-7.1-2.6-4.5 0-7.6 2.3-7.6 5.6 0 7.1 14.6 4 14.6 10.6 0 3.3-3.2 5.6-7.7 5.6-3.2 0-5.9-1.1-7.6-3"
+          stroke="<%= tone == :light ? '#67dfcb' : 'white' %>" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="27.7" cy="13.3" r="3.1" fill="#f2802b"/>
+  </svg>
+  <% unless local_assigns[:mark_only] %>
+    <span class="text-lg font-bold tracking-tight <%= tone == :light ? 'text-white' : 'text-ink-950' %>">Servora</span>
+  <% end %>
+</span>

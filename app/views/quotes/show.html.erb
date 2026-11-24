@@ -1,0 +1,198 @@
+<% content_for :title, @quote.number %>
+<% editable = policy(@quote).edit_draft? %>
+<% totals = @version.totals %>
+<%= page_header(@quote.title, eyebrow: "#{@quote.number} · #{@version.label}",
+      subtitle: "#{@quote.customer.display_name} · #{@quote.service_location.name}") do %>
+  <%= render "quotes/status_badge", quote: @quote %>
+  <% if policy(@quote).send_version? %>
+    <%= button_to send_version_quote_path(@quote), method: :post, class: "sv-btn-primary", disabled: @items.empty?,
+          form: { data: { turbo_confirm: "Enviar a #{@version.label} ao cliente? Depois do envio o conteúdo não pode ser alterado." } } do %>
+      <%= icon(:mail, size: 18) %> Enviar ao cliente
+    <% end %>
+  <% end %>
+  <% if policy(@quote).convert? %>
+    <%= button_to convert_quote_path(@quote), method: :post, class: "sv-btn-primary" do %>
+      <%= icon(:orders, size: 18) %> <%= @quote.converted? ? "Ver ordem de serviço" : "Gerar ordem de serviço" %>
+    <% end %>
+  <% end %>
+  <% if policy(@quote).new_version? && !@quote.converted? %>
+    <%= button_to "Criar nova versão", new_version_quote_path(@quote), method: :post, class: "sv-btn-secondary" %>
+  <% end %>
+<% end %>
+
+<% if @quote.approved? %>
+  <div class="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+    <%= icon(:check, css: "mt-0.5") %>
+    <p>Aprovado por <strong><%= @version.decided_by_contact&.name %></strong> em <%= l(@version.decided_at, format: :short) %>
+      (<%= Quotes::Decide::CHANNELS[@version.decision_channel] %>).
+      <% if @version.decided_by_membership %>Registrado por <%= @version.decided_by_membership.user.name %>.<% end %></p>
+  </div>
+<% end %>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="min-w-0 space-y-6 lg:col-span-2">
+    <section id="itens" class="sv-card overflow-hidden" aria-labelledby="itens-title">
+      <div class="flex items-center justify-between border-b border-ink-100 px-5 py-4">
+        <h2 id="itens-title" class="font-semibold text-ink-900">Itens</h2>
+        <% unless editable %><span class="text-xs text-ink-500">Conteúdo congelado desde <%= date_time(@version.sent_at) %></span><% end %>
+      </div>
+      <% if @items.empty? %>
+        <%= empty_state("Nenhum item", description: "Inclua serviços e peças do catálogo ou itens avulsos.", icon_name: :catalog) %>
+      <% else %>
+        <div class="relative overflow-x-auto">
+          <table class="sv-table">
+            <thead>
+              <tr>
+                <th scope="col">Descrição</th><th scope="col" class="text-right">Qtd.</th><th scope="col" class="text-right">Unitário</th>
+                <th scope="col" class="text-right">Desconto</th><th scope="col" class="text-right">Total</th>
+                <% if editable %><th scope="col"><span class="sr-only">Ações</span></th><% end %>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-ink-100">
+              <% @items.each do |item| %>
+                <tr>
+                  <td><span class="block text-ink-900"><%= item.description %></span><span class="text-xs text-ink-500"><%= item.kind_label %></span></td>
+                  <td class="sv-num text-right"><%= quantity(item.quantity, item.unit) %></td>
+                  <td class="sv-num text-right"><%= money(item.unit_price) %></td>
+                  <td class="sv-num text-right"><%= item.discount_amount.positive? ? money(item.discount_amount) : "—" %></td>
+                  <td class="sv-num text-right font-medium"><%= money(item.line_total) %></td>
+                  <% if editable %>
+                    <td class="text-right">
+                      <%= button_to quote_item_path(@quote, item), method: :delete, class: "rounded-lg p-1.5 text-ink-400 hover:bg-rose-50 hover:text-rose-700",
+                            aria: { label: "Remover #{item.description}" } do %><%= icon(:trash, size: 16) %><% end %>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+      <dl class="space-y-1 border-t border-ink-100 bg-ink-50/50 px-5 py-4 text-sm">
+        <div class="flex justify-between"><dt class="text-ink-500">Subtotal</dt><dd class="sv-num"><%= money(@version.subtotal) %></dd></div>
+        <div class="flex justify-between"><dt class="text-ink-500">Desconto</dt><dd class="sv-num">− <%= money(@version.discount_amount) %></dd></div>
+        <div class="flex justify-between text-base font-bold text-ink-950"><dt>Total</dt><dd class="sv-num"><%= money(@version.total) %></dd></div>
+        <% if policy(@quote).view_costs? %>
+          <div class="mt-2 flex justify-between border-t border-ink-200 pt-2 text-ink-600">
+            <dt>Custo estimado · margem</dt>
+            <dd class="sv-num"><%= totals.estimated_cost ? "#{money(totals.estimated_cost)} · #{money(totals.margin)} (#{number_with_precision(totals.margin_percent, precision: 1, separator: ',')}%)" : "custo incompleto" %></dd>
+          </div>
+        <% end %>
+      </dl>
+    </section>
+
+    <% if editable %>
+      <section class="sv-card p-5" aria-labelledby="incluir-title" data-controller="tabs">
+        <h2 id="incluir-title" class="mb-3 font-semibold text-ink-900">Incluir item</h2>
+        <%= render "shared/tabs", label: "Origem do item", tabs: [["catalogo", "Do catálogo", nil], ["avulso", "Item avulso", nil]] %>
+        <div id="painel-catalogo" role="tabpanel" aria-labelledby="aba-catalogo" data-tabs-target="panel">
+          <%= form_with url: quote_items_path(@quote), scope: :item, class: "grid gap-4 sm:grid-cols-6" do |f| %>
+            <div class="sm:col-span-3">
+              <%= f.label :catalog_item_id, "Item do catálogo", class: "sv-label" %>
+              <%= f.select :catalog_item_id, grouped_options_for_select(@catalog.group_by(&:kind_label).transform_values { |items| items.map { |i| ["#{i.name} — #{money(i.unit_price)}/#{i.unit}", i.id] } }),
+                    { include_blank: "Selecione" }, class: "sv-input", required: true %>
+            </div>
+            <div><%= f.label :quantity, "Qtd.", class: "sv-label" %><%= f.number_field :quantity, value: 1, step: "0.001", min: "0.001", class: "sv-input", required: true %></div>
+            <div><%= f.label :unit_price, "Preço", class: "sv-label" %><%= f.number_field :unit_price, step: "0.01", min: 0, class: "sv-input", placeholder: "do catálogo" %></div>
+            <div><%= f.label :discount, "Desconto", class: "sv-label" %><%= f.number_field :discount, step: "0.01", min: 0, value: 0, class: "sv-input" %></div>
+            <div class="sm:col-span-6"><%= f.button "Incluir", type: "submit", class: "sv-btn-primary" %></div>
+          <% end %>
+        </div>
+        <div id="painel-avulso" role="tabpanel" aria-labelledby="aba-avulso" data-tabs-target="panel" hidden>
+          <%= form_with url: quote_items_path(@quote), scope: :item, class: "grid gap-4 sm:grid-cols-6" do |f| %>
+            <div class="sm:col-span-3"><%= f.label :description, "Descrição", class: "sv-label" %><%= f.text_field :description, class: "sv-input", required: true, maxlength: 240 %></div>
+            <div><%= f.label :kind, "Tipo", class: "sv-label" %><%= f.select :kind, QuoteItem::KINDS.map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
+            <div><%= f.label :unit, "Unidade", class: "sv-label" %><%= f.select :unit, CatalogItem::UNITS.map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
+            <div><%= f.label :quantity, "Qtd.", class: "sv-label" %><%= f.number_field :quantity, value: 1, step: "0.001", min: "0.001", class: "sv-input", required: true %></div>
+            <div><%= f.label :unit_price, "Preço unitário", class: "sv-label" %><%= f.number_field :unit_price, step: "0.01", min: 0, class: "sv-input", required: true %></div>
+            <div><%= f.label :discount, "Desconto", class: "sv-label" %><%= f.number_field :discount, step: "0.01", min: 0, value: 0, class: "sv-input" %></div>
+            <div class="sm:col-span-6"><%= f.button "Incluir", type: "submit", class: "sv-btn-primary" %></div>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="sv-card p-5" aria-labelledby="condicoes-title">
+        <h2 id="condicoes-title" class="mb-3 font-semibold text-ink-900">Condições comerciais</h2>
+        <%= form_with url: update_terms_quote_path(@quote), method: :patch, scope: :terms, class: "grid gap-4 sm:grid-cols-2" do |f| %>
+          <div><%= f.label :valid_until, "Validade", class: "sv-label" %><%= f.date_field :valid_until, value: @version.valid_until, class: "sv-input", required: true %></div>
+          <div><%= f.label :discount, "Desconto global (R$)", class: "sv-label" %><%= f.number_field :discount, value: @version.discount_amount, step: "0.01", min: 0, class: "sv-input" %></div>
+          <div class="sm:col-span-2"><%= f.label :payment_terms, "Condições de pagamento", class: "sv-label" %><%= f.text_area :payment_terms, value: @version.payment_terms, rows: 2, class: "sv-input" %></div>
+          <div class="sm:col-span-2"><%= f.label :notes, "Observações ao cliente", class: "sv-label" %><%= f.text_area :notes, value: @version.notes, rows: 3, class: "sv-input" %></div>
+          <div><%= f.button "Salvar condições", type: "submit", class: "sv-btn-secondary" %></div>
+        <% end %>
+      </section>
+    <% else %>
+      <section class="sv-card p-5 text-sm" aria-labelledby="condicoes-ro-title">
+        <h2 id="condicoes-ro-title" class="mb-2 font-semibold text-ink-900">Condições comerciais</h2>
+        <p class="text-ink-700"><%= @version.payment_terms %></p>
+        <p class="mt-1 text-ink-500">Válida até <%= l(@version.valid_until) %></p>
+        <% if @version.notes.present? %><p class="mt-2 whitespace-pre-line text-ink-600"><%= @version.notes %></p><% end %>
+      </section>
+    <% end %>
+  </div>
+
+  <aside class="space-y-6">
+    <% if policy(@quote).register_decision? %>
+      <section class="sv-card p-5" aria-labelledby="decisao-title">
+        <h2 id="decisao-title" class="font-semibold text-ink-900">Decisão do cliente</h2>
+        <p class="mt-1 text-sm text-ink-600">O aprovador recebe um link do portal. Se a resposta chegou por outro canal, registre-a aqui.</p>
+        <% if @contacts.empty? %>
+          <p class="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Nenhum contato deste cliente pode aprovar orçamentos. Ajuste os contatos na ficha do cliente.</p>
+        <% else %>
+          <%= form_with url: quote_decisions_path(@quote), scope: :decision, class: "mt-4 space-y-3" do |f| %>
+            <%= f.hidden_field :version_id, value: @version.id %>
+            <%= f.hidden_field :content_digest, value: @version.content_digest %>
+            <div><%= f.label :contact_id, "Quem decidiu", class: "sv-label" %><%= f.select :contact_id, @contacts.map { |c| [c.name, c.id] }, {}, class: "sv-input" %></div>
+            <div><%= f.label :channel, "Canal", class: "sv-label" %><%= f.select :channel, Quotes::Decide::CHANNELS.except("portal").map { |v, l| [l, v] }, {}, class: "sv-input" %></div>
+            <div><%= f.label :outcome, "Decisão", class: "sv-label" %><%= f.select :outcome, [["Aprovou", "approved"], ["Recusou", "rejected"]], {}, class: "sv-input" %></div>
+            <div><%= f.label :note, "Evidência / observação", class: "sv-label" %><%= f.text_area :note, rows: 2, class: "sv-input", placeholder: "Ex.: aprovação por e-mail de 24/11, 10h32" %></div>
+            <%= f.button "Registrar decisão", type: "submit", class: "sv-btn-secondary w-full" %>
+          <% end %>
+          <details class="mt-4 border-t border-ink-100 pt-4">
+            <summary class="cursor-pointer text-sm font-medium text-brand-700">Reenviar link do portal</summary>
+            <% @contacts.select(&:portal_enabled?).each do |contact| %>
+              <%= button_to "Enviar para #{contact.name}", send_portal_link_quote_path(@quote, contact_id: contact.id), method: :post, class: "sv-btn-ghost sv-btn-sm mt-2" %>
+            <% end %>
+          </details>
+        <% end %>
+      </section>
+    <% end %>
+
+    <section class="sv-card p-5" aria-labelledby="versoes-title">
+      <h2 id="versoes-title" class="mb-3 font-semibold text-ink-900">Versões</h2>
+      <ol class="space-y-2" role="list">
+        <% @versions.reverse_each do |version| %>
+          <li class="flex items-center justify-between gap-2 rounded-xl px-3 py-2 <%= 'bg-brand-50' if version.id == @version.id %>">
+            <span class="text-sm text-ink-800"><%= version.label %></span>
+            <span class="flex items-center gap-2"><span class="sv-num text-sm text-ink-600"><%= money(version.total) %></span>
+              <%= badge(version.status_label, tone: { "approved" => :success, "rejected" => :danger, "sent" => :warning }.fetch(version.status, :neutral), dot: false) %></span>
+          </li>
+        <% end %>
+      </ol>
+    </section>
+
+    <section class="sv-card p-5" aria-labelledby="negociacao-title">
+      <h2 id="negociacao-title" class="mb-3 font-semibold text-ink-900">Histórico da negociação</h2>
+      <ol class="space-y-3 text-sm" role="list">
+        <% @events.each do |event| %>
+          <li>
+            <p class="font-medium text-ink-800"><%= event.kind_label %></p>
+            <p class="text-xs text-ink-500"><%= l(event.created_at, format: :short) %> · <%= event.actor_label || "Sistema" %></p>
+            <% if event.note.present? %><p class="mt-0.5 text-ink-600"><%= event.note %></p><% end %>
+          </li>
+        <% end %>
+      </ol>
+    </section>
+
+    <% if policy(@quote).cancel? %>
+      <details class="sv-card p-5">
+        <summary class="cursor-pointer text-sm font-semibold text-rose-700">Cancelar orçamento</summary>
+        <%= form_with url: cancel_quote_path(@quote), method: :patch, scope: :cancellation, class: "mt-3 space-y-3" do |f| %>
+          <%= f.label :reason, "Motivo", class: "sv-label" %>
+          <%= f.text_area :reason, rows: 2, class: "sv-input", required: true %>
+          <%= f.button "Cancelar orçamento", type: "submit", class: "sv-btn-danger w-full" %>
+        <% end %>
+      </details>
+    <% end %>
+  </aside>
+</div>

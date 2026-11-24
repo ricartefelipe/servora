@@ -1,0 +1,55 @@
+<%= form_with model: equipment, url: (equipment.persisted? ? equipment_path(equipment) : equipment_index_path), class: "max-w-4xl space-y-6" do |f| %>
+  <%= f.error_summary %>
+  <%= f.hidden_field :lock_version if equipment.persisted? %>
+  <% unless equipment.persisted? %>
+    <section class="sv-card p-6" aria-labelledby="instalacao-title"
+             data-controller="dependent-frame" data-dependent-frame-url-value="<%= options_customer_locations_path(':id') %>">
+      <h2 id="instalacao-title" class="mb-4 font-semibold text-ink-900">Instalação</h2>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <%= f.select_field :customer_id, @customer_options.map { |c| [c.display_name, c.id] }, label: "Cliente", include_blank: "Selecione",
+              data: { action: "change->dependent-frame#change" }, required: true %>
+        <%= turbo_frame_tag "location-options", data: { dependent_frame_target: "frame" },
+              src: (options_customer_locations_path(equipment.customer_id) if equipment.customer_id) do %>
+          <p class="sv-hint pt-8">Selecione o cliente para listar os locais.</p>
+        <% end %>
+      </div>
+      <% if equipment.errors[:service_location].any? %><p class="sv-error"><%= equipment.errors.full_messages_for(:service_location).to_sentence %></p><% end %>
+    </section>
+  <% end %>
+
+  <section class="sv-card p-6" aria-labelledby="identificacao-title">
+    <h2 id="identificacao-title" class="mb-4 font-semibold text-ink-900">Identificação</h2>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= f.field :equipment_type, label: "Tipo", required: true, list: "tipos-equipamento", placeholder: "Ex.: Split hi-wall" %>
+      <%= f.field :manufacturer, label: "Fabricante" %>
+      <%= f.field :model, label: "Modelo" %>
+      <%= f.field :serial_number, label: "Número de série" %>
+      <%= f.field :asset_tag, label: "Patrimônio" %>
+      <%= f.field :capacity, label: "Capacidade", placeholder: "Ex.: 24.000 BTU/h" %>
+    </div>
+    <datalist id="tipos-equipamento">
+      <% ["Split hi-wall", "Split piso-teto", "Cassete", "VRF", "Chiller", "Fan coil", "Câmara fria", "Gerador", "Elevador",
+          "Bomba de recalque", "Quadro elétrico", "Refrigerador comercial"].each do |type| %>
+        <option value="<%= type %>"></option>
+      <% end %>
+    </datalist>
+  </section>
+
+  <section class="sv-card p-6" aria-labelledby="garantia-title">
+    <h2 id="garantia-title" class="mb-4 font-semibold text-ink-900">Instalação e garantia</h2>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= f.field :installed_on, label: "Data de instalação", as: :date_field %>
+      <%= f.field :warranty_until, label: "Garantia até", as: :date_field, hint: "Conforme informado pelo cliente ou fabricante." %>
+      <%= f.field :warranty_notes, label: "Condições da garantia" %>
+    </div>
+    <% unless equipment.persisted? %>
+      <%= f.select_field :operational_status, Equipment::STATUSES.map { |value, label| [label, value] }, label: "Estado operacional", wrapper: { class: "mt-5 max-w-xs" } %>
+    <% end %>
+    <%= f.text_area_field :notes, label: "Observações", rows: 3, wrapper: { class: "mt-5" } %>
+  </section>
+
+  <div class="flex gap-3">
+    <%= f.submit_button(equipment.persisted? ? "Salvar" : "Cadastrar equipamento") %>
+    <%= link_to "Cancelar", (equipment.persisted? ? equipment_path(equipment) : equipment_index_path), class: "sv-btn-secondary" %>
+  </div>
+<% end %>

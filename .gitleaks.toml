@@ -1,0 +1,15 @@
+title = "Servora"
+
+[extend]
+useDefault = true
+
+# Credentials below are documented local-only defaults for the disposable
+# development database and CI service container.
+[[allowlists]]
+description = "Valores locais de desenvolvimento e CI"
+paths = [
+  '''\.env\.example$''',
+  '''docker-compose\.yml$''',
+  '''config/database\.yml$''',
+  '''\.github/workflows/ci\.yml$''',
+]

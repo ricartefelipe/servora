@@ -1,0 +1,29 @@
+<%= turbo_frame_tag "visit-suggestions" do %>
+  <% if @result.nil? %>
+    <p class="text-sm text-ink-500">Informe data e horário válidos.</p>
+  <% else %>
+    <% if @result.ranked.empty? %>
+      <p class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Nenhum técnico atende a este horário.</p>
+    <% else %>
+      <ol class="space-y-2" role="list">
+        <% @result.ranked.each_with_index do |candidate, index| %>
+          <li class="flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2 text-sm">
+            <span class="grid size-6 place-items-center rounded-full bg-brand-600 text-xs font-bold text-white"><%= index + 1 %></span>
+            <span class="flex-1 font-medium text-ink-900"><%= candidate.name %></span>
+            <span class="text-xs text-ink-500"><%= candidate.booked_minutes %> min no dia</span>
+          </li>
+        <% end %>
+      </ol>
+    <% end %>
+    <% if @result.others.any? %>
+      <details class="mt-3">
+        <summary class="cursor-pointer text-xs font-medium text-ink-600">Indisponíveis (<%= @result.others.size %>)</summary>
+        <ul class="mt-2 space-y-1 text-xs text-ink-500" role="list">
+          <% @result.others.each do |candidate, reasons| %>
+            <li><span class="font-medium text-ink-700"><%= candidate.name %>:</span> <%= reasons.join("; ") %></li>
+          <% end %>
+        </ul>
+      </details>
+    <% end %>
+  <% end %>
+<% end %>

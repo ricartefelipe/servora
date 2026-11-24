@@ -1,0 +1,48 @@
+# Version control and CI metadata
+/.git/
+/.gitignore
+/.github/
+
+# Bundler state
+/.bundle
+/vendor/bundle
+
+# Environment and secret files
+/.env
+/.env.*
+/config/master.key
+/config/credentials/*.key
+/config/credentials.yml.enc
+*.pem
+*.key
+
+# Logs, temporary files and local uploads
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+/storage/*
+!/storage/.keep
+
+# Compiled assets are rebuilt inside the image
+/public/assets
+/app/assets/builds/*
+!/app/assets/builds/.keep
+
+# Tests, coverage and documentation are not needed at runtime
+/coverage/
+/spec/examples.txt
+/backups/
+
+# Editors and operating systems
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+/node_modules/
+
+# Docker build definitions
+/.dockerignore
+/Dockerfile*
+/docker-compose*.yml
+/compose*.yml

@@ -1,0 +1,24 @@
+<%= form_with model: item, url: (item.persisted? ? catalog_item_path(item) : catalog_items_path), class: "sv-card max-w-3xl space-y-5 p-6" do |f| %>
+  <%= f.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-3">
+    <%= f.select_field :kind, CatalogItem::KINDS.map { |value, label| [label, value] }, label: "Tipo" %>
+    <%= f.field :name, label: "Nome", required: true, wrapper: { class: "sm:col-span-2" } %>
+    <%= f.field :sku, label: "Código interno" %>
+    <%= f.select_field :unit, CatalogItem::UNITS.map { |value, label| [label, value] }, label: "Unidade" %>
+    <%= f.field :unit_price, label: "Preço de venda (R$)", as: :number_field, step: "0.01", min: 0, required: true %>
+    <% if policy(item).view_cost? %>
+      <%= f.field :unit_cost, label: "Custo unitário (R$)", as: :number_field, step: "0.0001", min: 0,
+            hint: "Para peças com estoque, o custo médio é atualizado pelas entradas." %>
+    <% end %>
+    <%= f.field :estimated_minutes, label: "Duração estimada (min)", as: :number_field, min: 1, max: 10080 %>
+  </div>
+  <%= f.text_area_field :description, label: "Descrição", rows: 3 %>
+  <div class="space-y-3">
+    <%= f.toggle_field :tracks_inventory, label: "Controla estoque", hint: "Somente peças. Reservas e consumos movimentam o saldo." %>
+    <%= f.toggle_field :active, label: "Ativo", hint: "Itens inativos não aparecem para novos orçamentos." %>
+  </div>
+  <div class="flex gap-3">
+    <%= f.submit_button(item.persisted? ? "Salvar" : "Incluir no catálogo") %>
+    <%= link_to "Cancelar", catalog_items_path, class: "sv-btn-secondary" %>
+  </div>
+<% end %>

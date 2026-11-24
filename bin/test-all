@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Runs every suite with coverage and enforces thresholds:
+#   1. pure rules (no Rails, no database, no browser)
+#   2. Rails-backed specs (models, services, policies, requests, jobs, system)
+#   3. merged coverage check
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+rm -rf coverage
+ruby bin/rails tailwindcss:build
+COVERAGE_SUITE=unit ruby bin/rspec-unit "$@"
+COVERAGE_SUITE=rails bundle exec rspec --exclude-pattern "spec/unit/**/*_spec.rb" "$@"
+ruby bin/coverage-check

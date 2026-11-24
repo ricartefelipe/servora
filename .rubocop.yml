@@ -1,0 +1,136 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+  - rubocop-rspec_rails
+  - rubocop-performance
+  - rubocop-factory_bot
+  - rubocop-capybara
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "bin/**/*"
+    - "db/*schema.rb"
+    - "db/structure.sql"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "node_modules/**/*"
+    - "coverage/**/*"
+
+# --- Style -------------------------------------------------------------------
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - "config/**/*"
+    - "Gemfile"
+    - "Rakefile"
+    - "config.ru"
+
+# --- Layout ------------------------------------------------------------------
+
+Layout/LineLength:
+  Max: 130
+  AllowedPatterns:
+    - '\A\s*#'
+  Exclude:
+    # SVG path data is kept on one line per glyph.
+    - "app/helpers/icons_helper.rb"
+
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+# --- Metrics -----------------------------------------------------------------
+
+Metrics/MethodLength:
+  Max: 20
+  CountAsOne: ["array", "hash", "heredoc", "method_call"]
+  Exclude:
+    - "db/migrate/*"
+
+Metrics/ClassLength:
+  Max: 200
+  CountAsOne: ["array", "hash", "heredoc"]
+
+Metrics/AbcSize:
+  Max: 25
+  Exclude:
+    - "db/migrate/*"
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "config/**/*"
+    - "db/**/*"
+    - "lib/tasks/**/*"
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
+# --- Rails -------------------------------------------------------------------
+
+Rails/I18nLocaleTexts:
+  Enabled: false
+
+Rails/CreateTableWithTimestamps:
+  Exclude:
+    - "db/migrate/*"
+
+# Function bodies (PL/pgSQL) must keep their line structure.
+Rails/SquishedSQLHeredocs:
+  Exclude:
+    - "db/migrate/*"
+
+Rails/SkipsModelValidations:
+  Exclude:
+    - "spec/**/*"
+
+# Seeds report progress on stdout.
+Rails/Output:
+  Exclude:
+    - "db/seeds/**/*"
+    - "db/seeds.rb"
+
+# --- RSpec -------------------------------------------------------------------
+
+RSpec/ExampleLength:
+  Max: 25
+  CountAsOne: ["array", "hash", "heredoc", "method_call"]
+  Exclude:
+    # End-to-end journeys follow a whole flow in one example.
+    - "spec/system/**/*"
+
+RSpec/MultipleExpectations:
+  Max: 6
+  Exclude:
+    - "spec/system/**/*"
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 12
+
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/requests/**/*"
+    - "spec/system/**/*"
+    - "spec/integration/**/*"
+    - "spec/database/**/*"
+    # Grouped specs covering several identity classes.
+    - "spec/models/identity_spec.rb"
+    - "spec/policies/identity_policies_spec.rb"
+    - "spec/policies/customer_policies_spec.rb"

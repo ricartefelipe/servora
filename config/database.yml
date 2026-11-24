@@ -1,0 +1,92 @@
+# Servora connects to PostgreSQL with two distinct roles:
+#
+# * application role (default): DML only, no superuser, no BYPASSRLS, does not
+#   own any table. Every runtime process (web, worker) uses it, so Row-Level
+#   Security policies always apply.
+# * owner role: owns the schema and runs migrations, schema loads and privilege
+#   grants. Select it explicitly with SERVORA_DB_ROLE=owner (see bin/db-migrate).
+#
+# Credentials always come from the environment. Development and test defaults
+# match docker-compose.yml and are not used in production.
+<%
+  db_role = ENV.fetch("SERVORA_DB_ROLE", "app")
+  raise "SERVORA_DB_ROLE must be 'app' or 'owner'" unless %w[app owner].include?(db_role)
+
+  role_prefix = db_role == "owner" ? "DB_OWNER" : "DB_APP"
+  local_default_user = db_role == "owner" ? "servora_owner" : "servora_app"
+  local_default_password = db_role == "owner" ? "servora_owner_local" : "servora_app_local"
+%>
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", "55432") %>
+  max_connections: <%= ENV.fetch("DB_POOL", ENV.fetch("RAILS_MAX_THREADS", 5)) %>
+  checkout_timeout: 5
+  variables:
+    statement_timeout: <%= ENV.fetch("DB_STATEMENT_TIMEOUT", db_role == "owner" ? "0" : "15s") %>
+    lock_timeout: <%= ENV.fetch("DB_LOCK_TIMEOUT", db_role == "owner" ? "60s" : "5s") %>
+    idle_in_transaction_session_timeout: 60s
+
+local: &local
+  <<: *default
+  username: <%= ENV.fetch("#{role_prefix}_USER", local_default_user) %>
+  password: <%= ENV.fetch("#{role_prefix}_PASSWORD", local_default_password) %>
+
+development:
+  primary:
+    <<: *local
+    database: <%= ENV.fetch("DB_NAME", "servora_development") %>
+  queue:
+    <<: *local
+    database: <%= ENV.fetch("DB_NAME", "servora_development") %>_queue
+    migrations_paths: db/queue_migrate
+    schema_format: ruby
+  cable:
+    <<: *local
+    database: <%= ENV.fetch("DB_NAME", "servora_development") %>_cable
+    migrations_paths: db/cable_migrate
+    schema_format: ruby
+  cache:
+    <<: *local
+    database: <%= ENV.fetch("DB_NAME", "servora_development") %>_cache
+    migrations_paths: db/cache_migrate
+    schema_format: ruby
+
+# The test suite connects with the application role so that RLS policies are
+# exercised. The "maintenance" entry uses the owner role and is only used by
+# spec/support to clean data committed by non-transactional examples.
+test:
+  primary:
+    <<: *local
+    database: <%= ENV.fetch("DB_TEST_NAME", "servora_test") %>
+  maintenance:
+    <<: *default
+    database: <%= ENV.fetch("DB_TEST_NAME", "servora_test") %>
+    username: <%= ENV.fetch("DB_OWNER_USER", "servora_owner") %>
+    password: <%= ENV.fetch("DB_OWNER_PASSWORD", "servora_owner_local") %>
+    database_tasks: false
+
+production:
+  primary: &production
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "servora_production") %>
+    # Presence is validated at boot by config/initializers/required_environment.rb.
+    username: <%= ENV["#{role_prefix}_USER"] %>
+    password: <%= ENV["#{role_prefix}_PASSWORD"] %>
+    sslmode: <%= ENV.fetch("DB_SSLMODE", "prefer") %>
+  queue:
+    <<: *production
+    database: <%= ENV.fetch("DB_NAME", "servora_production") %>_queue
+    migrations_paths: db/queue_migrate
+    schema_format: ruby
+  cable:
+    <<: *production
+    database: <%= ENV.fetch("DB_NAME", "servora_production") %>_cable
+    migrations_paths: db/cable_migrate
+    schema_format: ruby
+  cache:
+    <<: *production
+    database: <%= ENV.fetch("DB_NAME", "servora_production") %>_cache
+    migrations_paths: db/cache_migrate
+    schema_format: ruby

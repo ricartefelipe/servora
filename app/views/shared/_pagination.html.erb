@@ -1,0 +1,18 @@
+<%# Links keep the current filters. Built from request.path + query string so
+    that parameters such as "host" can never turn into an absolute URL. %>
+<% page_url = ->(page) { "#{request.path}?#{request.query_parameters.merge('pagina' => page).to_query}" } %>
+<% if pagination.previous_page? || pagination.next_page? %>
+  <nav class="mt-4 flex items-center justify-between" aria-label="Paginação">
+    <% if pagination.previous_page? %>
+      <%= link_to "Anterior", page_url.call(pagination.page - 1), class: "sv-btn-secondary sv-btn-sm", rel: "prev" %>
+    <% else %>
+      <span></span>
+    <% end %>
+    <span class="text-sm text-ink-500">Página <%= pagination.page %></span>
+    <% if pagination.next_page? %>
+      <%= link_to "Próxima", page_url.call(pagination.page + 1), class: "sv-btn-secondary sv-btn-sm", rel: "next" %>
+    <% else %>
+      <span></span>
+    <% end %>
+  </nav>
+<% end %>
