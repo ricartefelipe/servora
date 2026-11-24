@@ -1,17 +1,21 @@
 <% content_for :title, "Nota fiscal" %>
 <%= page_header("Nota fiscal de serviço (NFS-e)", eyebrow: "Gestão · Nota fiscal", subtitle: "Emitida pelo provedor de pagamentos. A inscrição municipal e o certificado digital são configurados na conta do provedor.", size: :md) %>
 
-<section class="sv-card max-w-3xl p-6">
-  <%= form_with model: @setting, url: fiscal_settings_path, method: :patch, class: "space-y-5" do |f| %>
-    <%= f.error_summary %>
-    <div class="grid gap-5 sm:grid-cols-3">
-      <%= f.field :municipal_service_code, label: "Código do serviço municipal", required: true, wrapper: { class: "sm:col-span-1" } %>
-      <%= f.field :iss_rate, label: "Alíquota de ISS (%)", as: :number_field, step: "0.01", min: 0, max: 5, wrapper: { class: "sm:col-span-1" } %>
+<%= form_with model: @setting, url: fiscal_settings_path, method: :patch, class: "sv-card max-w-5xl p-6" do |f| %>
+  <%= f.error_summary %>
+  <%= render "shared/form_section", title: "Serviço municipal",
+        description: "Código, descrição e alíquota conforme a lista de serviços do município." do %>
+    <div class="grid gap-5 @sm:grid-cols-2">
+      <%= f.field :municipal_service_code, label: "Código do serviço municipal", required: true %>
+      <%= f.field :iss_rate, label: "Alíquota de ISS (%)", as: :number_field, step: "0.01", min: 0, max: 5 %>
     </div>
     <%= f.field :municipal_service_name, label: "Descrição do serviço municipal", required: true, hint: "Conforme a lista de serviços do município" %>
+  <% end %>
+  <%= render "shared/form_section", title: "Emissão",
+        description: "Texto da nota, retenção do ISS e a emissão automática após a quitação." do %>
     <%= f.field :default_description, label: "Texto padrão da nota", hint: "Complementado com a descrição da conta a receber" %>
     <%= f.toggle_field :retain_iss, label: "ISS retido pelo tomador" %>
     <%= f.toggle_field :auto_issue_on_payment, label: "Emitir automaticamente quando a conta for quitada" %>
-    <%= render "shared/form_footer", f:, submit: "Salvar dados fiscais", cancel_url: edit_fiscal_settings_path %>
   <% end %>
-</section>
+  <%= render "shared/form_footer", f:, submit: "Salvar dados fiscais", cancel_url: edit_fiscal_settings_path %>
+<% end %>
