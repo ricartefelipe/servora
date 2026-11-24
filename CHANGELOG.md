@@ -5,6 +5,31 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.6.0] - 2026-11-24
+
+Deslocamento e sincronização no campo, ações em lote, formulários em seções e resumo do portal.
+
+### Adicionado
+
+- Visita "Em deslocamento" entre agendada e em andamento, com horário de saída registrado, e "Não foi possível
+  atender" para registrar cliente ausente com motivo; ambas funcionam sem conexão.
+- Indicador de sincronização na área do técnico: sincronizado, sincronizando, offline com pendências e falha com
+  nova tentativa.
+- Alteração de situação de ordens em lote, com autorização por ordem, falhas isoladas e resumo do resultado.
+- Densidade compacta das tabelas, lembrada no navegador.
+- Resumo no início do portal: visitas, orçamentos aguardando decisão e faturas em aberto.
+
+### Alterado
+
+- Formulários longos organizados em seções de duas colunas.
+- Avisos de erro permanecem até serem fechados; avisos comuns somem sozinhos.
+- Cancelar uma ordem libera visitas em deslocamento; a conclusão aguarda o técnico a caminho.
+
+### Corrigido
+
+- Mensagens de validação do cadastro de cliente com nomes de campos em português.
+- Acesso ao portal por link sem bloqueios de política de segurança de conteúdo após a troca de sessão.
+
 ## [1.5.0] - 2026-11-24
 
 Busca rápida, auditoria legível, agenda ao vivo e gráficos no painel.
@@ -196,7 +221,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.5.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.6.0...develop
+[1.6.0]: https://github.com/ricartefelipe/servora/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/ricartefelipe/servora/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ricartefelipe/servora/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.3.0
