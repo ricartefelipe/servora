@@ -1,12 +1,12 @@
 <% content_for :title, "Notificações" %>
-<%= page_header("Notificações", subtitle: "Avisos sobre a sua equipe e a sua operação.") do %>
+<%= page_header("Notificações", eyebrow: "Conta · Notificações", subtitle: "Avisos sobre a sua equipe e a sua operação.") do %>
   <% if @notifications.any? { |n| !n.read? } %>
     <%= button_to "Marcar todas como lidas", read_all_notifications_path, method: :patch, class: "sv-btn-secondary sv-btn-sm" %>
   <% end %>
 <% end %>
 
 <section class="sv-card overflow-hidden">
-  <ul id="notifications-feed" class="divide-y divide-ink-100" role="list">
+  <ul id="notifications-feed" class="divide-y divide-ink-150" role="list">
     <% @notifications.each do |notification| %>
       <%= render "notifications/notification", notification: %>
     <% end %>

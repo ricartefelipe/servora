@@ -1,14 +1,20 @@
-<%# Servora mark: a route that closes into a service node. %>
-<% size = local_assigns.fetch(:size, 32) %>
+<%# Servora mark: the cut gem. Flat facets, no gradients, so it stays crisp at small sizes. %>
+<% size = local_assigns.fetch(:size, 28) %>
 <% tone = local_assigns.fetch(:tone, :dark) %>
-<span class="inline-flex items-center gap-2.5">
+<span class="inline-flex items-center gap-2">
   <svg width="<%= size %>" height="<%= size %>" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">
-    <rect width="40" height="40" rx="11" class="fill-brand-600"/>
-    <path d="M27.5 13.2c-1.6-1.6-4.1-2.6-7.1-2.6-4.5 0-7.6 2.3-7.6 5.6 0 7.1 14.6 4 14.6 10.6 0 3.3-3.2 5.6-7.7 5.6-3.2 0-5.9-1.1-7.6-3"
-          stroke="white" stroke-width="3.2" stroke-linecap="round"/>
-    <circle cx="27.7" cy="13.3" r="3.1" class="fill-ember-400"/>
+    <path d="M3 15 12.5 7 11.5 15Z" fill="#d91f3c"/>
+    <path d="M12.5 7 20 15H11.5Z" fill="#c8102e"/>
+    <path d="M12.5 7H27.5L20 15Z" fill="#e8475f"/>
+    <path d="M27.5 7 28.5 15H20Z" fill="#a80c28"/>
+    <path d="M27.5 7 37 15H28.5Z" fill="#8c0e26"/>
+    <path d="M3 15H11.5L20 36Z" fill="#c8102e"/>
+    <path d="M11.5 15H20V36Z" fill="#a80c28"/>
+    <path d="M20 15H28.5L20 36Z" fill="#8c0e26"/>
+    <path d="M28.5 15H37L20 36Z" fill="#6b0d20"/>
+    <path d="M12.5 7H19L15.5 11Z" fill="#ffffff" fill-opacity="0.3"/>
   </svg>
   <% unless local_assigns[:mark_only] %>
-    <span class="text-lg font-bold tracking-tight <%= tone == :light ? 'text-white' : 'text-ink-950' %>">Servora</span>
+    <span class="text-[17px] font-semibold tracking-tight <%= tone == :light ? 'text-white' : 'text-ink-950' %>">Servora</span>
   <% end %>
 </span>

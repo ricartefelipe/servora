@@ -1,0 +1,10 @@
+<%# Outline of the Servora gem for dark or ruby surfaces. Decorative; one facet is filled. %>
+<svg viewBox="0 0 400 360" fill="none" aria-hidden="true" focusable="false" class="<%= local_assigns[:class] %>">
+  <g stroke="#ffffff" stroke-opacity="<%= local_assigns.fetch(:opacity, 0.22) %>" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M60 170 140 110H260L340 170 200 330Z"/>
+    <path d="M60 170H340M140 110 130 170 200 330M140 110 200 170 260 110M260 110 270 170 200 330M200 170V330"/>
+  </g>
+  <path d="M140 110H260L200 170Z" fill="<%= local_assigns.fetch(:facet, "#ff8a9b") %>" fill-opacity="0.9"/>
+  <path class="animate-glint-once origin-center [transform-box:fill-box]" fill="#ffffff"
+        d="M168 96c1.2 6.4 3.6 8.8 10 10-6.4 1.2-8.8 3.6-10 10-1.2-6.4-3.6-8.8-10-10 6.4-1.2 8.8-3.6 10-10Z"/>
+</svg>

@@ -6,6 +6,7 @@
   </head>
   <body class="h-full bg-white" data-controller="local-context" data-local-context-key-value="<%= local_context_key %>">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
+    <%= render "shared/brand_rule" %>
     <div id="flash"><%= render "shared/flash" %></div>
     <%# Wide account pages (security, organizations) only show the showcase when there is room for both columns. %>
     <% wide = content_for?(:container_width) %>
@@ -28,37 +29,34 @@
       </main>
 
       <aside class="relative hidden p-3 <%= wide ? "2xl:block" : "lg:block" %>" aria-hidden="true">
-        <div class="relative isolate flex h-full flex-col justify-between overflow-hidden rounded-[1.75rem] bg-ink-950 p-10 xl:p-14">
+        <div class="relative isolate flex h-full flex-col justify-between overflow-hidden rounded-[20px] bg-noir-950 p-10 ring-1 ring-white/[0.06] xl:p-14">
           <svg class="absolute inset-0 -z-10 size-full" aria-hidden="true" focusable="false">
             <defs>
               <pattern id="showcase-grid" width="44" height="44" patternUnits="userSpaceOnUse">
-                <path d="M44 0H0V44" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+                <path d="M44 0H0V44" fill="none" stroke="#ffffff" stroke-opacity="0.03"/>
               </pattern>
-              <radialGradient id="showcase-fade" cx="50%" cy="42%" r="65%">
-                <stop offset="0" stop-color="#ffffff"/>
-                <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-              </radialGradient>
-              <mask id="showcase-mask"><rect width="100%" height="100%" fill="url(#showcase-fade)"/></mask>
             </defs>
-            <rect width="100%" height="100%" fill="url(#showcase-grid)" mask="url(#showcase-mask)"/>
+            <rect width="100%" height="100%" fill="url(#showcase-grid)"/>
           </svg>
-          <div class="pointer-events-none absolute left-1/2 top-[38%] -z-10 size-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-600/25 blur-3xl"></div>
 
-          <p class="font-mono text-xs uppercase tracking-[0.2em] text-brand-300">Gestão de serviços de campo</p>
+          <p class="inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-white/55">
+            <span class="inline-block size-1.5 shrink-0 rotate-45 bg-brand-300"></span>
+            Gestão de serviços de campo
+          </p>
 
-          <%= render "shared/gem", class: "mx-auto w-full max-w-sm drop-shadow-2xl" %>
+          <%= render "shared/gem", class: "mx-auto w-full max-w-sm" %>
 
           <div>
-            <p class="text-4xl font-semibold leading-[1.1] tracking-tight text-white xl:text-5xl">
-              Operação de campo,<br><span class="text-brand-400">lapidada.</span>
+            <p class="sv-display text-4xl font-semibold leading-[1.1] tracking-[-0.03em] text-white xl:text-5xl">
+              Operação de campo,<br>lapidada.
             </p>
-            <p class="mt-5 max-w-md text-sm leading-relaxed text-ink-300">
+            <p class="mt-5 max-w-md text-sm leading-relaxed text-white/72">
               Orçamentos, ordens de serviço, agenda, estoque e recebimentos com rastreabilidade de ponta a ponta —
               da solicitação do cliente à margem de cada serviço.
             </p>
             <ul class="mt-8 flex flex-wrap gap-2" role="list">
               <% %w[Orçamentos Ordens\ de\ serviço Agenda Estoque Contratos Financeiro].each do |item| %>
-                <li class="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-ink-200 ring-1 ring-inset ring-white/10"><%= item %></li>
+                <li class="rounded-full bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/72 ring-1 ring-inset ring-white/10"><%= item %></li>
               <% end %>
             </ul>
           </div>

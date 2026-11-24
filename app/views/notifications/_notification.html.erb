@@ -1,8 +1,9 @@
-<li id="<%= dom_id(notification) %>" class="flex items-start gap-3 px-5 py-4 <%= notification.read? ? '' : 'bg-ink-50' %>">
-  <span class="mt-1.5 size-2 shrink-0 rounded-full <%= notification.read? ? 'bg-ink-200' : 'bg-brand-500' %>" aria-hidden="true"></span>
+<%# Unread: an ink dot and a heavier title. Ruby is not used for counts or dots. %>
+<li id="<%= dom_id(notification) %>" class="flex items-start gap-3 px-5 py-4 <%= notification.read? ? '' : 'bg-ink-25' %>">
+  <span class="mt-1.5 size-2 shrink-0 rounded-full <%= notification.read? ? 'ring-1 ring-inset ring-ink-300' : 'bg-ink-950' %>" aria-hidden="true"></span>
   <div class="min-w-0 flex-1">
-    <p class="text-sm font-medium text-ink-900"><%= notification.title %></p>
-    <% if notification.body.present? %><p class="text-sm text-ink-600"><%= notification.body %></p><% end %>
+    <p class="text-[13px] <%= notification.read? ? 'font-medium text-ink-800' : 'font-semibold text-ink-950' %>"><%= notification.title %></p>
+    <% if notification.body.present? %><p class="mt-0.5 text-[13px] text-ink-600"><%= notification.body %></p><% end %>
     <p class="mt-0.5 text-xs text-ink-500"><%= time_ago_in_words(notification.created_at) %> atrás<span class="sr-only"> · <%= notification.read? ? "lida" : "não lida" %></span></p>
   </div>
   <% unless notification.read? %>

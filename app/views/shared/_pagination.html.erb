@@ -8,7 +8,7 @@
     <% else %>
       <span></span>
     <% end %>
-    <span class="text-sm text-ink-500">Página <%= pagination.page %></span>
+    <span class="font-mono text-xs text-ink-500">Página <span class="sv-num text-ink-800"><%= pagination.page %></span></span>
     <% if pagination.next_page? %>
       <%= link_to "Próxima", page_url.call(pagination.page + 1), class: "sv-btn-secondary sv-btn-sm", rel: "next" %>
     <% else %>

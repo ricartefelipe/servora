@@ -59,6 +59,16 @@ module NavigationHelper
     item.permission.nil? || can?(item.permission)
   end
 
+  # Section and entry of the current page for the top bar trail, e.g.
+  # ["Operação", "Ordens de serviço"]. Empty when the page is outside the menu.
+  def breadcrumb_trail
+    NAVIGATION.each do |title, items|
+      item = items.find { |candidate| nav_item_active?(candidate) }
+      return [title, item] if item
+    end
+    []
+  end
+
   # Entries with a namespace ("field/agenda") match the controller path; plain
   # names match controllers outside the field area.
   def nav_item_active?(item)
