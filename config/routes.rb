@@ -91,10 +91,28 @@ Rails.application.routes.draw do
         post :new_version, path: "nova-versao"
         post :send_portal_link, path: "enviar-link"
         patch :cancel, path: "cancelar"
+        post :convert, path: "converter"
       end
       scope module: :quotes do
         resources :items, path: "itens", only: %i[create destroy]
         resources :decisions, path: "decisoes", only: :create
+      end
+    end
+    resources :service_types, path: "tipos-de-servico", only: %i[index new create edit update]
+    resources :work_orders, path: "ordens-de-servico", only: %i[index new create show] do
+      member do
+        patch :update_report, path: "registro-tecnico"
+        patch :change_status, path: "situacao"
+        post :complete, path: "concluir"
+        patch :cancel, path: "cancelar"
+        patch :reopen, path: "reabrir"
+      end
+      scope module: :work_orders do
+        resources :items, path: "itens", only: :create do
+          patch :decide, on: :member, path: "decisao"
+        end
+        resources :checklist_items, path: "checklist", only: :update
+        resources :assignments, path: "tecnicos", only: %i[create destroy]
       end
     end
     resources :audit_events, path: "auditoria", only: :index

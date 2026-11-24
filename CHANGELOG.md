@@ -25,3 +25,6 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   digest do conteúdo, descontos, validade, histórico de negociação e cancelamento.
 - Portal do cliente com link de uso único, sessão restrita e aprovação ou recusa da versão vigente com evidências;
   registro interno de decisões comunicadas por outros canais.
+- Ordens de serviço com máquina de estados, conversão idempotente de orçamentos aprovados, tipos de serviço com
+  checklist obrigatório, registro técnico, itens adicionais com autorização, conclusão com relatório versionado,
+  cancelamento e reabertura auditados; escopo restrito para técnicos.

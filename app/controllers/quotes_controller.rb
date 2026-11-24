@@ -57,6 +57,13 @@ class QuotesController < TenantController
     redirect_to quote_path(@quote), notice: "Versão #{version.version_number} criada como rascunho.", status: :see_other
   end
 
+  def convert
+    authorize @quote
+    result = WorkOrders::CreateFromQuote.new(quote: @quote, actor: current_membership).call
+    notice = result.created ? "Ordem de serviço #{result.work_order.number} criada." : "Este orçamento já foi convertido."
+    redirect_to work_order_path(result.work_order), notice:, status: :see_other
+  end
+
   def cancel
     authorize @quote
     Quotes::Cancel.new(quote: @quote, reason: params.dig(:cancellation, :reason)).call

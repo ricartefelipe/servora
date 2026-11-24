@@ -1,0 +1,52 @@
+<% content_for :title, "Ordens de serviço" %>
+<%= page_header("Ordens de serviço", subtitle: can?(:work_orders_view_all) ? "Atendimentos em aberto por prioridade e data de solicitação." : "Atendimentos atribuídos a você.") do %>
+  <% if policy(WorkOrder).create? %>
+    <%= link_to new_work_order_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Nova ordem<% end %>
+  <% end %>
+<% end %>
+
+<div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+  <% %w[approved scheduled in_progress waiting_parts waiting_customer reopened].each do |status| %>
+    <%= link_to work_orders_path(situacao: status), class: "sv-card p-4 transition hover:border-brand-300 #{'ring-2 ring-brand-500' if @filters[:status] == status}" do %>
+      <span class="block text-xs font-semibold uppercase tracking-wide text-ink-500"><%= WorkOrders::LABELS[status] %></span>
+      <span class="sv-num mt-1 block text-2xl font-bold text-ink-950"><%= @counts[status] || 0 %></span>
+    <% end %>
+  <% end %>
+</div>
+
+<%= form_with url: work_orders_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
+  <div class="min-w-64 flex-1">
+    <%= f.label :q, "Buscar", class: "sv-label" %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Número, título ou cliente", class: "sv-input" %>
+  </div>
+  <div>
+    <%= f.label :situacao, "Situação", class: "sv-label" %>
+    <%= f.select :situacao, WorkOrders::LABELS.map { |value, label| [label, value] }, { include_blank: "Em aberto", selected: @filters[:status] }, class: "sv-input" %>
+  </div>
+  <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
+<% end %>
+
+<section class="sv-card overflow-hidden">
+  <% if @pagination.records.empty? %>
+    <%= empty_state("Nenhuma ordem encontrada", description: "Ordens nascem de solicitações, orçamentos aprovados ou planos preventivos.", icon_name: :orders) %>
+  <% else %>
+    <ul class="divide-y divide-ink-100" role="list">
+      <% @pagination.records.each do |work_order| %>
+        <li>
+          <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-5 py-4 hover:bg-ink-50/70" do %>
+            <div class="min-w-0 flex-1">
+              <p class="flex flex-wrap items-center gap-2">
+                <span class="font-mono text-xs text-ink-500"><%= work_order.number %></span>
+                <span class="font-semibold text-ink-900"><%= work_order.title %></span>
+              </p>
+              <p class="truncate text-sm text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
+            </div>
+            <%= render "work_orders/priority_badge", work_order: %>
+            <%= render "work_orders/status_badge", work_order: %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>
+<%= render "shared/pagination", pagination: @pagination %>

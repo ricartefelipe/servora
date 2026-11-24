@@ -24,21 +24,25 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Orçamentos | Numeração atômica, versões, snapshot e digest, triggers de imutabilidade, descontos, validade, cancelamento, histórico | `spec/services/quotes_spec.rb`, `spec/services/numbering_spec.rb` |
 | Aprovação | Decisão pelo portal ou registro interno com evidências; recusa de versão substituída, expirada, digest divergente e contato não autorizado | `spec/services/quotes_spec.rb`, `spec/system/quote_approval_flow_spec.rb` |
 | Portal do cliente | Link de uso único (GET não consome), sessão restrita revogável, isolamento por cliente | `spec/requests/portal_spec.rb`, `spec/services/portal/**` |
+| Ordens de serviço | Abertura, conversão idempotente (inclusive concorrente), máquina de estados, checklist obrigatório, registro técnico com bloqueio otimista, itens adicionais com autorização, conclusão com relatório versionado, cancelamento e reabertura | `spec/services/work_orders_spec.rb`, `spec/services/work_orders/create_from_quote_spec.rb`, `spec/system/work_order_flow_spec.rb` |
+| Técnicos | Escopo restrito a ordens e equipamentos atribuídos, sem preços e sem conclusão formal | `spec/policies/work_order_policy_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `ruby bin/test-all` | 40 exemplos (regras puras) + 213 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 99,46%, branches 89,31% |
+| `ruby bin/test-all` | 44 exemplos (regras puras) + 239 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 99,26%, branches 87,34% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
 
 ## Em andamento
 
-- Ordens de serviço (conversão idempotente do orçamento aprovado, máquinas de estados, checklists).
+- Agenda e despacho: visitas com máquina de estados própria, reservas de técnicos e equipes protegidas por
+  exclusion constraint, horários de trabalho, ausências, deslocamento e sugestão de técnicos.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/ordens-de-servico` a partir de `develop`.
+Próxima branch: `feature/agenda-e-despacho` a partir de `develop`. `WorkOrders::Complete#visits_in_progress`
+passa a consultar as visitas reais nessa feature.

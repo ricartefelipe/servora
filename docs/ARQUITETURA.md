@@ -141,6 +141,33 @@ draft ──enviar──▶ sent ──▶ approved ──┐
 - Mudança após envio ou aprovação: nova versão (cópia dos itens) e nova decisão do cliente.
 - A conversão em ordem de serviço usa a versão aprovada (feature de ordens de serviço).
 
+## Ordens de serviço
+
+### Máquina de estados da ordem
+
+```
+open ─▶ awaiting_approval ─▶ approved ─▶ scheduled ─▶ in_progress ─▶ completed ─▶ reopened
+                                │            ▲   │         │  ▲                     │
+                                └────────────┘   │         ▼  │                     ▼
+                                    waiting_parts / waiting_customer        (scheduled, in_progress,
+                                                                              completed, canceled)
+canceled: a partir de qualquer estado não concluído (motivo obrigatório)
+```
+
+- Transições inválidas são recusadas (`WorkOrders::States`) e toda mudança fica em `work_order_transitions`
+  (append-only, com ator e motivo). Visitas têm máquina própria: concluir uma visita não conclui a ordem.
+- Conclusão formal (escritório) exige checklist obrigatório respondido, diagnóstico, solução, nenhuma visita em
+  andamento e nenhum serviço adicional pendente de autorização. Cada conclusão grava um relatório versionado
+  (`work_order_reports`, append-only, com digest); reabrir não apaga relatórios nem execução anterior.
+- Conversão do orçamento: `INSERT … ON CONFLICT DO NOTHING` no índice único `(organization_id, quote_version_id)`;
+  sob concorrência a requisição perdedora aguarda o commit da vencedora e devolve a mesma ordem. Itens do
+  orçamento entram como autorizados (com a evidência da aprovação).
+- Itens adicionais entram como pendentes e só são cobráveis após autorização registrada (contato, canal e membro).
+- Equipamentos da ordem pertencem ao cliente da ordem (FK composta). Checklist é copiado do tipo de serviço
+  na abertura; mudanças posteriores no tipo não afetam ordens abertas.
+- Técnicos veem apenas ordens atribuídas (e os equipamentos delas), executam checklist e registro técnico, sem
+  ver preços ou custos; a conclusão formal e o cancelamento são ações do escritório.
+
 ## Portal do cliente
 
 - Acesso por concessão de uso único enviada por e-mail (72 h, finalidade registrada, revogável). O GET apenas

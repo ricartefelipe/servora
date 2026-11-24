@@ -699,6 +699,39 @@ CREATE TABLE public.service_locations (
 
 
 --
+-- Name: service_type_checklist_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.service_type_checklist_items (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    label character varying NOT NULL,
+    response_kind character varying DEFAULT 'check'::character varying NOT NULL,
+    required boolean DEFAULT true NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    service_type_id uuid NOT NULL,
+    CONSTRAINT checklist_items_kind CHECK (((response_kind)::text = ANY (ARRAY['check'::text, 'text'::text, 'number'::text])))
+);
+
+
+--
+-- Name: service_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.service_types (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    description text,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
 -- Name: user_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -746,6 +779,164 @@ CREATE TABLE public.users (
     updated_at timestamp(6) with time zone NOT NULL,
     CONSTRAINT users_email_lowercase CHECK (((email)::text = lower((email)::text))),
     CONSTRAINT users_name_length CHECK (((char_length((name)::text) >= 1) AND (char_length((name)::text) <= 120)))
+);
+
+
+--
+-- Name: work_order_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_assignments (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    role character varying DEFAULT 'technician'::character varying NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    membership_id uuid NOT NULL,
+    CONSTRAINT work_order_assignments_role CHECK (((role)::text = ANY (ARRAY['lead'::text, 'technician'::text])))
+);
+
+
+--
+-- Name: work_order_checklist_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_checklist_items (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    label character varying NOT NULL,
+    response_kind character varying NOT NULL,
+    required boolean NOT NULL,
+    "position" integer NOT NULL,
+    response character varying,
+    responded_at timestamp(6) with time zone,
+    responded_by_membership_id uuid,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    CONSTRAINT work_order_checklist_kind CHECK (((response_kind)::text = ANY (ARRAY['check'::text, 'text'::text, 'number'::text])))
+);
+
+
+--
+-- Name: work_order_equipment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_equipment (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    customer_id uuid NOT NULL,
+    equipment_id uuid NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL
+);
+
+
+--
+-- Name: work_order_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_items (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    source character varying NOT NULL,
+    description character varying NOT NULL,
+    unit character varying NOT NULL,
+    quantity numeric(14,3) NOT NULL,
+    unit_price numeric(14,2) NOT NULL,
+    unit_cost numeric(14,4),
+    discount_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    line_total numeric(14,2) NOT NULL,
+    authorization_status character varying NOT NULL,
+    authorized_at timestamp(6) with time zone,
+    authorization_channel character varying,
+    authorization_note text,
+    authorized_by_contact_id uuid,
+    authorized_by_membership_id uuid,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    work_order_id uuid NOT NULL,
+    catalog_item_id uuid,
+    CONSTRAINT work_order_items_authorization_evidence CHECK ((((authorization_status)::text = 'pending'::text) OR ((authorized_at IS NOT NULL) AND (authorized_by_membership_id IS NOT NULL)))),
+    CONSTRAINT work_order_items_authorization_status CHECK (((authorization_status)::text = ANY (ARRAY['authorized'::text, 'pending'::text, 'rejected'::text]))),
+    CONSTRAINT work_order_items_kind CHECK (((kind)::text = ANY (ARRAY['service'::text, 'part'::text, 'other'::text]))),
+    CONSTRAINT work_order_items_line_total CHECK (((line_total = (round((quantity * unit_price), 2) - discount_amount)) AND (line_total >= (0)::numeric))),
+    CONSTRAINT work_order_items_source CHECK (((source)::text = ANY (ARRAY['quote'::text, 'additional'::text, 'preventive'::text, 'manual'::text]))),
+    CONSTRAINT work_order_items_values CHECK (((quantity > (0)::numeric) AND (unit_price >= (0)::numeric) AND (discount_amount >= (0)::numeric)))
+);
+
+
+--
+-- Name: work_order_reports; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_reports (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    version_number integer NOT NULL,
+    data jsonb NOT NULL,
+    content_digest character varying NOT NULL,
+    generated_by_membership_id uuid,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    work_order_id uuid NOT NULL
+);
+
+
+--
+-- Name: work_order_transitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_order_transitions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    from_status character varying,
+    to_status character varying NOT NULL,
+    reason text,
+    actor_label character varying,
+    actor_membership_id uuid,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    work_order_id uuid NOT NULL
+);
+
+
+--
+-- Name: work_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.work_orders (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    number character varying NOT NULL,
+    title character varying NOT NULL,
+    status character varying DEFAULT 'open'::character varying NOT NULL,
+    origin character varying NOT NULL,
+    priority character varying DEFAULT 'normal'::character varying NOT NULL,
+    customer_id uuid NOT NULL,
+    service_location_id uuid NOT NULL,
+    problem_description text NOT NULL,
+    diagnosis text,
+    solution text,
+    requested_at timestamp(6) with time zone NOT NULL,
+    started_at timestamp(6) with time zone,
+    completed_at timestamp(6) with time zone,
+    canceled_at timestamp(6) with time zone,
+    cancel_reason text,
+    reopened_count integer DEFAULT 0 NOT NULL,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    quote_version_id uuid,
+    service_type_id uuid,
+    created_by_membership_id uuid NOT NULL,
+    CONSTRAINT work_orders_cancel_reason CHECK ((((status)::text <> 'canceled'::text) OR ((canceled_at IS NOT NULL) AND (cancel_reason IS NOT NULL)))),
+    CONSTRAINT work_orders_completed_at CHECK ((((status)::text <> 'completed'::text) OR (completed_at IS NOT NULL))),
+    CONSTRAINT work_orders_origin CHECK (((origin)::text = ANY (ARRAY['phone'::text, 'email'::text, 'whatsapp'::text, 'portal'::text, 'quote'::text, 'preventive'::text, 'internal'::text]))),
+    CONSTRAINT work_orders_priority CHECK (((priority)::text = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text]))),
+    CONSTRAINT work_orders_status CHECK (((status)::text = ANY (ARRAY['open'::text, 'awaiting_approval'::text, 'approved'::text, 'scheduled'::text, 'in_progress'::text, 'waiting_parts'::text, 'waiting_customer'::text, 'completed'::text, 'reopened'::text, 'canceled'::text])))
 );
 
 
@@ -926,6 +1117,22 @@ ALTER TABLE ONLY public.service_locations
 
 
 --
+-- Name: service_type_checklist_items service_type_checklist_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_checklist_items
+    ADD CONSTRAINT service_type_checklist_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: service_types service_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_types
+    ADD CONSTRAINT service_types_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -939,6 +1146,62 @@ ALTER TABLE ONLY public.user_sessions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_assignments work_order_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_assignments
+    ADD CONSTRAINT work_order_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_checklist_items work_order_checklist_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_checklist_items
+    ADD CONSTRAINT work_order_checklist_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_equipment work_order_equipment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_equipment
+    ADD CONSTRAINT work_order_equipment_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_items work_order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT work_order_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_reports work_order_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_reports
+    ADD CONSTRAINT work_order_reports_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_order_transitions work_order_transitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_transitions
+    ADD CONSTRAINT work_order_transitions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: work_orders work_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT work_orders_pkey PRIMARY KEY (id);
 
 
 --
@@ -970,6 +1233,13 @@ CREATE INDEX idx_on_organization_id_kind_active_name_677c9f430a ON public.catalo
 
 
 --
+-- Name: idx_on_organization_id_membership_id_765e54b84e; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_membership_id_765e54b84e ON public.work_order_assignments USING btree (organization_id, membership_id);
+
+
+--
 -- Name: idx_on_organization_id_outbox_event_id_4fefddfda1; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -977,10 +1247,52 @@ CREATE INDEX idx_on_organization_id_outbox_event_id_4fefddfda1 ON public.outbox_
 
 
 --
+-- Name: idx_on_organization_id_service_type_id_db08157b19; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_service_type_id_db08157b19 ON public.service_type_checklist_items USING btree (organization_id, service_type_id);
+
+
+--
 -- Name: idx_on_organization_id_status_created_at_1118c31bba; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_on_organization_id_status_created_at_1118c31bba ON public.outbox_events USING btree (organization_id, status, created_at);
+
+
+--
+-- Name: idx_on_organization_id_status_priority_requested_at_20346fbe18; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_status_priority_requested_at_20346fbe18 ON public.work_orders USING btree (organization_id, status, priority, requested_at);
+
+
+--
+-- Name: idx_on_organization_id_work_order_id_5a82199b7e; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_work_order_id_5a82199b7e ON public.work_order_equipment USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: idx_on_organization_id_work_order_id_8b9dd6799b; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_work_order_id_8b9dd6799b ON public.work_order_transitions USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: idx_on_organization_id_work_order_id_abfa99dc1a; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_work_order_id_abfa99dc1a ON public.work_order_checklist_items USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_assignments_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_assignments_unique ON public.work_order_assignments USING btree (organization_id, work_order_id, membership_id);
 
 
 --
@@ -1072,6 +1384,13 @@ CREATE INDEX index_equipment_events_on_organization_id_and_equipment_id ON publi
 --
 
 CREATE UNIQUE INDEX index_equipment_events_on_tenant_key ON public.equipment_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_equipment_on_customer_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_equipment_on_customer_key ON public.equipment USING btree (organization_id, customer_id, id);
 
 
 --
@@ -1369,6 +1688,27 @@ CREATE UNIQUE INDEX index_service_locations_on_tenant_key ON public.service_loca
 
 
 --
+-- Name: index_service_type_checklist_items_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_type_checklist_items_on_tenant_key ON public.service_type_checklist_items USING btree (organization_id, id);
+
+
+--
+-- Name: index_service_types_on_organization_id_and_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_types_on_organization_id_and_name ON public.service_types USING btree (organization_id, name);
+
+
+--
+-- Name: index_service_types_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_types_on_tenant_key ON public.service_types USING btree (organization_id, id);
+
+
+--
 -- Name: index_user_sessions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1408,6 +1748,104 @@ CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING bt
 --
 
 CREATE UNIQUE INDEX index_users_on_unlock_token ON public.users USING btree (unlock_token);
+
+
+--
+-- Name: index_work_order_assignments_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_assignments_on_tenant_key ON public.work_order_assignments USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_order_checklist_items_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_checklist_items_on_tenant_key ON public.work_order_checklist_items USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_order_equipment_on_organization_id_and_equipment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_work_order_equipment_on_organization_id_and_equipment_id ON public.work_order_equipment USING btree (organization_id, equipment_id);
+
+
+--
+-- Name: index_work_order_equipment_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_equipment_on_tenant_key ON public.work_order_equipment USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_order_equipment_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_equipment_unique ON public.work_order_equipment USING btree (organization_id, work_order_id, equipment_id);
+
+
+--
+-- Name: index_work_order_items_on_organization_id_and_work_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_work_order_items_on_organization_id_and_work_order_id ON public.work_order_items USING btree (organization_id, work_order_id);
+
+
+--
+-- Name: index_work_order_items_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_items_on_tenant_key ON public.work_order_items USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_order_reports_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_reports_on_tenant_key ON public.work_order_reports USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_order_reports_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_reports_version ON public.work_order_reports USING btree (organization_id, work_order_id, version_number);
+
+
+--
+-- Name: index_work_order_transitions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_order_transitions_on_tenant_key ON public.work_order_transitions USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_orders_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_work_orders_on_organization_id_and_customer_id ON public.work_orders USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_work_orders_on_organization_id_and_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_orders_on_organization_id_and_number ON public.work_orders USING btree (organization_id, number);
+
+
+--
+-- Name: index_work_orders_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_orders_on_tenant_key ON public.work_orders USING btree (organization_id, id);
+
+
+--
+-- Name: index_work_orders_one_per_quote_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_work_orders_one_per_quote_version ON public.work_orders USING btree (organization_id, quote_version_id) WHERE (quote_version_id IS NOT NULL);
 
 
 --
@@ -1624,11 +2062,27 @@ ALTER TABLE ONLY public.organization_counters
 
 
 --
+-- Name: work_order_items fk_rails_084e8e77d0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT fk_rails_084e8e77d0 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: invitations fk_rails_0fe4c14f0e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invitations
     ADD CONSTRAINT fk_rails_0fe4c14f0e FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_order_assignments fk_rails_1b8a8a53ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_assignments
+    ADD CONSTRAINT fk_rails_1b8a8a53ac FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -1645,6 +2099,30 @@ ALTER TABLE ONLY public.service_locations
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT fk_rails_394d9847aa FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: service_type_checklist_items fk_rails_3a0232caa8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_checklist_items
+    ADD CONSTRAINT fk_rails_3a0232caa8 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_order_reports fk_rails_4b371782c8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_reports
+    ADD CONSTRAINT fk_rails_4b371782c8 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_orders fk_rails_4ec807c8ae; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_rails_4ec807c8ae FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -1693,6 +2171,22 @@ ALTER TABLE ONLY public.quote_items
 
 ALTER TABLE ONLY public.portal_access_grants
     ADD CONSTRAINT fk_rails_721b04c463 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_order_transitions fk_rails_8030aa2bf5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_transitions
+    ADD CONSTRAINT fk_rails_8030aa2bf5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: work_order_checklist_items fk_rails_87fc4ab3dc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_checklist_items
+    ADD CONSTRAINT fk_rails_87fc4ab3dc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -1760,6 +2254,14 @@ ALTER TABLE ONLY public.customer_contacts
 
 
 --
+-- Name: work_order_equipment fk_rails_cd24dbaf4f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_equipment
+    ADD CONSTRAINT fk_rails_cd24dbaf4f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: quote_versions fk_rails_d2d917b73a; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1792,11 +2294,163 @@ ALTER TABLE ONLY public.equipment_events
 
 
 --
+-- Name: service_types fk_rails_eeff69bade; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_types
+    ADD CONSTRAINT fk_rails_eeff69bade FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: service_locations fk_service_locations_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.service_locations
     ADD CONSTRAINT fk_service_locations_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: service_type_checklist_items fk_service_type_checklist_items_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.service_type_checklist_items
+    ADD CONSTRAINT fk_service_type_checklist_items_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: work_order_assignments fk_work_order_assignments_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_assignments
+    ADD CONSTRAINT fk_work_order_assignments_membership_id_tenant FOREIGN KEY (organization_id, membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: work_order_assignments fk_work_order_assignments_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_assignments
+    ADD CONSTRAINT fk_work_order_assignments_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: work_order_checklist_items fk_work_order_checklist_items_responded_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_checklist_items
+    ADD CONSTRAINT fk_work_order_checklist_items_responded_by_membership_id_tenant FOREIGN KEY (organization_id, responded_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: work_order_checklist_items fk_work_order_checklist_items_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_checklist_items
+    ADD CONSTRAINT fk_work_order_checklist_items_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: work_order_equipment fk_work_order_equipment_of_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_equipment
+    ADD CONSTRAINT fk_work_order_equipment_of_customer FOREIGN KEY (organization_id, customer_id, equipment_id) REFERENCES public.equipment(organization_id, customer_id, id);
+
+
+--
+-- Name: work_order_equipment fk_work_order_equipment_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_equipment
+    ADD CONSTRAINT fk_work_order_equipment_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: work_order_items fk_work_order_items_authorized_by_contact_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT fk_work_order_items_authorized_by_contact_id_tenant FOREIGN KEY (organization_id, authorized_by_contact_id) REFERENCES public.customer_contacts(organization_id, id);
+
+
+--
+-- Name: work_order_items fk_work_order_items_authorized_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT fk_work_order_items_authorized_by_membership_id_tenant FOREIGN KEY (organization_id, authorized_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: work_order_items fk_work_order_items_catalog_item_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT fk_work_order_items_catalog_item_id_tenant FOREIGN KEY (organization_id, catalog_item_id) REFERENCES public.catalog_items(organization_id, id);
+
+
+--
+-- Name: work_order_items fk_work_order_items_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_items
+    ADD CONSTRAINT fk_work_order_items_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: work_order_reports fk_work_order_reports_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_reports
+    ADD CONSTRAINT fk_work_order_reports_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: work_order_transitions fk_work_order_transitions_work_order_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_order_transitions
+    ADD CONSTRAINT fk_work_order_transitions_work_order_id_tenant FOREIGN KEY (organization_id, work_order_id) REFERENCES public.work_orders(organization_id, id);
+
+
+--
+-- Name: work_orders fk_work_orders_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: work_orders fk_work_orders_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: work_orders fk_work_orders_location_of_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_location_of_customer FOREIGN KEY (organization_id, customer_id, service_location_id) REFERENCES public.service_locations(organization_id, customer_id, id);
+
+
+--
+-- Name: work_orders fk_work_orders_quote_version_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_quote_version_id_tenant FOREIGN KEY (organization_id, quote_version_id) REFERENCES public.quote_versions(organization_id, id);
+
+
+--
+-- Name: work_orders fk_work_orders_service_type_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.work_orders
+    ADD CONSTRAINT fk_work_orders_service_type_id_tenant FOREIGN KEY (organization_id, service_type_id) REFERENCES public.service_types(organization_id, id);
 
 
 --
@@ -1964,6 +2618,18 @@ ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_locations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: service_type_checklist_items; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.service_type_checklist_items ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: service_types; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.service_types ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: audit_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2090,12 +2756,119 @@ CREATE POLICY tenant_isolation ON public.service_locations USING ((organization_
 
 
 --
+-- Name: service_type_checklist_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.service_type_checklist_items USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: service_types tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.service_types USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_assignments tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_assignments USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_checklist_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_checklist_items USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_equipment tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_equipment USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_items USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_reports tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_reports USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_transitions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_order_transitions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_orders tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.work_orders USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: work_order_assignments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_assignments ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_order_checklist_items; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_checklist_items ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_order_equipment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_equipment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_order_items; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_items ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_order_reports; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_reports ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_order_transitions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_order_transitions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: work_orders; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124005100'),
+('20261124005000'),
 ('20261124004300'),
 ('20261124004200'),
 ('20261124004100'),

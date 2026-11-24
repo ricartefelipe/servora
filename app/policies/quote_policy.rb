@@ -10,6 +10,7 @@ class QuotePolicy < ApplicationPolicy
   def register_decision? = can?(:quotes_manage) && record.sent? && record.current_version&.sent?
   def send_portal_link? = register_decision?
   def cancel? = can?(:quotes_manage) && !record.closed?
+  def convert? = can?(:work_orders_manage) && (record.approved? || record.converted?)
   def view_costs? = can?(:costs_view)
 
   class Scope < Scope
