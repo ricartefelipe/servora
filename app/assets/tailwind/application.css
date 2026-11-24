@@ -294,6 +294,11 @@
   .sv-table tbody tr[aria-selected="true"] {
     @apply bg-select shadow-[inset_2px_0_0_var(--color-brand-600)];
   }
+
+  /* Compact density (density_controller.js on <body>): 36px rows instead of 44px. */
+  body[data-density="compact"] .sv-table td {
+    padding-block: 0.5rem;
+  }
 }
 
 /* Selects share the input look with a drawn chevron instead of the native arrow. */

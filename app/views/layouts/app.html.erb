@@ -4,7 +4,7 @@
     <title><%= [content_for(:title), current_organization&.name, "Servora"].compact_blank.join(" · ") %></title>
     <%= render "layouts/head" %>
   </head>
-  <body class="h-full" data-controller="shell local-context command-palette" data-local-context-key-value="<%= local_context_key %>"
+  <body class="h-full" data-controller="shell local-context command-palette density" data-local-context-key-value="<%= local_context_key %>"
         data-command-palette-url-value="<%= search_path %>"
         data-action="keydown.esc@window->shell#close keydown.ctrl+k@window->command-palette#open keydown.meta+k@window->command-palette#open turbo:before-cache@document->command-palette#dismiss">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
