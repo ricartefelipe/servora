@@ -1,0 +1,63 @@
+<% content_for :title, "Assinatura" %>
+<% module_names = @modules.to_h { |m| [m.code, m.name] } %>
+<%= page_header("Assinatura do Servora", subtitle: "Plano da plataforma da sua empresa. Contratos de manutenção com seus clientes ficam em Contratos.") %>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+  <%= stat_tile("Plano", @subscription.plan.name, hint: @subscription.status_label) %>
+  <%= stat_tile("Técnicos", "#{@seats_in_use} de #{@subscription.technician_seats}", hint: "ativos e convidados / vagas", tone: @seats_in_use >= @subscription.technician_seats ? :danger : :brand) %>
+  <%= stat_tile("Mensalidade", money(@subscription.monthly_amount), hint: @subscription.status == "trialing" ? "após a avaliação" : "valor vigente") %>
+</div>
+
+<% if @subscription.status == "trialing" %>
+  <div class="mb-6 rounded-2xl border <%= @subscription.trial_expired? ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-brand-200 bg-brand-50 text-brand-900' %> p-4 text-sm" role="status">
+    <% if @subscription.trial_expired? %>
+      A avaliação terminou em <%= l(@subscription.trial_ends_on) %>. Os dados seguem disponíveis para consulta; ative a assinatura para voltar a registrar.
+    <% else %>
+      Avaliação com todos os módulos até <%= l(@subscription.trial_ends_on) %> (<%= pluralize(@subscription.trial_days_left, "dia") %>).
+    <% end %>
+  </div>
+<% end %>
+
+<%= form_with url: subscription_path, method: :patch, scope: :subscription, class: "space-y-6" do |f| %>
+  <fieldset class="grid gap-4 md:grid-cols-3">
+    <legend class="sr-only">Plano</legend>
+    <% @plans.each do |plan| %>
+      <label class="sv-card relative flex cursor-pointer flex-col gap-2 p-5 has-[:checked]:border-brand-500 has-[:checked]:ring-2 has-[:checked]:ring-brand-200">
+        <%= f.radio_button :plan_code, plan.code, checked: plan.id == @subscription.plan_id, class: "absolute right-4 top-4 text-brand-600" %>
+        <span class="text-lg font-semibold text-ink-950"><%= plan.name %></span>
+        <span class="sv-num text-2xl font-bold text-ink-950"><%= money(plan.monthly_price) %><span class="text-sm font-normal text-ink-500">/mês</span></span>
+        <span class="text-sm text-ink-600"><%= plan.included_technicians %> técnicos incluídos · <%= money(plan.extra_technician_price) %> por técnico adicional</span>
+        <span class="text-sm text-ink-600">Módulos: <%= plan.modules.map { |code| module_names[code] }.to_sentence.presence || "ordens, agenda, clientes, orçamentos e portal" %></span>
+        <span class="text-xs text-ink-500">Implantação e treinamento: <%= plan.implementation_fee.positive? ? money(plan.implementation_fee) : "incluídos" %></span>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <section class="sv-card grid gap-5 p-6 sm:grid-cols-2" aria-labelledby="ajustes-title">
+    <h2 id="ajustes-title" class="font-semibold text-ink-900 sm:col-span-2">Vagas e módulos adicionais</h2>
+    <div>
+      <%= f.label :seats, "Vagas de técnico", class: "sv-label" %>
+      <%= f.number_field :seats, value: @subscription.technician_seats, min: [@seats_in_use, 1].max, class: "sv-input", required: true %>
+      <p class="sv-hint mt-1">Não pode ser menor que os técnicos ativos e convidados (<%= @seats_in_use %>).</p>
+    </div>
+    <fieldset>
+      <legend class="sv-label">Módulos adicionais</legend>
+      <div class="space-y-2 text-sm text-ink-700">
+        <% @modules.each do |mod| %>
+          <label class="flex items-center gap-2">
+            <%= check_box_tag "subscription[addons][]", mod.code, @subscription.addon_modules.include?(mod.code), id: "modulo-#{mod.code}", class: "rounded border-ink-300 text-brand-600" %>
+            <%= mod.name %> <span class="text-ink-500">(<%= money(mod.monthly_price) %>/mês, se não incluso no plano)</span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+  </section>
+
+  <div class="flex flex-wrap justify-end gap-3">
+    <%= f.button "Salvar alterações", type: "submit", class: "sv-btn-secondary" %>
+    <% unless @subscription.status == "active" %>
+      <%= f.button "Ativar assinatura", type: "submit", name: "ativar", value: "1", class: "sv-btn-primary",
+            data: { turbo_confirm: "Ativar a assinatura com o plano e as vagas selecionados?" } %>
+    <% end %>
+  </div>
+<% end %>

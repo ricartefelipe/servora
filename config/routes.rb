@@ -172,6 +172,7 @@ Rails.application.routes.draw do
     end
     resource :payment_integration, path: "configuracoes/pagamentos", only: %i[edit update]
     resource :sla_settings, path: "configuracoes/sla", only: %i[show update]
+    resource :subscription, path: "configuracoes/assinatura", only: %i[show update]
     resource :integrations, path: "configuracoes/integracoes", only: :show do
       post :create_credential, path: "credenciais"
       patch "credenciais/:id/revogar", action: :revoke_credential, as: :revoke_credential

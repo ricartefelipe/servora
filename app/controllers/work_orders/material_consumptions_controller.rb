@@ -5,6 +5,8 @@ module WorkOrders
   # or directly from a warehouse the member may operate — for technicians,
   # only the stock in their custody.
   class MaterialConsumptionsController < TenantController
+    requires_module :inventory
+
     include WorkOrderMaterials
 
     def create

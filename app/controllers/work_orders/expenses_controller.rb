@@ -2,6 +2,8 @@
 
 module WorkOrders
   class ExpensesController < TenantController
+    requires_module :finance
+
     def create
       work_order = policy_scope(tenant_relation(WorkOrder)).includes(:assignments).find(params.expect(:work_order_id))
       authorize work_order, :record_expense?

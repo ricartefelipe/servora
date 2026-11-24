@@ -2,6 +2,8 @@
 
 # Inventory ledger: every movement with the balance it produced.
 class StockMovementsController < TenantController
+  requires_module :inventory
+
   def index
     authorize StockMovement
     @warehouses = policy_scope(tenant_relation(Warehouse)).alphabetical

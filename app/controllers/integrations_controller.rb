@@ -4,6 +4,8 @@
 # provider notification token. Secrets are rendered once, right after
 # creation, and never stored in plain text or flash messages.
 class IntegrationsController < TenantController
+  requires_module :api
+
   before_action { authorize :integration, :show? }
 
   def show

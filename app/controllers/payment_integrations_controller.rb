@@ -3,6 +3,8 @@
 # Payment provider settings. The stored API key is never sent back to the
 # browser; leaving the field blank keeps it.
 class PaymentIntegrationsController < TenantController
+  requires_module :finance
+
   before_action :load_integration
 
   def edit; end
