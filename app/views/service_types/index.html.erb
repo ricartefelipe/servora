@@ -1,5 +1,5 @@
 <% content_for :title, "Tipos de serviço" %>
-<%= page_header("Tipos de serviço", subtitle: "Cada tipo define o checklist exigido para concluir a ordem.") do %>
+<%= page_header("Tipos de serviço", eyebrow: "Cadastros · Tipos de serviço", subtitle: "Cada tipo define o checklist exigido para concluir a ordem.") do %>
   <%= link_to new_service_type_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo tipo<% end %>
 <% end %>
 <% if @service_types.empty? %>
@@ -7,14 +7,14 @@
 <% else %>
   <div class="grid gap-4 md:grid-cols-2">
     <% @service_types.each do |service_type| %>
-      <article class="sv-card p-5 <%= 'opacity-60' unless service_type.active? %>">
+      <article class="sv-card p-5">
         <div class="flex items-start justify-between gap-3">
-          <h2 class="font-semibold text-ink-900"><%= service_type.name %></h2>
+          <h2 class="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink-950"><%= service_type.name %><% unless service_type.active? %><%= badge("Inativo") %><% end %></h2>
           <%= link_to "Editar", edit_service_type_path(service_type), class: "sv-btn-ghost sv-btn-sm" %>
         </div>
         <ul class="mt-3 space-y-1 text-sm text-ink-700" role="list">
           <% service_type.checklist_items.each do |item| %>
-            <li class="flex items-center gap-2"><%= icon(:check, size: 14, css: "text-ink-400") %><%= item.label %><% if item.required %><span class="text-xs text-rose-600">obrigatório</span><% end %></li>
+            <li class="flex items-center gap-2"><%= icon(:check, size: 14, css: "text-ink-500") %><%= item.label %><% if item.required %><span class="text-xs font-medium text-ink-500">· obrigatório</span><% end %></li>
           <% end %>
         </ul>
       </article>

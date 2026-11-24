@@ -1,9 +1,9 @@
 <% content_for :title, "Abrir chamado" %>
 <% values = @request_values || {} %>
-<h1 class="text-2xl font-bold tracking-tight text-ink-950">Abrir chamado</h1>
-<p class="mb-6 text-sm text-ink-600">Conte o que está acontecendo. Nossa equipe analisa e agenda o atendimento.</p>
+<h1 class="sv-display text-display-md text-ink-950">Abrir chamado</h1>
+<p class="mb-6 mt-1 text-sm text-ink-600">Conte o que está acontecendo. Nossa equipe analisa e agenda o atendimento.</p>
 
-<%= form_with url: portal_work_orders_path, scope: :request, class: "sv-card max-w-2xl space-y-5 p-6" do |f| %>
+<%= form_with url: portal_work_orders_path, scope: :request, class: "sv-card space-y-5 p-5 sm:p-6" do |f| %>
   <div><%= f.label :title, "Resumo", class: "sv-label" %><%= f.text_field :title, value: values[:title], maxlength: 160, required: true, class: "sv-input", placeholder: "Ex.: ar-condicionado da recepção não gela" %></div>
   <div><%= f.label :description, "Detalhes", class: "sv-label" %><%= f.text_area :description, value: values[:description], rows: 5, maxlength: 5000, required: true, class: "sv-input", placeholder: "Desde quando, ruídos, mensagens no painel, horários de acesso…" %></div>
   <div class="grid gap-5 sm:grid-cols-2">
@@ -12,11 +12,14 @@
   </div>
   <fieldset>
     <legend class="sv-label">Urgência</legend>
-    <div class="flex flex-wrap gap-4 text-sm text-ink-700">
+    <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-800">
       <% Portal::OpenRequest::URGENCIES.each do |value, label| %>
-        <label class="flex items-center gap-2"><%= f.radio_button :urgency, value, checked: (values[:urgency] || "normal") == value, class: "text-brand-600" %> <%= label %></label>
+        <label class="flex min-h-11 items-center gap-2"><%= f.radio_button :urgency, value, checked: (values[:urgency] || "normal") == value, class: "size-4" %> <%= label %></label>
       <% end %>
     </div>
   </fieldset>
-  <div class="flex justify-end"><%= f.button "Enviar chamado", type: "submit", class: "sv-btn-primary", data: { turbo_submits_with: "Enviando…" } %></div>
+  <div class="-mx-5 -mb-5 flex justify-end gap-2 rounded-b-[var(--radius-card)] border-t border-ink-150 bg-ink-25 px-5 py-4 sm:-mx-6 sm:-mb-6 sm:px-6">
+    <%= link_to "Cancelar", portal_work_orders_path, class: "sv-btn-secondary h-11 px-4 text-sm" %>
+    <%= f.button "Enviar chamado", type: "submit", class: "sv-btn-primary h-11 px-4 text-sm", data: { turbo_submits_with: "Enviando…" } %>
+  </div>
 <% end %>

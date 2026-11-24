@@ -1,32 +1,45 @@
 <% content_for :title, "Contratos" %>
-<%= page_header("Contratos", subtitle: "Contratos de manutenção com termos versionados, cobertura e planos preventivos.") do %>
+<%= page_header("Contratos", eyebrow: "Operação · Contratos", subtitle: "Contratos de manutenção com termos versionados, cobertura e planos preventivos.") do %>
   <% if policy(Contract).create? %>
     <%= link_to new_contract_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo contrato<% end %>
   <% end %>
 <% end %>
 
-<nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar por situação">
-  <%= link_to "Todos", contracts_path, class: "sv-btn-sm #{@status ? 'sv-btn-secondary' : 'sv-btn-primary'}", aria: { current: (@status ? nil : "page") } %>
-  <% Contract::STATUSES.each do |value, label| %>
-    <%= link_to label, contracts_path(situacao: value), class: "sv-btn-sm #{@status == value ? 'sv-btn-primary' : 'sv-btn-secondary'}",
-          aria: { current: (@status == value ? "page" : nil) } %>
-  <% end %>
-</nav>
+<%= render "shared/filter_chips", label: "Filtrar por situação", items: [
+      ["Todos", contracts_path, @status.nil?, nil],
+      *Contract::STATUSES.map { |value, text| [text, contracts_path(situacao: value), @status == value, nil] }] %>
 
 <section class="sv-card overflow-hidden" aria-label="Contratos">
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhum contrato", description: "Cadastre um contrato para organizar a cobertura e as manutenções preventivas do cliente.", icon_name: :preventive) %>
   <% else %>
-    <div class="relative overflow-x-auto">
+    <ul class="divide-y divide-ink-150 sm:hidden" role="list">
+      <% @pagination.records.each do |contract| %>
+        <li>
+          <%= link_to contract_path(contract), class: "flex items-start gap-3 px-4 py-3 hover:bg-ink-25" do %>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold text-ink-950"><%= contract.title %></span>
+              <span class="block whitespace-nowrap font-mono text-xs text-ink-600"><%= contract.number %></span>
+              <span class="block truncate text-xs text-ink-500"><%= contract.customer.display_name %> · <%= date(contract.starts_on) %> — <%= contract.ends_on ? date(contract.ends_on) : "indeterminado" %></span>
+            </span>
+            <span class="flex shrink-0 flex-col items-end gap-1">
+              <%= render "contracts/status_badge", contract: %>
+              <span class="sv-num whitespace-nowrap text-sm text-ink-950"><%= money(contract.monthly_fee) %></span>
+            </span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <div class="relative hidden overflow-x-auto sm:block">
       <table class="sv-table">
         <thead><tr><th scope="col">Contrato</th><th scope="col">Cliente</th><th scope="col">Vigência</th><th scope="col" class="text-right">Mensalidade</th><th scope="col">Situação</th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |contract| %>
             <tr>
-              <td><%= link_to contract.number, contract_path(contract), class: "sv-link font-mono text-xs" %><span class="block text-ink-700"><%= contract.title %></span></td>
+              <td><%= link_to contract.number, contract_path(contract), class: "sv-link font-mono text-xs" %><span class="block font-medium text-ink-950"><%= contract.title %></span></td>
               <td><%= contract.customer.display_name %></td>
-              <td class="whitespace-nowrap"><%= date(contract.starts_on) %> — <%= contract.ends_on ? date(contract.ends_on) : "indeterminado" %></td>
-              <td class="sv-num text-right"><%= money(contract.monthly_fee) %></td>
+              <td class="whitespace-nowrap font-mono text-xs text-ink-600"><%= date(contract.starts_on) %> — <%= contract.ends_on ? date(contract.ends_on) : "indeterminado" %></td>
+              <td class="sv-num whitespace-nowrap text-right text-ink-950"><%= money(contract.monthly_fee) %></td>
               <td><%= render "contracts/status_badge", contract: %></td>
             </tr>
           <% end %>

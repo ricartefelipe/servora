@@ -1,3 +1,1 @@
-<% tones = { "open" => :info, "awaiting_approval" => :warning, "approved" => :indigo, "scheduled" => :indigo, "in_progress" => :ember,
-             "waiting_parts" => :warning, "waiting_customer" => :warning, "completed" => :success, "reopened" => :danger, "canceled" => :neutral } %>
-<%= badge(work_order.status_label, tone: tones.fetch(work_order.status)) %>
+<%= badge(work_order.status_label, tone: work_order_status_tone(work_order.status)) %>

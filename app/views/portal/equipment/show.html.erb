@@ -1,16 +1,16 @@
 <% content_for :title, @equipment.title %>
-<h1 class="text-2xl font-bold tracking-tight text-ink-950"><%= @equipment.title %></h1>
-<p class="mb-6 text-sm text-ink-600"><%= @equipment.service_location.name %><% if @equipment.serial_number %> · série <%= @equipment.serial_number %><% end %> · <%= @equipment.status_label %></p>
+<h1 class="sv-display text-display-md text-ink-950"><%= @equipment.title %></h1>
+<p class="mb-6 mt-1 text-sm text-ink-600"><%= @equipment.service_location.name %><% if @equipment.serial_number %> · série <%= @equipment.serial_number %><% end %> · <%= @equipment.status_label %></p>
 <section class="sv-card overflow-hidden" aria-labelledby="historico-title">
-  <h2 id="historico-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Histórico de atendimentos</h2>
+  <h2 id="historico-title" class="border-b border-ink-150 px-5 py-3.5 text-[15px] font-semibold text-ink-950">Histórico de atendimentos</h2>
   <% if @history.empty? %>
     <p class="px-5 py-6 text-sm text-ink-500">Nenhum atendimento registrado para este equipamento.</p>
   <% else %>
-    <ul class="divide-y divide-ink-100" role="list">
+    <ul class="divide-y divide-ink-150" role="list">
       <% @history.each do |work_order| %>
-        <li><%= link_to portal_work_order_path(work_order), class: "flex flex-wrap items-center gap-3 px-5 py-3 text-sm hover:bg-ink-50" do %>
-          <span class="w-24 text-ink-500"><%= l(work_order.requested_at.to_date) %></span>
-          <span class="min-w-0 flex-1 text-ink-900"><%= work_order.title %></span>
+        <li><%= link_to portal_work_order_path(work_order), class: "flex flex-wrap items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-ink-25" do %>
+          <span class="sv-num w-24 text-ink-500"><%= l(work_order.requested_at.to_date) %></span>
+          <span class="min-w-0 flex-1 font-medium text-ink-950"><%= work_order.title %></span>
           <%= render "portal/work_orders/status", work_order: %>
         <% end %></li>
       <% end %>

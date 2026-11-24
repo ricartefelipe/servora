@@ -1,7 +1,7 @@
 <% content_for :title, "Pagamentos" %>
-<%= page_header("Integração de pagamentos", subtitle: "Provedor usado para emitir cobranças Pix e boleto. Dados de cartão nunca passam pelo Servora.") %>
+<%= page_header("Integração de pagamentos", eyebrow: "Gestão · Pagamentos", subtitle: "Provedor usado para emitir cobranças Pix e boleto. Dados de cartão nunca passam pelo Servora.", size: :md) %>
 
-<section class="sv-card max-w-2xl p-6">
+<section class="sv-card max-w-3xl p-6">
   <%= form_with model: @integration, url: payment_integration_path, method: :patch, class: "space-y-5" do |f| %>
     <%= f.error_summary %>
     <%= f.select_field :provider, PaymentCharge::PROVIDERS.map { |value, label| [label, value] }, label: "Provedor",
@@ -9,6 +9,6 @@
     <%= f.select_field :default_billing_type, PaymentCharge::BILLING_TYPES.map { |value, label| [label, value] }, label: "Forma de cobrança padrão" %>
     <%= f.field :api_key, label: "Chave de API do Asaas (sandbox)", as: :password_field, value: nil, autocomplete: "off",
           hint: @integration.credential_configured? ? "Chave configurada e armazenada com criptografia. Deixe em branco para mantê-la." : "Necessária apenas para o Asaas." %>
-    <div class="flex justify-end"><%= f.submit_button("Salvar integração") %></div>
+    <%= render "shared/form_footer", f:, submit: "Salvar integração", cancel_url: edit_payment_integration_path %>
   <% end %>
 </section>

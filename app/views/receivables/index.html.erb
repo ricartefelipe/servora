@@ -1,25 +1,48 @@
 <% content_for :title, "Financeiro" %>
-<%= page_header("Contas a receber", subtitle: "Faturamento por ordem de serviço, pagamentos parciais e cobranças. Valores em reais.") %>
+<%= page_header("Contas a receber", eyebrow: "Operação · Financeiro", subtitle: "Faturamento por ordem de serviço, pagamentos parciais e cobranças. Valores em reais.") %>
 
-<div class="mb-6 grid gap-4 sm:grid-cols-3">
-  <%= stat_tile("Em aberto", money(@summary.outstanding), hint: "Saldo a receber de contas não quitadas") %>
-  <%= stat_tile("Vencido", money(@summary.overdue), hint: "Saldo com vencimento anterior a hoje", tone: @summary.overdue.positive? ? :danger : :neutral) %>
-  <%= stat_tile("Recebido no mês", money(@summary.received_this_month), hint: "Pagamentos menos estornos") %>
-</div>
-
-<nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar por situação">
-  <%= link_to "Todas", receivables_path, class: "sv-btn-sm #{@filter ? 'sv-btn-secondary' : 'sv-btn-primary'}", aria: { current: (@filter ? nil : "page") } %>
-  <% Receivable::STATUSES.merge("overdue" => "Vencidas").each do |value, label| %>
-    <%= link_to label, receivables_path(situacao: value), class: "sv-btn-sm #{@filter == value ? 'sv-btn-primary' : 'sv-btn-secondary'}",
-          aria: { current: (@filter == value ? "page" : nil) } %>
+<%# KPI strip: money is always ink. An overdue balance turns its label into a
+    danger badge (tint, icon and text) instead of colouring the amount. %>
+<section class="sv-card mb-6 grid divide-y divide-ink-150 sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="Resumo financeiro">
+  <% [["Em aberto", @summary.outstanding, "Saldo a receber de contas não quitadas", false],
+      ["Vencido", @summary.overdue, "Saldo com vencimento anterior a hoje", @summary.overdue.positive?],
+      ["Recebido no mês", @summary.received_this_month, "Pagamentos menos estornos", false]].each do |label, amount, hint, overdue| %>
+    <div class="p-5">
+      <p class="flex h-5 items-center text-xs font-medium text-ink-600"><%= overdue ? badge(label, tone: :danger) : label %></p>
+      <p class="sv-num mt-2 text-[28px] font-semibold leading-none tracking-tight text-ink-950"><%= money(amount) %></p>
+      <p class="mt-2 text-xs text-ink-500"><%= hint %></p>
+    </div>
   <% end %>
-</nav>
+</section>
+
+<% filter_items = [["Todas", receivables_path, @filter.nil?]] +
+     Receivable::STATUSES.merge("overdue" => "Vencidas").map { |value, label| [label, receivables_path(situacao: value), @filter == value] } %>
+<%= render "shared/filter_chips", items: filter_items, label: "Filtrar por situação" %>
 
 <section class="sv-card overflow-hidden" aria-label="Contas a receber">
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhuma conta", description: "Fature uma ordem de serviço pelo painel financeiro da ordem.", icon_name: :finance) %>
   <% else %>
-    <div class="relative overflow-x-auto">
+    <%# Below sm the table becomes a stacked list with the same data. %>
+    <ul class="divide-y divide-ink-150 sm:hidden" role="list" aria-label="Contas">
+      <% @pagination.records.each do |receivable| %>
+        <li>
+          <%= link_to receivable_path(receivable), class: "flex items-start gap-3 px-4 py-3.5 transition-colors duration-150 hover:bg-ink-25" do %>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-ink-950"><%= receivable.customer.display_name %></p>
+              <p class="truncate font-mono text-xs text-ink-600"><%= receivable.number %> · <%= receivable.work_order.number %></p>
+              <p class="mt-1 text-xs text-ink-500">Vence em <span class="font-mono text-ink-700"><%= date(receivable.due_on) %></span></p>
+              <p class="sv-num mt-1 text-xs text-ink-600">
+                Valor <%= money(receivable.amount - receivable.discount_amount) %> ·
+                Saldo <span class="font-semibold text-ink-950"><%= receivable.canceled? ? "—" : money(receivable.balance) %></span>
+              </p>
+            </div>
+            <div class="flex shrink-0 flex-col items-end gap-1"><%= render "receivables/status_badge", receivable: %></div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <div class="relative hidden overflow-x-auto sm:block">
       <table class="sv-table">
         <thead>
           <tr>
@@ -27,18 +50,18 @@
             <th scope="col" class="text-right">Valor</th><th scope="col" class="text-right">Saldo</th><th scope="col">Situação</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |receivable| %>
             <tr>
               <td>
                 <%= link_to receivable.number, receivable_path(receivable), class: "sv-link font-mono text-xs" %>
-                <span class="block text-xs text-ink-500"><%= receivable.work_order.number %></span>
+                <span class="block font-mono text-xs text-ink-500"><%= receivable.work_order.number %></span>
               </td>
-              <td><%= receivable.customer.display_name %></td>
-              <td class="whitespace-nowrap"><%= date(receivable.due_on) %></td>
-              <td class="sv-num text-right"><%= money(receivable.amount - receivable.discount_amount) %></td>
-              <td class="sv-num text-right font-semibold"><%= receivable.canceled? ? "—" : money(receivable.balance) %></td>
-              <td><%= render "receivables/status_badge", receivable: %></td>
+              <td class="font-medium text-ink-950"><%= receivable.customer.display_name %></td>
+              <td class="whitespace-nowrap font-mono text-xs text-ink-600"><%= date(receivable.due_on) %></td>
+              <td class="sv-num whitespace-nowrap text-right text-ink-950"><%= money(receivable.amount - receivable.discount_amount) %></td>
+              <td class="sv-num whitespace-nowrap text-right font-semibold text-ink-950"><%= receivable.canceled? ? "—" : money(receivable.balance) %></td>
+              <td><div class="flex flex-wrap items-center gap-1.5"><%= render "receivables/status_badge", receivable: %></div></td>
             </tr>
           <% end %>
         </tbody>

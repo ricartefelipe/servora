@@ -1,27 +1,27 @@
 <% content_for :title, @plan.title %>
 <% pp = policy(@plan) %>
-<%= page_header(@plan.title, eyebrow: "#{@contract.number} · plano preventivo", subtitle: "#{@plan.frequency.label} · #{@plan.mode_label}") do %>
-  <% unless @plan.active? %><%= badge("Inativo") %><% end %>
+<%= page_header(@plan.title, eyebrow: "#{@contract.number} · plano preventivo", subtitle: "#{@plan.frequency.label} · #{@plan.mode_label}", size: :md,
+      meta: (badge("Inativo") unless @plan.active?)) do %>
   <% if pp.update? %><%= link_to "Editar", edit_contract_plan_path(@contract, @plan), class: "sv-btn-secondary" %><% end %>
   <% if pp.generate? %><%= button_to "Gerar ocorrências devidas", generate_contract_plan_path(@contract, @plan), class: "sv-btn-primary" %><% end %>
 <% end %>
 
 <div class="grid gap-6 lg:grid-cols-3">
   <section class="sv-card overflow-hidden lg:col-span-2" aria-labelledby="ocorrencias-title">
-    <h2 id="ocorrencias-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Ocorrências geradas</h2>
+    <h2 id="ocorrencias-title" class="border-b border-ink-150 px-5 py-4 text-[15px] font-semibold text-ink-950">Ocorrências geradas</h2>
     <% if @occurrences.empty? %>
       <p class="px-5 py-6 text-sm text-ink-500">Nenhuma ocorrência gerada. A geração diária cria as ordens quando a janela de antecedência abre.</p>
     <% else %>
-      <ul class="divide-y divide-ink-100" role="list">
+      <ul class="divide-y divide-ink-150" role="list">
         <% @occurrences.each do |occurrence| %>
           <li class="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
-            <span class="sv-num w-12 font-semibold text-ink-900">nº <%= occurrence.sequence %></span>
-            <span class="text-ink-700">Vence <%= date(occurrence.due_on) %></span>
+            <span class="sv-num w-12 font-semibold text-ink-950">nº <%= occurrence.sequence %></span>
+            <span class="text-ink-700">Vence <span class="font-mono text-xs text-ink-600"><%= date(occurrence.due_on) %></span></span>
             <span class="flex-1"></span>
             <% if policy(occurrence.work_order).show? %>
               <%= link_to occurrence.work_order.number, work_order_path(occurrence.work_order), class: "sv-link font-mono text-xs" %>
             <% end %>
-            <%= badge(occurrence.work_order.status_label) %>
+            <%= render "work_orders/status_badge", work_order: occurrence.work_order %>
           </li>
         <% end %>
       </ul>
@@ -30,13 +30,13 @@
 
   <aside class="space-y-6">
     <section class="sv-card p-5 text-sm" aria-labelledby="proximas-title">
-      <h2 id="proximas-title" class="mb-3 font-semibold text-ink-900">Próximas datas</h2>
+      <h2 id="proximas-title" class="mb-3 text-[15px] font-semibold text-ink-950">Próximas datas</h2>
       <% if @upcoming.empty? %>
         <p class="text-ink-500">A próxima data é calculada a partir da conclusão da ocorrência anterior.</p>
       <% else %>
         <ol class="space-y-1" role="list">
           <% @upcoming.each do |sequence, due_on| %>
-            <li class="flex justify-between"><span class="text-ink-500">nº <%= sequence %></span><span class="sv-num text-ink-900"><%= l(due_on, format: :long) %></span></li>
+            <li class="flex justify-between"><span class="text-ink-500">nº <%= sequence %></span><span class="sv-num text-ink-950"><%= l(due_on, format: :long) %></span></li>
           <% end %>
         </ol>
       <% end %>

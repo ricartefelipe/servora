@@ -8,5 +8,5 @@
   <%= f.field :unit_cost, label: "Custo unitário da sobra (R$)", as: :number_field, step: "0.0001", min: 0,
         hint: "Somente para entradas; em branco usa o custo médio atual" %>
   <%= f.text_area_field :reason, label: "Motivo", rows: 2, required: true, hint: "Registrado na auditoria com o seu nome" %>
-  <div class="flex justify-end"><%= f.submit_button("Registrar ajuste") %></div>
+  <%= render "shared/form_footer", f:, submit: "Registrar ajuste", cancel_url: stock_balances_path, within: :modal %>
 <% end %>

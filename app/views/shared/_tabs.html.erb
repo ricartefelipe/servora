@@ -1,11 +1,12 @@
-<%# tabs: [[key, label, count_or_nil], ...] — panels must use id "painel-<key>". %>
-<div role="tablist" aria-label="<%= label %>" class="mb-4 flex gap-1 overflow-x-auto border-b border-ink-200">
+<%# tabs: [[key, label, count_or_nil], ...] — panels must use id "painel-<key>".
+    Underline tabs: the selected one is ink-950 at 600 with the 2px ruby marker and aria-selected. %>
+<div role="tablist" aria-label="<%= label %>" class="mb-5 flex gap-6 overflow-x-auto border-b border-ink-200">
   <% tabs.each do |key, title, count| %>
     <button type="button" role="tab" id="aba-<%= key %>" aria-controls="painel-<%= key %>" data-key="<%= key %>"
             data-tabs-target="tab" data-action="click->tabs#activate keydown->tabs#keydown"
-            class="-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-ink-500 hover:text-ink-800 aria-selected:border-brand-600 aria-selected:text-brand-700">
+            class="-mb-px flex h-10 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-0.5 text-[13px] font-medium text-ink-500 transition-colors duration-150 hover:text-ink-800 aria-selected:border-brand-600 aria-selected:font-semibold aria-selected:text-ink-950">
       <%= title %>
-      <% if count %><span class="sv-num rounded-full bg-ink-100 px-2 text-xs text-ink-600"><%= count %></span><% end %>
+      <% if count %><span class="sv-num grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ink-950/[0.06] px-1.5 font-mono text-[11px] font-medium text-ink-600"><%= count %></span><% end %>
     </button>
   <% end %>
 </div>

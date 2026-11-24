@@ -1,5 +1,5 @@
 <% content_for :title, "Clientes" %>
-<%= page_header("Clientes", subtitle: "Pessoas e empresas atendidas, seus locais e equipamentos.") do %>
+<%= page_header("Clientes", eyebrow: "Cadastros · Clientes", subtitle: "Pessoas e empresas atendidas, seus locais e equipamentos.") do %>
   <% if policy(Customer).create? %>
     <%= link_to new_customer_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo cliente<% end %>
   <% end %>
@@ -9,7 +9,7 @@
   <div class="min-w-64 flex-1">
     <%= f.label :q, "Buscar", class: "sv-label" %>
     <div class="relative">
-      <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-400"><%= icon(:search, size: 18) %></span>
+      <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-500" aria-hidden="true"><%= icon(:search, size: 18) %></span>
       <%= f.search_field :q, value: params[:q], placeholder: "Nome, e-mail, CPF ou CNPJ", class: "sv-input pl-10", autocomplete: "off" %>
     </div>
   </div>
@@ -24,30 +24,35 @@
   <section class="sv-card overflow-hidden">
     <% if @pagination.records.empty? %>
       <% if params[:q].present? %>
-        <%= empty_state("Nenhum cliente encontrado", description: "Revise o termo buscado ou o filtro de situação.", icon_name: :search) %>
+        <%= empty_state("Nenhum cliente encontrado", description: "Revise o termo buscado ou o filtro de situação.", icon_name: :search) do %>
+          <%= link_to "Limpar filtros", customers_path, class: "sv-btn-ghost" %>
+        <% end %>
       <% else %>
         <%= empty_state("Cadastre seu primeiro cliente", description: "Clientes concentram locais de atendimento, contatos e equipamentos.", icon_name: :customers) do %>
-          <% if policy(Customer).create? %><%= link_to "Novo cliente", new_customer_path, class: "sv-btn-primary" %><% end %>
+          <% if policy(Customer).create? %><%= link_to "Novo cliente", new_customer_path, class: "sv-btn-secondary" %><% end %>
         <% end %>
       <% end %>
     <% else %>
-      <ul class="divide-y divide-ink-100" role="list">
+      <ul class="divide-y divide-ink-150" role="list">
         <% @pagination.records.each do |customer| %>
+          <% locations_count = pluralize(@counts[:locations][customer.id] || 0, "local", plural: "locais") %>
+          <% equipment_count = pluralize(@counts[:equipment][customer.id] || 0, "equipamento", plural: "equipamentos") %>
           <li>
-            <%= link_to customer_path(customer), class: "flex flex-wrap items-center gap-4 px-5 py-4 transition hover:bg-ink-50/70" do %>
+            <%= link_to customer_path(customer), class: "flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5 transition-colors duration-150 hover:bg-ink-25" do %>
               <%= avatar(customer.display_name) %>
               <div class="min-w-0 flex-1">
-                <p class="truncate font-semibold text-ink-900"><%= customer.display_name %></p>
-                <p class="truncate text-sm text-ink-500">
+                <p class="truncate text-sm font-semibold text-ink-950"><%= customer.display_name %></p>
+                <p class="truncate text-xs text-ink-500">
                   <%= [customer.kind_label, (format_document(customer.document) if customer.document), customer.email].compact.join(" · ") %>
                 </p>
+                <p class="sv-num truncate text-xs text-ink-500 sm:hidden"><%= [locations_count, equipment_count].join(" · ") %></p>
               </div>
-              <div class="flex items-center gap-2 text-xs text-ink-500">
-                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1 text-ink-600"><%= pluralize(@counts[:locations][customer.id] || 0, "local", plural: "locais") %></span>
-                <span class="sv-num rounded-lg bg-ink-100 px-2 py-1 text-ink-600"><%= pluralize(@counts[:equipment][customer.id] || 0, "equipamento", plural: "equipamentos") %></span>
+              <div class="flex shrink-0 items-center gap-2 text-xs text-ink-500">
+                <span class="sv-num hidden rounded-md bg-ink-950/[0.06] px-1.5 py-0.5 text-ink-600 sm:inline"><%= locations_count %></span>
+                <span class="sv-num hidden rounded-md bg-ink-950/[0.06] px-1.5 py-0.5 text-ink-600 sm:inline"><%= equipment_count %></span>
                 <% if customer.archived? %><%= badge("Arquivado") %><% end %>
               </div>
-              <%= icon(:chevron_right, css: "text-ink-300") %>
+              <%= icon(:chevron_right, css: "shrink-0 text-ink-300") %>
             <% end %>
           </li>
         <% end %>

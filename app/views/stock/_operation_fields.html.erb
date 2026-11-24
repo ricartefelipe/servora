@@ -1,8 +1,9 @@
 <%# Fields shared by every stock operation form. %>
 <%= f.hidden_field :operation_key %>
 <% if items.empty? %>
-  <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
-    Nenhuma peça controla estoque. Marque “Controla estoque” no cadastro da peça no catálogo.
+  <div class="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/20" role="status">
+    <%= icon(:alert, size: 16, css: "mt-0.5 text-amber-700") %>
+    <span>Nenhuma peça controla estoque. Marque “Controla estoque” no cadastro da peça no catálogo.</span>
   </div>
 <% end %>
 <div class="grid gap-5 sm:grid-cols-2">

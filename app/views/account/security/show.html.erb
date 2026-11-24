@@ -1,14 +1,12 @@
 <% content_for :title, "Segurança da conta" %>
 <% content_for :container_width, "max-w-2xl" %>
-<div class="mb-6 flex items-center justify-between gap-4">
-  <%= render "shared/auth_heading", title: "Segurança da conta", subtitle: current_user.email %>
-</div>
+<%= page_header("Segurança da conta", eyebrow: "Conta · Segurança", subtitle: current_user.email) %>
 
 <section class="sv-card mb-6 p-6" aria-labelledby="mfa-title">
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
-      <h2 id="mfa-title" class="font-semibold text-ink-900">Verificação em duas etapas</h2>
-      <p class="mt-1 text-sm text-ink-600">Código temporário de um aplicativo autenticador exigido a cada login.</p>
+      <h2 id="mfa-title" class="text-[15px] font-semibold text-ink-950">Verificação em duas etapas</h2>
+      <p class="mt-1 text-[13px] text-ink-600">Código temporário de um aplicativo autenticador exigido a cada login.</p>
     </div>
     <%= current_user.mfa_enabled? ? badge("Ativa", tone: :success) : badge("Inativa", tone: :warning) %>
   </div>
@@ -21,7 +19,7 @@
             <%= f.label :current_password, "Confirme com sua senha", class: "sv-label" %>
             <%= f.password_field :current_password, class: "sv-input", required: true, autocomplete: "current-password" %>
           </div>
-          <%= f.button "Desativar", type: "submit", class: "sv-btn-danger" %>
+          <%= f.button type: "submit", class: "sv-btn-danger" do %><%= icon(:alert, size: 16) %> Desativar<% end %>
         <% end %>
       </details>
     <% else %>
@@ -33,25 +31,26 @@
 <section class="sv-card p-6" aria-labelledby="sessions-title">
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 id="sessions-title" class="font-semibold text-ink-900">Sessões ativas</h2>
-      <p class="mt-1 text-sm text-ink-600">Encerre acessos que você não reconhece.</p>
+      <h2 id="sessions-title" class="text-[15px] font-semibold text-ink-950">Sessões ativas</h2>
+      <p class="mt-1 text-[13px] text-ink-600">Encerre acessos que você não reconhece.</p>
     </div>
     <% if @sessions.size > 1 %>
-      <%= button_to "Encerrar as demais", others_account_sessions_path, method: :delete, class: "sv-btn-secondary sv-btn-sm" %>
+      <%= button_to others_account_sessions_path, method: :delete, class: "sv-btn-danger sv-btn-sm" do %><%= icon(:logout, size: 14) %> Encerrar as demais<% end %>
     <% end %>
   </div>
-  <ul class="divide-y divide-ink-100" role="list">
+  <ul class="divide-y divide-ink-150" role="list">
     <% @sessions.each do |user_session| %>
       <li class="flex flex-wrap items-center gap-3 py-3">
-        <%= icon(:device, css: "text-ink-400") %>
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-ink-800"><%= user_session.user_agent.presence || "Navegador desconhecido" %></p>
-          <p class="text-xs text-ink-500">IP <%= user_session.ip_address %> · último acesso <%= l(user_session.last_seen_at, format: :short) %></p>
+        <% device_label, device_icon = session_device(user_session.user_agent) %>
+        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700" aria-hidden="true"><%= icon(device_icon, size: 16) %></span>
+        <div class="min-w-0 flex-1 [contain:inline-size]">
+          <p class="truncate text-[13px] font-medium text-ink-950" title="<%= user_session.user_agent %>"><%= device_label %></p>
+          <p class="text-xs text-ink-500">IP <span class="font-mono"><%= user_session.ip_address %></span> · <span class="whitespace-nowrap">último acesso <%= l(user_session.last_seen_at, format: :short) %></span></p>
         </div>
         <% if user_session.id == @current_session_id %>
-          <%= badge("Esta sessão", tone: :indigo, dot: false) %>
+          <%= badge("Esta sessão", dot: false) %>
         <% else %>
-          <%= button_to "Encerrar", account_session_path(user_session), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700" %>
+          <%= button_to account_session_path(user_session), method: :delete, class: "sv-btn-ghost sv-btn-sm" do %><%= icon(:logout, size: 14) %> Encerrar<% end %>
         <% end %>
       </li>
     <% end %>

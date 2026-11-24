@@ -5,6 +5,29 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.4.0] - 2026-11-24
+
+Interface interna redesenhada na direção "Precisão".
+
+### Alterado
+
+- Interface interna redesenhada na direção "Precisão": superfícies de porcelana quente com texto ameixa, menu
+  lateral claro com marcador rubi no item ativo, fio rubi no topo, trilha de navegação na barra superior,
+  títulos com faceta e tipografia Inter e JetBrains Mono servidas pela própria aplicação.
+- Painel com capa rubi (saudação, visitas do dia, técnicos em campo e ordens em aberto), lista "Precisa de
+  atenção" ordenada por gravidade com atalhos para as listas filtradas e próximas visitas; capa adaptada ao perfil.
+- Marca e ícone passam a ser a gema facetada.
+- Área do técnico com layout próprio para celular, cartão rubi da próxima visita e navegação inferior.
+- Portal do cliente com cabeçalho, abas e acompanhamento do chamado por etapas.
+- Listas, filtros, formulários e tabelas padronizados; tabelas viram cartões empilhados no celular.
+- Papéis de cor: o rubi marca identidade, ação e "agora"; perigo usa rosa com ícone; valores em dinheiro sempre
+  em tinta neutra; estados das ordens com um único mapa de tons em toda a aplicação.
+
+### Corrigido
+
+- Técnicos passam a ver no painel apenas as próprias visitas.
+- Contraste AA em bordas de campos, registros arquivados, marcadores da agenda e rótulos do menu.
+
 ## [1.3.0] - 2026-11-24
 
 Acesso pela raiz da aplicação e nova identidade visual.
@@ -150,7 +173,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.3.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.4.0...develop
+[1.4.0]: https://github.com/ricartefelipe/servora/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ricartefelipe/servora/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ricartefelipe/servora/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ricartefelipe/servora/compare/v1.0.0...v1.1.0

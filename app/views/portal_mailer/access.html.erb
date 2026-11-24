@@ -1,9 +1,9 @@
-<h1 style="font-size:20px;margin:0 0 16px;color:#121215;">Olá, <%= @contact.name %></h1>
+<h1 style="font-size:20px;margin:0 0 16px;color:#1a1416;">Olá, <%= @contact.name %></h1>
 <% if @quote %>
   <p style="margin:0 0 12px;"><%= @organization.name %> enviou a proposta <strong><%= @quote.number %> — <%= @quote.title %></strong> para sua análise.</p>
 <% else %>
   <p style="margin:0 0 12px;">Você recebeu acesso ao portal de clientes de <%= @organization.name %>.</p>
 <% end %>
 <p style="margin:0 0 24px;">O link é pessoal, pode ser usado uma única vez e vale até <%= l(@grant.expires_at, format: :long) %>.</p>
-<p style="margin:0 0 24px;"><a href="<%= @url %>" style="display:inline-block;background:#c8102e;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;">Acessar o portal</a></p>
-<p style="margin:0;color:#56565f;font-size:13px;">Não encaminhe este e-mail. Se não esperava esta mensagem, ignore-a.</p>
+<p style="margin:0 0 24px;"><a href="<%= @url %>" style="display:inline-block;background:#c8102e;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Acessar o portal</a></p>
+<p style="margin:0;color:#5e5457;font-size:13px;">Não encaminhe este e-mail. Se não esperava esta mensagem, ignore-a.</p>

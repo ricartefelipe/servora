@@ -9,5 +9,6 @@
   <% if warehouse.persisted? %>
     <%= f.toggle_field :active, label: "Depósito ativo", hint: "Depósitos inativos não recebem novas entradas nem transferências." %>
   <% end %>
-  <div class="flex justify-end"><%= f.submit_button(warehouse.persisted? ? "Salvar depósito" : "Cadastrar depósito") %></div>
+  <%= render "shared/form_footer", f:, submit: (warehouse.persisted? ? "Salvar depósito" : "Cadastrar depósito"),
+        cancel_url: warehouses_path, within: :modal %>
 <% end %>

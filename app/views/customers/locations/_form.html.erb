@@ -14,7 +14,6 @@
           include_blank: "Selecione", wrapper: { class: "sm:col-span-2" } %>
   </div>
   <%= f.text_area_field :access_instructions, label: "Instruções de acesso", rows: 2 %>
-  <div class="flex justify-end gap-3">
-    <%= f.submit_button(location.persisted? ? "Salvar local" : "Adicionar local") %>
-  </div>
+  <%= render "shared/form_footer", f:, submit: (location.persisted? ? "Salvar local" : "Adicionar local"),
+        cancel_url: customer_path(customer), within: :modal %>
 <% end %>

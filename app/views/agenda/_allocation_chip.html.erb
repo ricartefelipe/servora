@@ -1,8 +1,17 @@
 <% if allocation.kind == "absence" %>
-  <p class="mb-1 rounded-lg bg-ink-100 px-2 py-1 text-xs text-ink-600">Ausência · <%= allocation.reason %></p>
+  <p class="mb-1 rounded-md border-l-[3px] border-ink-300 bg-ink-100 px-2 py-1 text-xs text-ink-600">Ausência · <%= allocation.reason %></p>
 <% else %>
-  <%= link_to work_order_path(allocation.visit.work_order), class: "mb-1 block rounded-lg bg-indigo-50 px-2 py-1 text-xs text-indigo-800 hover:bg-indigo-100" do %>
-    <span class="font-semibold"><%= l(allocation.visit.scheduled_start, format: "%H:%M") %></span> <%= allocation.visit.work_order.number %>
-    <span class="block truncate text-indigo-700"><%= allocation.visit.work_order.customer.display_name %></span>
+  <% visit = allocation.visit %>
+  <% tone = if visit.in_progress?
+              "border-ember-600 bg-ember-50 hover:bg-ember-100"
+            elsif visit.completed?
+              "border-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+            else
+              "border-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+            end %>
+  <% state_icon = visit.in_progress? ? :clock : (visit.completed? ? :check : :calendar) %>
+  <%= link_to work_order_path(visit.work_order), class: "mb-1 block rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors #{tone}" do %>
+    <span class="flex items-center gap-1"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700", label: visit.status_label) %><span class="sv-num font-mono text-[11px] text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %></span> <span class="font-medium"><%= visit.work_order.number %></span></span>
+    <span class="block truncate text-ink-600"><%= visit.work_order.customer.display_name %></span>
   <% end %>
 <% end %>

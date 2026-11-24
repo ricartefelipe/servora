@@ -1,21 +1,21 @@
 <% content_for :title, @work_order.number %>
-<p class="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700"><%= @work_order.number %></p>
-<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-  <h1 class="text-2xl font-bold tracking-tight text-ink-950"><%= @work_order.title %></h1>
+<p class="sv-num text-[13px] font-medium text-ink-500">Chamado <%= @work_order.number %></p>
+<div class="mb-6 mt-1 flex flex-wrap items-start justify-between gap-3">
+  <h1 class="sv-display min-w-0 text-display-md text-ink-950"><%= @work_order.title %></h1>
   <%= render "portal/work_orders/status", work_order: @work_order %>
 </div>
 
 <div class="grid gap-6 md:grid-cols-3">
   <div class="min-w-0 space-y-6 md:col-span-2">
     <section class="sv-card p-5 text-sm" aria-labelledby="pedido-title">
-      <h2 id="pedido-title" class="mb-2 font-semibold text-ink-900">Pedido</h2>
+      <h2 id="pedido-title" class="mb-2 text-[15px] font-semibold text-ink-950">Pedido</h2>
       <p class="whitespace-pre-line text-ink-700"><%= @work_order.problem_description %></p>
       <p class="mt-3 text-xs text-ink-500">Aberto em <%= l(@work_order.requested_at, format: :short) %> · <%= @work_order.service_location.name %></p>
       <% if @work_order.equipment.any? %><p class="mt-1 text-xs text-ink-500">Equipamentos: <%= @work_order.equipment.map(&:title).to_sentence %></p><% end %>
     </section>
 
     <section class="sv-card p-5 text-sm" aria-labelledby="relatorios-title">
-      <h2 id="relatorios-title" class="mb-2 font-semibold text-ink-900">Relatórios de execução</h2>
+      <h2 id="relatorios-title" class="mb-2 text-[15px] font-semibold text-ink-950">Relatórios de execução</h2>
       <% if @reports.empty? %>
         <p class="text-ink-500">O relatório fica disponível quando o atendimento for concluído.</p>
       <% else %>
@@ -31,19 +31,53 @@
     </section>
   </div>
 
-  <aside class="sv-card p-5 text-sm" aria-labelledby="visitas-title">
-    <h2 id="visitas-title" class="mb-2 font-semibold text-ink-900">Visitas</h2>
-    <% if @visits.empty? %>
-      <p class="text-ink-500">Nenhuma visita marcada ainda.</p>
-    <% else %>
-      <ul class="space-y-2" role="list">
-        <% @visits.each do |visit| %>
-          <li>
-            <p class="font-medium text-ink-900"><%= l(visit.scheduled_start, format: :short) %></p>
-            <p class="text-xs text-ink-500"><%= Visits::LABELS.fetch(visit.status) %> · até <%= l(visit.scheduled_end, format: "%H:%M") %></p>
-          </li>
-        <% end %>
-      </ul>
+  <div class="order-first min-w-0 space-y-6 md:order-none">
+    <% steps = ["Em análise", "Aprovação", "Visita agendada", "Em execução", "Concluído"] %>
+    <% current_step = { "open" => 0, "awaiting_approval" => 1, "approved" => 1, "scheduled" => 2, "in_progress" => 3,
+                        "waiting_parts" => 3, "waiting_customer" => 3, "reopened" => 3, "completed" => steps.size }[@work_order.status] %>
+    <% if current_step %>
+      <section class="sv-card p-5 text-sm" aria-labelledby="andamento-title">
+        <h2 id="andamento-title" class="mb-3 text-[15px] font-semibold text-ink-950">Andamento</h2>
+        <div class="relative">
+          <span class="absolute bottom-2 left-[5px] top-2 w-px bg-ink-200" aria-hidden="true"></span>
+          <ol class="relative space-y-3" role="list">
+            <% steps.each_with_index do |step, index| %>
+              <% if index < current_step %>
+                <li class="flex items-center gap-3 text-ink-700">
+                  <span class="size-[11px] shrink-0 rounded-full bg-ink-950 ring-2 ring-white" aria-hidden="true"></span>
+                  <span><%= step %><span class="sr-only"> (etapa concluída)</span></span>
+                </li>
+              <% elsif index == current_step %>
+                <li class="flex items-center gap-3 font-semibold text-ink-950" aria-current="step">
+                  <span class="grid size-[11px] shrink-0 place-items-center bg-white" aria-hidden="true"><span class="sv-facet size-2"></span></span>
+                  <span><%= step %><span class="sr-only"> (etapa atual)</span></span>
+                </li>
+              <% else %>
+                <li class="flex items-center gap-3 text-ink-500">
+                  <span class="size-[11px] shrink-0 rounded-full bg-white ring-1 ring-inset ring-ink-400" aria-hidden="true"></span>
+                  <span><%= step %></span>
+                </li>
+              <% end %>
+            <% end %>
+          </ol>
+        </div>
+      </section>
     <% end %>
-  </aside>
+
+    <aside class="sv-card p-5 text-sm" aria-labelledby="visitas-title">
+      <h2 id="visitas-title" class="mb-2 text-[15px] font-semibold text-ink-950">Visitas</h2>
+      <% if @visits.empty? %>
+        <p class="text-ink-500">Nenhuma visita marcada ainda.</p>
+      <% else %>
+        <ul class="space-y-2" role="list">
+          <% @visits.each do |visit| %>
+            <li>
+              <p class="sv-num font-medium text-ink-950"><%= l(visit.scheduled_start, format: :short) %></p>
+              <p class="text-xs text-ink-500"><%= Visits::LABELS.fetch(visit.status) %> · até <%= l(visit.scheduled_end, format: "%H:%M") %></p>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </aside>
+  </div>
 </div>

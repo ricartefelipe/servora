@@ -6,42 +6,54 @@
 @source inline("col-span-{1..64}");
 
 /*
- * Servora design tokens.
+ * Servora design tokens — "Precisão".
  *
- * brand  - "rubi": ruby red for primary actions, links, selection and focus.
- * ink    - graphite neutrals for text, surfaces and borders.
- * ember  - gold accent reserved for highlights and SLA attention.
- * Status colours are semantic (success, warning, danger, info) and always paired
- * with a text label, never conveyed by colour alone. Positive outcomes use the
- * success tone, never the brand red.
+ * Rule of thumb: ruby fills or marks; rose warns.
+ *   brand  - ruby. Identity, action, "here" and "now": the brand rule, the active
+ *            marker, the facet, one primary action per area, focus, and the two
+ *            hero surfaces (dashboard cover and the technician's next visit).
+ *            Never a badge, a row tint, link text, money or a status.
+ *   ink    - warm porcelain-to-plum neutrals for surfaces, lines and text.
+ *   noir   - plum blacks for the login showcase, toasts and dark overlays.
+ *   ember  - gold for "in progress" and attention highlights.
+ * Status colours are semantic (success emerald, warning amber, danger rose,
+ * info sky, calm indigo, progress ember) and always paired with a text label;
+ * danger also carries an icon and is never a solid fill.
  */
 @theme {
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans: "InterVariable", "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --color-brand-50: #fff1f3;
-  --color-brand-100: #ffe1e5;
-  --color-brand-200: #ffc7cf;
-  --color-brand-300: #ff9cab;
-  --color-brand-400: #f8607a;
-  --color-brand-500: #e82d4f;
+  --color-brand-50: #fbf1f2;
+  --color-brand-100: #f6dde1;
+  --color-brand-200: #edb9c1;
+  --color-brand-300: #ff8a9b;
+  --color-brand-400: #e8475f;
+  --color-brand-500: #d91f3c;
   --color-brand-600: #c8102e;
   --color-brand-700: #a80c28;
   --color-brand-800: #8c0e26;
-  --color-brand-900: #761025;
-  --color-brand-950: #42030f;
+  --color-brand-900: #6b0d20;
+  --color-brand-950: #3d0612;
+  --color-on-brand-muted: #ffd9de;
 
-  --color-ink-50: #f8f8f9;
-  --color-ink-100: #f0f0f2;
-  --color-ink-200: #e2e2e6;
-  --color-ink-300: #c9c9d0;
-  --color-ink-400: #9d9da8;
-  --color-ink-500: #6e6e79;
-  --color-ink-600: #56565f;
-  --color-ink-700: #44444b;
-  --color-ink-800: #2e2e33;
-  --color-ink-900: #1d1d21;
-  --color-ink-950: #121215;
+  --color-ink-25: #faf8f7;
+  --color-ink-50: #f7f4f3;
+  --color-ink-100: #f3f0ee;
+  --color-ink-150: #efeae8;
+  --color-ink-200: #e6e0de;
+  --color-ink-300: #d9d2cf;
+  --color-ink-400: #958a8d;
+  --color-ink-500: #756a6d;
+  --color-ink-600: #5e5457;
+  --color-ink-700: #463d40;
+  --color-ink-800: #2f2729;
+  --color-ink-900: #241c1f;
+  --color-ink-950: #1a1416;
+  --color-select: #f5f1ef;
+
+  --color-noir-900: #1b1316;
+  --color-noir-950: #140e10;
 
   --color-ember-50: #fdf8ec;
   --color-ember-100: #f8ecc8;
@@ -49,14 +61,29 @@
   --color-ember-500: #d49a1f;
   --color-ember-600: #8a5a00;
 
-  --radius-card: 1rem;
-  --shadow-card: 0 1px 2px rgb(18 18 21 / 0.05), 0 8px 24px -12px rgb(18 18 21 / 0.10);
-  --shadow-float: 0 12px 32px -8px rgb(18 18 21 / 0.22);
+  --text-display-xl: 2.5rem;
+  --text-display-xl--line-height: 2.75rem;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl--font-weight: 650;
+  --text-display-lg: 2rem;
+  --text-display-lg--line-height: 2.375rem;
+  --text-display-lg--letter-spacing: -0.025em;
+  --text-display-lg--font-weight: 600;
+  --text-display-md: 1.5rem;
+  --text-display-md--line-height: 1.875rem;
+  --text-display-md--letter-spacing: -0.02em;
+  --text-display-md--font-weight: 600;
+
+  --radius-card: 0.75rem;
+  --shadow-card: none;
+  --shadow-xs: 0 1px 2px rgb(26 20 22 / 0.06);
+  --shadow-float: 0 0 0 1px rgb(26 20 22 / 0.06), 0 16px 40px -12px rgb(26 20 22 / 0.28);
 
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-up: slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-float: float 9s ease-in-out infinite;
   --animate-glint: glint 7s ease-in-out infinite;
+  --animate-glint-once: glint 1.6s ease-in-out 0.6s 1 both;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -80,18 +107,43 @@
   }
 }
 
+@font-face {
+  font-family: "InterVariable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("JetBrainsMono-Medium.woff2") format("woff2");
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
   }
 
   body {
-    @apply bg-ink-50 text-ink-900;
+    @apply bg-ink-25 text-ink-900;
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-brand-500;
+    @apply outline-2 outline-offset-2 outline-brand-600;
   }
 
   [hidden] {
@@ -101,6 +153,11 @@
   input[type="checkbox"],
   input[type="radio"] {
     accent-color: var(--color-brand-600);
+  }
+
+  .turbo-progress-bar {
+    height: 2px;
+    background-color: var(--color-brand-800);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -113,43 +170,65 @@
 }
 
 @utility sv-card {
-  @apply rounded-[var(--radius-card)] border border-ink-200/70 bg-white shadow-[var(--shadow-card)];
+  @apply rounded-[var(--radius-card)] bg-white ring-1 ring-ink-200;
+}
+
+@utility sv-card-inset {
+  @apply rounded-[var(--radius-card)] bg-ink-25;
+}
+
+@utility sv-icon-chip {
+  @apply grid size-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-700;
 }
 
 @utility sv-btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
-    disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2;
+  @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold whitespace-nowrap
+    transition duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-60
+    focus-visible:outline-2 focus-visible:outline-offset-2;
 }
 
 @utility sv-btn-primary {
-  @apply sv-btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:outline-brand-600;
+  @apply sv-btn bg-brand-600 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(61_6_18/0.25)]
+    hover:bg-brand-700 active:translate-y-px active:bg-brand-800 focus-visible:outline-brand-600
+    forced-colors:outline forced-colors:outline-1;
 }
 
 @utility sv-btn-secondary {
-  @apply sv-btn border border-ink-200 bg-white text-ink-800 hover:border-ink-300 hover:bg-ink-50;
+  @apply sv-btn bg-white text-ink-900 ring-1 ring-inset ring-ink-300 hover:bg-ink-25 hover:ring-ink-400;
 }
 
 @utility sv-btn-ghost {
-  @apply sv-btn text-ink-700 hover:bg-ink-100;
+  @apply sv-btn text-ink-700 hover:bg-ink-950/[0.04] hover:text-ink-950;
+}
+
+@utility sv-btn-dark {
+  @apply sv-btn bg-ink-950 text-white hover:bg-ink-800;
+}
+
+@utility sv-btn-on-brand {
+  @apply sv-btn bg-white text-brand-800 hover:bg-[#fff5f6] focus-visible:outline-white;
+}
+
+@utility sv-btn-ghost-on-brand {
+  @apply sv-btn bg-white/15 text-white hover:bg-white/25 focus-visible:outline-white;
 }
 
 @utility sv-btn-danger {
-  @apply sv-btn border border-rose-200 bg-white text-rose-700 hover:border-rose-300 hover:bg-rose-50
-    focus-visible:outline-rose-600;
+  @apply sv-btn bg-white text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 focus-visible:outline-rose-600;
 }
 
 @utility sv-btn-sm {
-  @apply px-3 py-1.5 text-xs rounded-lg;
+  @apply h-8 px-3 text-xs;
 }
 
 @utility sv-label {
-  @apply mb-1.5 block text-sm font-medium text-ink-800;
+  @apply mb-1.5 block text-[13px] font-medium text-ink-800;
 }
 
 @utility sv-input {
-  @apply block w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-xs
-    placeholder:text-ink-500 transition focus:border-ink-900 focus:outline-none focus:ring-4 focus:ring-ink-900/8
-    aria-[invalid=true]:border-rose-500 aria-[invalid=true]:ring-rose-500/10 disabled:bg-ink-100;
+  @apply block w-full rounded-lg border border-ink-400 bg-white px-3 py-2 text-sm text-ink-900 shadow-[var(--shadow-xs)]
+    placeholder:text-ink-500 transition focus:border-ink-950 focus:outline-none focus:ring-[3px] focus:ring-ink-950/10
+    aria-[invalid=true]:border-rose-600 aria-[invalid=true]:ring-rose-600/10 disabled:bg-ink-100;
 }
 
 @utility sv-hint {
@@ -161,31 +240,71 @@
 }
 
 @utility sv-badge {
-  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset whitespace-nowrap;
+  @apply inline-flex h-5 items-center gap-1.5 rounded-md px-1.5 text-xs font-medium ring-1 ring-inset whitespace-nowrap;
 }
 
 @utility sv-table {
-  @apply min-w-full divide-y divide-ink-100 text-sm;
+  @apply min-w-full divide-y divide-ink-150 text-[13px];
 }
 
 @utility sv-link {
-  @apply font-medium text-brand-700 underline-offset-4 hover:underline;
+  @apply font-medium text-ink-900 underline decoration-ink-300 decoration-1 underline-offset-4 transition-colors
+    hover:text-ink-950 hover:decoration-brand-600;
 }
 
 @utility sv-kbd {
-  @apply rounded-md border border-ink-200 bg-ink-50 px-1.5 py-0.5 font-mono text-[11px] text-ink-600;
+  @apply rounded-md bg-ink-100 px-1.5 py-0.5 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-ink-200;
 }
 
 @utility sv-num {
   font-variant-numeric: tabular-nums;
 }
 
+/* Eyebrow: a ruby facet (rotated square) followed by a mono uppercase label. */
+@utility sv-eyebrow {
+  @apply inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-ink-500;
+}
+
+@utility sv-facet {
+  @apply inline-block size-1.5 shrink-0 rotate-45 bg-brand-600;
+}
+
+@utility sv-display {
+  font-variation-settings: "opsz" 32;
+}
+
 @layer components {
+  .sv-table thead {
+    @apply bg-ink-50;
+  }
+
   .sv-table th {
-  @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-500;
+    @apply h-9 whitespace-nowrap px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-500;
   }
 
   .sv-table td {
-  @apply px-4 py-3 align-middle text-ink-800;
+    @apply px-4 py-3 align-middle text-ink-800;
+  }
+
+  .sv-table tbody tr {
+    @apply transition-colors duration-150 hover:bg-ink-25;
+  }
+
+  .sv-table tbody tr[aria-selected="true"] {
+    @apply bg-select shadow-[inset_2px_0_0_var(--color-brand-600)];
   }
 }
+
+/* Selects share the input look with a drawn chevron instead of the native arrow. */
+@layer components {
+  select.sv-input {
+    @apply appearance-none bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23756a6d' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+  }
+
+  select[multiple].sv-input {
+    @apply bg-none pr-3;
+  }
+}
+

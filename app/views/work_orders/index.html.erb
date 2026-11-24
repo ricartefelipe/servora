@@ -1,18 +1,24 @@
 <% content_for :title, "Ordens de serviço" %>
-<%= page_header("Ordens de serviço", subtitle: can?(:work_orders_view_all) ? "Atendimentos em aberto por prioridade e data de solicitação." : "Atendimentos atribuídos a você.") do %>
+<%= page_header("Ordens de serviço", eyebrow: "Operação · Ordens de serviço", subtitle: can?(:work_orders_view_all) ? "Atendimentos em aberto por prioridade e data de solicitação." : "Atendimentos atribuídos a você.") do %>
   <% if policy(WorkOrder).create? %>
     <%= link_to new_work_order_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Nova ordem<% end %>
   <% end %>
 <% end %>
 
-<div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-  <% %w[approved scheduled in_progress waiting_parts waiting_customer reopened].each do |status| %>
-    <%= link_to work_orders_path(situacao: status), class: "sv-card p-4 transition hover:border-brand-300 #{'ring-2 ring-brand-500' if @filters[:status] == status}" do %>
-      <span class="block text-xs font-semibold uppercase tracking-wide text-ink-500"><%= WorkOrders::LABELS[status] %></span>
-      <span class="sv-num mt-1 block text-2xl font-bold text-ink-950"><%= @counts[status] || 0 %></span>
+<%# One KPI strip: three cells per row with a hairline between rows on small screens, six across on lg.
+    divide-x draws the vertical rules; the per-cell classes drop the rule at the row end and add the row hairline. %>
+<% kpi_edges = ["", "", "max-lg:border-r-0", "max-lg:border-t", "max-lg:border-t", "max-lg:border-t"] %>
+<nav class="sv-card mb-5 grid grid-cols-3 divide-x divide-ink-150 overflow-hidden lg:grid-cols-6" aria-label="Ordens em aberto por situação">
+  <% %w[approved scheduled in_progress waiting_parts waiting_customer reopened].each_with_index do |status, index| %>
+    <% current = @filters[:status] == status %>
+    <%= link_to work_orders_path(situacao: status),
+          class: "block min-w-0 border-ink-150 p-4 transition-colors lg:p-5 #{kpi_edges[index]} #{current ? 'bg-select shadow-[inset_2px_0_0_var(--color-brand-600)]' : 'hover:bg-ink-25'}",
+          aria: { current: (current ? "true" : nil) } do %>
+      <span class="block min-h-8 text-xs font-medium leading-4 lg:min-h-0 <%= current ? "text-ink-950" : "text-ink-600" %>"><%= WorkOrders::LABELS[status] %></span>
+      <span class="sv-num mt-1 block text-[22px] font-semibold leading-tight text-ink-950 lg:text-[28px]"><%= @counts[status] || 0 %></span>
     <% end %>
   <% end %>
-</div>
+</nav>
 
 <%= form_with url: work_orders_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
   <div class="min-w-64 flex-1">
@@ -30,16 +36,16 @@
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhuma ordem encontrada", description: "Ordens nascem de solicitações, orçamentos aprovados ou planos preventivos.", icon_name: :orders) %>
   <% else %>
-    <ul class="divide-y divide-ink-100" role="list">
+    <ul class="divide-y divide-ink-150" role="list">
       <% @pagination.records.each do |work_order| %>
         <li>
-          <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-5 py-4 hover:bg-ink-50/70" do %>
+          <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-5 py-3.5 transition-colors hover:bg-ink-25" do %>
             <div class="min-w-0 flex-1">
               <p class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs text-ink-500"><%= work_order.number %></span>
-                <span class="font-semibold text-ink-900"><%= work_order.title %></span>
+                <span class="font-mono text-xs text-ink-700"><%= work_order.number %></span>
+                <span class="text-sm font-medium text-ink-950"><%= work_order.title %></span>
               </p>
-              <p class="truncate text-sm text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
+              <p class="truncate text-xs text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
             </div>
             <%= render "work_orders/priority_badge", work_order: %>
             <%= render "work_orders/status_badge", work_order: %>

@@ -2,11 +2,11 @@
   <%= f.error_summary %>
   <%= f.hidden_field :work_order_id %>
   <% remaining = WorkOrderFinancialsQuery.new(work_order).remaining_to_bill %>
-  <p class="rounded-xl bg-ink-50 p-3 text-sm text-ink-700">Saldo a faturar da ordem <strong><%= work_order.number %></strong>: <strong class="sv-num"><%= money(remaining) %></strong>. Parcelas podem ser emitidas separadamente.</p>
+  <p class="rounded-lg bg-ink-50 p-3 text-sm text-ink-700">Saldo a faturar da ordem <strong><%= work_order.number %></strong>: <strong class="sv-num text-ink-950"><%= money(remaining) %></strong>. Parcelas podem ser emitidas separadamente.</p>
   <div class="grid gap-5 sm:grid-cols-2">
     <%= f.field :amount, label: "Valor (R$)", as: :number_field, step: "0.01", min: "0.01", required: true, autofocus: true %>
     <%= f.field :due_on, label: "Vencimento", as: :date_field, required: true, min: Time.zone.today.iso8601 %>
   </div>
   <%= f.field :description, label: "Descrição", hint: "Em branco: “Ordem de serviço #{work_order.number}”" %>
-  <div class="flex justify-end"><%= f.submit_button("Emitir conta") %></div>
+  <%= render "shared/form_footer", f:, submit: "Emitir conta", cancel_url: work_order_path(work_order), within: :modal %>
 <% end %>

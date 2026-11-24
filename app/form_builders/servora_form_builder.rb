@@ -4,6 +4,9 @@
 # aria-describedby and aria-invalid, hints are announced with the field.
 class ServoraFormBuilder < ActionView::Helpers::FormBuilder
   INPUT_CLASS = "sv-input"
+  BUTTON_VARIANTS = {
+    primary: "sv-btn-primary", secondary: "sv-btn-secondary", ghost: "sv-btn-ghost", danger: "sv-btn-danger", dark: "sv-btn-dark"
+  }.freeze
 
   def field(attribute, label: nil, hint: nil, as: :text_field, wrapper: {}, **options)
     wrap(attribute, label:, hint:, wrapper:) do |aria|
@@ -25,7 +28,7 @@ class ServoraFormBuilder < ActionView::Helpers::FormBuilder
 
   def toggle_field(attribute, label:, hint: nil, **options)
     @template.tag.div(class: "flex items-start gap-3") do
-      check_box(attribute, options.merge(class: "mt-1 size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500")) +
+      check_box(attribute, options.merge(class: "mt-1 size-4 rounded border-ink-400")) +
         @template.tag.div do
           label(attribute, label, class: "text-sm font-medium text-ink-800") +
             (hint ? @template.tag.p(hint, class: "sv-hint mt-0.5") : ActiveSupport::SafeBuffer.new)
@@ -34,7 +37,7 @@ class ServoraFormBuilder < ActionView::Helpers::FormBuilder
   end
 
   def submit_button(text = nil, variant: :primary, **options)
-    css = ["sv-btn-#{variant}", options.delete(:class)].compact.join(" ")
+    css = [BUTTON_VARIANTS.fetch(variant.to_sym), options.delete(:class)].compact.join(" ")
     button(text || submit_default_value, { type: "submit", class: css, data: { turbo_submits_with: "Salvando…" } }.merge(options))
   end
 
