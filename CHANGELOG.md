@@ -54,6 +54,9 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   protegidas por token (HTTP, jobs, outbox, filas, integrações, consultas lentas) sem rótulos de alta
   cardinalidade.
 
+- Documentação de operação e produto: C4, modelo de dados, fluxos, políticas de calendário, dinheiro e custos,
+  runbooks (com backup e restauração exercitados localmente) e roteiro de demonstração.
+
 ### Corrigido
 
 - CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),

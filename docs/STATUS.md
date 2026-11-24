@@ -49,6 +49,11 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
+## Documentação
+
+C4, modelo de dados, fluxos, políticas, runbooks (backup e restauração exercitados localmente) e roteiro de
+demonstração em `docs/`.
+
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
@@ -73,8 +78,8 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 
 ## Em andamento
 
-- Assinaturas da plataforma (planos, trial, limites e módulos).
+- Release 1.0.0.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/assinaturas` a partir de `develop`.
+Próximo passo: `release/1.0.0` a partir de `develop` após a integração da documentação final.
