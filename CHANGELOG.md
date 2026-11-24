@@ -44,6 +44,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - Portal do cliente ampliado: abertura de chamados (ordem em análise com notificação à equipe), acompanhamento
   das ordens e visitas, equipamentos com histórico, relatórios e propostas em PDF e cobranças com link de
   pagamento; navegação adaptada ao celular.
+- API pública v1 com OpenAPI, credenciais com escopos, validade e revogação, paginação limitada, filtros e
+  idempotência por `Idempotency-Key` na criação de ordens.
+- Webhooks de saída assinados (HMAC-SHA256), com id de evento estável, retentativas, reenvio manual e proteção
+  contra SSRF; webhooks de entrada do Asaas autenticados, gravados antes da confirmação e deduplicados.
+- Tela de integrações com segredos exibidos uma única vez.
 
 ### Corrigido
 

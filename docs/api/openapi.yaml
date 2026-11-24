@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info:
+  title: Servora API
+  version: "1.0"
+  description: |
+    API pública do Servora. Autenticação por token de credencial (Configurações → Integrações):
+    `Authorization: Bearer <token>`. Cada credencial tem escopos e pode ser revogada a qualquer momento.
+    Listas são paginadas (`page[number]`, `page[size]` até 100). Datas em ISO 8601 (UTC); valores em BRL como texto
+    decimal. Escritas exigem o cabeçalho `Idempotency-Key`.
+servers:
+  - url: /api/v1
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    PageNumber:
+      name: page[number]
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: page[size]
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    UpdatedSince:
+      name: updated_since
+      in: query
+      description: Somente registros alterados a partir deste instante (ISO 8601).
+      schema: { type: string, format: date-time }
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Meta:
+      type: object
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        next_page: { type: [integer, "null"] }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, enum: [unauthorized, insufficient_scope, not_found, bad_request, rule_violation, rate_limited] }
+            message: { type: string }
+    Customer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [company, individual] }
+        name: { type: string }
+        trade_name: { type: [string, "null"] }
+        document: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        archived: { type: boolean }
+        updated_at: { type: string, format: date-time }
+    Equipment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        customer_id: { type: string, format: uuid }
+        service_location_id: { type: string, format: uuid }
+        equipment_type: { type: string }
+        manufacturer: { type: [string, "null"] }
+        model: { type: [string, "null"] }
+        serial_number: { type: [string, "null"] }
+        operational_status: { type: string, enum: [operational, attention, inoperative] }
+        updated_at: { type: string, format: date-time }
+    WorkOrder:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string }
+        title: { type: string }
+        status: { type: string }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        origin: { type: string }
+        customer_id: { type: string, format: uuid }
+        service_location_id: { type: string, format: uuid }
+        requested_at: { type: string, format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: string, format: date-time }
+    WorkOrderInput:
+      type: object
+      required: [work_order]
+      properties:
+        work_order:
+          type: object
+          required: [title, problem_description, customer_id, service_location_id]
+          properties:
+            title: { type: string, maxLength: 160 }
+            problem_description: { type: string, maxLength: 5000 }
+            customer_id: { type: string, format: uuid }
+            service_location_id: { type: string, format: uuid }
+            priority: { type: string, enum: [low, normal, high, urgent] }
+            equipment_ids: { type: array, items: { type: string, format: uuid } }
+    Receivable:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string }
+        work_order_id: { type: string, format: uuid }
+        customer_id: { type: string, format: uuid }
+        status: { type: string, enum: [open, partially_paid, paid, canceled] }
+        due_on: { type: string, format: date }
+        amount: { type: string, example: "1200.00" }
+        discount_amount: { type: string }
+        balance: { type: string }
+        updated_at: { type: string, format: date-time }
+  responses:
+    Unauthorized:
+      description: Credencial ausente, inválida, revogada ou expirada.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Forbidden:
+      description: Escopo insuficiente.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    NotFound:
+      description: Recurso inexistente ou de outra organização.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+paths:
+  /customers:
+    get:
+      summary: Lista clientes
+      description: "Escopo: customers:read"
+      parameters: [{ $ref: "#/components/parameters/PageNumber" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/UpdatedSince" }]
+      responses:
+        "200":
+          description: Página de clientes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /customers/{id}:
+    get:
+      summary: Consulta um cliente
+      description: "Escopo: customers:read"
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Cliente.
+          content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/Customer" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /equipment:
+    get:
+      summary: Lista equipamentos
+      description: "Escopo: equipment:read"
+      parameters:
+        - { $ref: "#/components/parameters/PageNumber" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/UpdatedSince" }
+        - { name: customer_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Página de equipamentos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Equipment" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
+  /work_orders:
+    get:
+      summary: Lista ordens de serviço
+      description: "Escopo: work_orders:read"
+      parameters:
+        - { $ref: "#/components/parameters/PageNumber" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/UpdatedSince" }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: customer_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Página de ordens.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/WorkOrder" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
+    post:
+      summary: Abre uma ordem de serviço
+      description: "Escopo: work_orders:write. Requisições repetidas com a mesma Idempotency-Key devolvem a resposta original."
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/WorkOrderInput" } } }
+      responses:
+        "201":
+          description: Ordem criada.
+          content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/WorkOrder" } } } } }
+        "400": { description: Cabeçalho ou corpo inválido. }
+        "422": { description: Regra de negócio violada ou chave reutilizada com outro conteúdo. }
+  /work_orders/{id}:
+    get:
+      summary: Consulta uma ordem de serviço
+      description: "Escopo: work_orders:read"
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: Ordem.
+          content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/WorkOrder" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /receivables:
+    get:
+      summary: Lista contas a receber
+      description: "Escopo: receivables:read"
+      parameters:
+        - { $ref: "#/components/parameters/PageNumber" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/UpdatedSince" }
+        - { name: status, in: query, schema: { type: string, enum: [open, partially_paid, paid, canceled] } }
+      responses:
+        "200":
+          description: Página de contas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Receivable" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
