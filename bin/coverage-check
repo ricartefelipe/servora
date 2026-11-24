@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Merges the coverage recorded by every suite (unit without Rails and the
+# Rails-backed suites), writes the HTML report and enforces the thresholds
+# documented in docs/REQUISITOS.md for the core rules and use cases.
+require "simplecov"
+
+ROOT = File.expand_path("..", __dir__)
+CORE_PATHS = %w[app/domain/ app/services/ app/queries/ app/forms/ app/policies/].freeze
+LINE_MINIMUM = 90.0
+BRANCH_MINIMUM = 80.0
+
+SimpleCov.root(ROOT)
+SimpleCov.enable_coverage :branch
+SimpleCov.merge_timeout 3600
+%w[/spec/ /config/ /db/ lib/tasks/].each { |path| SimpleCov.skip(path) }
+
+abort "Resultado de cobertura não encontrado: execute as suítes antes." unless File.exist?(SimpleCov::ResultMerger.resultset_path)
+
+result = SimpleCov::ResultMerger.merged_result
+result.format!
+
+core_files = result.files.select { |file| CORE_PATHS.any? { |path| file.filename.start_with?(File.join(ROOT, path)) } }
+if core_files.empty?
+  puts "Nenhum arquivo do núcleo no resultado; metas não aplicáveis."
+  exit 0
+end
+
+def percent(covered, total) = total.zero? ? 100.0 : covered * 100.0 / total
+
+line_pct = percent(core_files.sum { |f| f.covered_lines.size }, core_files.sum { |f| f.covered_lines.size + f.missed_lines.size })
+branch_pct = percent(core_files.sum { |f| f.covered_branches.size }, core_files.sum { |f| f.total_branches.size })
+
+puts format("Núcleo (domínio, casos de uso, consultas, formulários, policies): linhas %<l>.2f%%, branches %<b>.2f%%", l: line_pct, b: branch_pct)
+puts format("Aplicação completa: linhas %<l>.2f%%", l: result.covered_percent)
+
+failures = []
+failures << format("linhas do núcleo %<v>.2f%% < %<m>.1f%%", v: line_pct, m: LINE_MINIMUM) if line_pct < LINE_MINIMUM
+failures << format("branches do núcleo %<v>.2f%% < %<m>.1f%%", v: branch_pct, m: BRANCH_MINIMUM) if branch_pct < BRANCH_MINIMUM
+abort "Cobertura insuficiente: #{failures.join('; ')}" if failures.any?
+
+puts "Metas de cobertura atendidas."
