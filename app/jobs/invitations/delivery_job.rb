@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "net/protocol"
+
 module Invitations
   class DeliveryJob < ApplicationJob
     queue_as :mailers
