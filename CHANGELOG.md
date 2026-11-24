@@ -5,6 +5,11 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+### Adicionado
+
+- Estornos executados no provedor de pagamento: envio após o commit, situação por estorno, verificação humana
+  obrigatória quando a resposta é ambígua e sinalização dos estornos de pagamentos manuais.
+
 ## [1.0.0] - 2026-11-24
 
 Ciclo completo da operação de serviços de campo: da solicitação à execução e ao resultado financeiro, com

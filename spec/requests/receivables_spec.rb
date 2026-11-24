@@ -78,6 +78,23 @@ RSpec.describe "Receivables" do
     expect(response.body).to include("Quitada", "Boleto", "Cobrança paga")
   end
 
+  it "shows how each refund is executed and lets finance resolve manual ones" do
+    sign_in_as(finance)
+    receivable = issue("200.00")
+    post receivable_payments_path(receivable), params: { payment: { amount: "200", payment_method: "cash",
+                                                                    paid_on: Time.zone.today.iso8601,
+                                                                    operation_key: SecureRandom.uuid_v7 } }
+    payment = in_tenant(organization) { Payment.sole }
+    patch refund_receivable_payment_path(receivable, payment), params: { refund: { amount: "50", reason: "Ajuste" } }
+    refund = in_tenant(organization) { PaymentRefund.sole }
+
+    get receivable_path(receivable)
+    expect(response.body).to include("Executar manualmente", "Marcar como executado")
+    patch receivable_resolve_refund_path(receivable, refund), params: { resolution: { action: "confirm" } }
+
+    expect(reload_in_tenant(refund).status).to eq("accepted")
+  end
+
   it "lists receivables with totals and filters" do
     sign_in_as(finance)
     issue("400.00")

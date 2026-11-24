@@ -8,6 +8,7 @@ class Payment < TenantRecord
   MANUAL_METHODS = METHODS.except("card_gateway").freeze
 
   belongs_to :receivable, inverse_of: :payments
+  has_many :refunds, -> { order(:created_at) }, class_name: "PaymentRefund", dependent: nil, inverse_of: :payment
   belongs_to :charge, class_name: "PaymentCharge", foreign_key: :payment_charge_id, optional: true, inverse_of: false
   belongs_to :recorded_by, class_name: "Membership", foreign_key: :recorded_by_membership_id, optional: true,
     inverse_of: false
