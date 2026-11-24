@@ -5,6 +5,8 @@ module Field
   # time entries are submitted through Field::OperationsController, which also
   # accepts operations queued while offline.
   class WorkOrdersController < TenantController
+    layout "field"
+
     def show
       authorize :field, :show?
       @work_order = policy_scope(tenant_relation(WorkOrder)).includes(:assignments, :customer, :service_location,

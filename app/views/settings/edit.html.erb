@@ -1,5 +1,5 @@
 <% content_for :title, "Configurações" %>
-<%= page_header("Configurações da organização", subtitle: "Dados cadastrais e parâmetros operacionais.") %>
+<%= page_header("Configurações da organização", eyebrow: "Gestão · Configurações", subtitle: "Dados cadastrais e parâmetros operacionais.", size: :md) %>
 
 <section class="sv-card max-w-3xl p-6">
   <%= form_with model: @organization, url: settings_path, method: :patch, class: "space-y-5" do |f| %>
@@ -14,6 +14,6 @@
     </div>
     <%= f.toggle_field :mfa_required_for_privileged, label: "Exigir verificação em duas etapas para perfis privilegiados",
           hint: "Proprietários, administradores e financeiro têm #{Authentication::MfaRequirement.grace_period.in_days.to_i} dias para ativar." %>
-    <%= f.submit_button "Salvar configurações" %>
+    <%= render "shared/form_footer", f:, submit: "Salvar configurações", cancel_url: edit_settings_path %>
   <% end %>
 </section>

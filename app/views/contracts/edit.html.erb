@@ -1,3 +1,3 @@
 <% content_for :title, "Editar #{@contract.number}" %>
-<%= page_header("Alterar condições", eyebrow: @contract.number, subtitle: @contract.customer.display_name) %>
+<%= page_header("Alterar condições", eyebrow: "Operação · Contratos", subtitle: "#{@contract.number} · #{@contract.customer.display_name}", size: :md) %>
 <div class="max-w-3xl"><%= render "contracts/form", contract: @contract, customers: [], service_types: @service_types %></div>

@@ -1,5 +1,5 @@
 <% content_for :title, "Agendar visita" %>
-<%= page_header("Agendar visita", eyebrow: @work_order.number, subtitle: "#{@work_order.title} · #{@work_order.customer.display_name}") %>
+<%= page_header("Agendar visita", eyebrow: "Operação · Ordens de serviço", size: :md, subtitle: "#{@work_order.number} · #{@work_order.title} · #{@work_order.customer.display_name}") %>
 <div class="grid gap-6 lg:grid-cols-3" data-controller="suggestions" data-suggestions-url-value="<%= suggestions_work_order_visits_path(@work_order) %>">
   <%= form_with url: work_order_visits_path(@work_order), scope: :visit, class: "sv-card space-y-5 p-6 lg:col-span-2" do |f| %>
     <div class="grid gap-4 sm:grid-cols-4">
@@ -12,8 +12,8 @@
       <legend class="sv-label">Técnicos</legend>
       <div class="grid gap-2 sm:grid-cols-2">
         <% current_organization.memberships.technicians.includes(:user).ordered.each do |technician| %>
-          <label class="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-            <%= check_box_tag "visit[technician_ids][]", technician.id, @work_order.assignments.any? { |a| a.membership_id == technician.id }, id: "tecnico_#{technician.id}", class: "rounded border-ink-300 text-brand-600" %>
+          <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 transition-colors hover:bg-ink-25 has-[:checked]:border-ink-400 has-[:checked]:bg-select has-[:checked]:shadow-[inset_2px_0_0_var(--color-brand-600)]">
+            <%= check_box_tag "visit[technician_ids][]", technician.id, @work_order.assignments.any? { |a| a.membership_id == technician.id }, id: "tecnico_#{technician.id}", class: "rounded border-ink-400" %>
             <%= technician.user.name %>
           </label>
         <% end %>
@@ -24,13 +24,10 @@
       <div><%= f.label :team_id, "Ou uma equipe inteira", class: "sv-label" %><%= f.select :team_id, teams.map { |t| [t.name, t.id] }, { include_blank: "Nenhuma" }, class: "sv-input" %></div>
     <% end %>
     <div><%= f.label :notes, "Observações para a equipe", class: "sv-label" %><%= f.text_area :notes, rows: 2, class: "sv-input" %></div>
-    <div class="flex gap-3">
-      <%= f.button "Agendar", type: "submit", class: "sv-btn-primary" %>
-      <%= link_to "Voltar", work_order_path(@work_order), class: "sv-btn-secondary" %>
-    </div>
+    <%= render "shared/form_footer", f:, submit: "Agendar", cancel_url: work_order_path(@work_order), submits_with: false, sticky: true %>
   <% end %>
   <aside class="sv-card p-5" aria-labelledby="sugestoes-title">
-    <h2 id="sugestoes-title" class="font-semibold text-ink-900">Técnicos sugeridos</h2>
+    <h2 id="sugestoes-title" class="text-[15px] font-semibold text-ink-950">Técnicos sugeridos</h2>
     <p class="mt-1 text-xs text-ink-500">Por competência exigida, disponibilidade e menor carga no dia. Não é otimização de rotas.</p>
     <%= turbo_frame_tag "visit-suggestions", src: suggestions_work_order_visits_path(@work_order, date: @starts_at.to_date, start_time: @starts_at.strftime("%H:%M"), duration_minutes: 90),
           loading: :lazy, class: "mt-4 block", data: { suggestions_target: "frame" } do %>

@@ -1,0 +1,26 @@
+<%# "Próxima visita": the only ruby block of the field area. Flat brand-700, white text and one on-brand action. %>
+<% order = visit.work_order %>
+<% starts = visit.scheduled_start.in_time_zone(zone) %>
+<% ends = visit.scheduled_end.in_time_zone(zone) %>
+<% day = starts.to_date %>
+<% in_progress = visit.status == "in_progress" %>
+<% service_type = order.service_type %>
+<section class="rounded-[20px] bg-brand-700 p-5 text-white" aria-labelledby="proxima-visita-titulo">
+  <h2 id="proxima-visita-titulo" class="inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-on-brand-muted">
+    <span class="inline-block size-1.5 shrink-0 rotate-45 bg-white" aria-hidden="true"></span>
+    <%= in_progress ? "Em andamento" : "Próxima" %><% unless day == today %> · <%= day == today + 1 ? "Amanhã" : l(day, format: "%A, %d/%m") %><% end %>
+  </h2>
+  <p class="mt-3 font-mono text-[40px] font-semibold leading-none tracking-tight sv-num"><%= l(starts, format: "%H:%M") %></p>
+  <p class="mt-4 text-[22px] font-semibold leading-tight"><%= order.customer.display_name %></p>
+  <p class="mt-1 text-[15px] font-medium text-white"><%= order.title %></p>
+  <p class="mt-1 text-[15px] text-on-brand-muted"><%= order.service_location.address_line %></p>
+  <ul class="mt-4 flex flex-wrap gap-2" role="list">
+    <li class="rounded-full bg-white/15 px-2.5 py-1 font-mono text-[13px] font-medium"><%= l(starts, format: "%H:%M") %> – <%= l(ends, format: "%H:%M") %></li>
+    <% if service_type %><li class="rounded-full bg-white/15 px-2.5 py-1 text-[13px] font-medium"><%= service_type.name %></li><% end %>
+    <li class="rounded-full bg-white/15 px-2.5 py-1 font-mono text-[13px] font-medium"><%= order.number %></li>
+  </ul>
+  <%= link_to field_work_order_path(order), class: "sv-btn-on-brand mt-5 h-12 w-full text-base" do %>
+    <%= in_progress ? "Continuar atendimento" : "Abrir visita" %><span class="sr-only"> · <%= order.number %></span>
+    <%= icon(:chevron_right, size: 18) %>
+  <% end %>
+</section>

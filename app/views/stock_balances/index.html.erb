@@ -3,13 +3,23 @@
 <% show_costs = stock_policy.view_costs? %>
 <%= render "stock/header" %>
 
-<div class="mb-6 grid gap-4 sm:grid-cols-3">
-  <%= stat_tile("Posições com saldo", @summary.positions, hint: @warehouse ? @warehouse.name : "Todos os depósitos visíveis") %>
-  <%= stat_tile("Abaixo do mínimo", @summary.below_minimum, hint: "Disponível menor que o mínimo definido", tone: @summary.below_minimum.positive? ? :danger : :neutral) %>
-  <% if show_costs %>
-    <%= stat_tile("Valor em estoque", money(@summary.stock_value), hint: "Saldo físico × custo médio") %>
+<%# KPI strip: one card split by hairlines. Values stay ink; attention is a
+    labelled badge, never the colour of the number. %>
+<% below_minimum = @summary.below_minimum.positive? %>
+<% kpis = [["Posições com saldo", @summary.positions, @warehouse ? @warehouse.name : "Todos os depósitos visíveis", false],
+           ["Abaixo do mínimo", @summary.below_minimum, "Disponível menor que o mínimo definido", below_minimum]] %>
+<% kpis << ["Valor em estoque", money(@summary.stock_value), "Saldo físico × custo médio", false] if show_costs %>
+<section class="sv-card mb-6 grid divide-y divide-ink-150 sm:divide-x sm:divide-y-0 <%= show_costs ? 'sm:grid-cols-3' : 'sm:grid-cols-2' %>" aria-label="Resumo do estoque">
+  <% kpis.each do |label, value, hint, attention| %>
+    <div class="p-5">
+      <p class="flex h-5 items-center gap-2 text-xs font-medium text-ink-600">
+        <%= label %><% if attention %><%= badge("Repor", tone: :warning) %><% end %>
+      </p>
+      <p class="sv-num mt-2 text-[28px] font-semibold leading-none tracking-tight text-ink-950"><%= value %></p>
+      <p class="mt-2 text-xs text-ink-500"><%= hint %></p>
+    </div>
   <% end %>
-</div>
+</section>
 
 <%= form_with url: stock_balances_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
   <div class="min-w-64 flex-1">
@@ -21,7 +31,7 @@
     <%= f.select :deposito, @warehouses.map { |w| [w.name, w.id] }, { include_blank: "Todos", selected: @warehouse&.id }, class: "sv-input" %>
   </div>
   <label class="flex items-center gap-2 pb-2.5 text-sm text-ink-700">
-    <%= f.check_box :abaixo, { checked: params[:abaixo] == "1", class: "rounded border-ink-300 text-brand-600" }, "1", nil %> Só abaixo do mínimo
+    <%= f.check_box :abaixo, { checked: params[:abaixo] == "1", class: "size-4" }, "1", nil %> Só abaixo do mínimo
   </label>
   <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
 <% end %>
@@ -32,11 +42,58 @@
           description: @warehouses.empty? ? "Cadastre um depósito para registrar entradas de peças." : "Registre uma entrada ou ajuste os filtros.",
           icon_name: :stock) do %>
       <% if @warehouses.empty? && policy(Warehouse).create? %>
-        <%= link_to "Cadastrar depósito", new_warehouse_path, class: "sv-btn-primary", data: { turbo_frame: "modal" } %>
+        <%= link_to "Cadastrar depósito", new_warehouse_path, class: "sv-btn-secondary", data: { turbo_frame: "modal" } %>
       <% end %>
     <% end %>
   <% else %>
-    <div class="relative overflow-x-auto">
+    <%# Below sm the table becomes a stacked list with the same data. %>
+    <ul class="divide-y divide-ink-150 sm:hidden" role="list" aria-label="Saldos">
+      <% @pagination.records.each do |balance| %>
+        <% item = balance.catalog_item %>
+        <li class="px-4 py-3.5">
+          <div class="flex items-start gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-ink-950"><%= item.name %></p>
+              <p class="truncate text-xs text-ink-500"><span class="font-mono text-ink-700"><%= item.sku %></span><%= " · #{item.unit_label}" if item.unit_label.present? %></p>
+              <p class="truncate text-xs text-ink-600"><%= balance.warehouse.name %> · <%= balance.warehouse.kind_label %></p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="sv-num text-sm font-semibold text-ink-950"><%= quantity(balance.available) %></p>
+              <p class="text-[11px] text-ink-500">disponível</p>
+            </div>
+          </div>
+          <% if balance.below_minimum? %><p class="mt-2"><%= badge("Abaixo do mínimo", tone: :warning) %></p><% end %>
+          <dl class="sv-num mt-2 grid grid-cols-3 gap-2 text-xs">
+            <div><dt class="text-ink-500">Físico</dt><dd class="text-ink-950"><%= quantity(balance.on_hand) %></dd></div>
+            <div><dt class="text-ink-500">Reservado</dt><dd class="text-ink-600"><%= quantity(balance.reserved) %></dd></div>
+            <div>
+              <dt class="text-ink-500">Mínimo</dt>
+              <dd>
+                <% if stock_policy.set_minimum? %>
+                  <details class="relative inline-block text-left">
+                    <summary class="sv-link cursor-pointer list-none" aria-label="Alterar estoque mínimo de <%= item.name %> em <%= balance.warehouse.name %>"><%= quantity(balance.minimum_quantity) %></summary>
+                    <%= form_with url: minimum_stock_balances_path, method: :patch, scope: :stock_minimum, class: "absolute right-0 z-10 mt-2 w-56 space-y-2 rounded-xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
+                      <%= f.hidden_field :warehouse_id, value: balance.warehouse_id, id: nil %>
+                      <%= f.hidden_field :catalog_item_id, value: balance.catalog_item_id, id: nil %>
+                      <div><%= f.label :minimum, "Estoque mínimo", class: "sv-label", for: "minimo-lista-#{balance.id}" %><%= f.number_field :minimum, value: balance.minimum_quantity.to_s("F"), id: "minimo-lista-#{balance.id}", step: "0.001", min: 0, class: "sv-input" %></div>
+                      <%= f.button "Salvar", type: "submit", class: "sv-btn-primary w-full" %>
+                    <% end %>
+                  </details>
+                <% else %>
+                  <span class="text-ink-950"><%= quantity(balance.minimum_quantity) %></span>
+                <% end %>
+              </dd>
+            </div>
+            <% if show_costs %>
+              <div><dt class="text-ink-500">Custo médio</dt><dd class="text-ink-600"><%= unit_cost(balance.average_cost) %></dd></div>
+              <div class="col-span-2"><dt class="text-ink-500">Valor</dt><dd class="text-ink-950"><%= money(balance.stock_value) %></dd></div>
+            <% end %>
+          </dl>
+          <%= link_to "Movimentações", stock_movements_path(deposito: balance.warehouse_id, item: balance.catalog_item_id), class: "sv-btn-ghost sv-btn-sm -ml-3 mt-1" %>
+        </li>
+      <% end %>
+    </ul>
+    <div class="relative hidden overflow-x-auto sm:block">
       <table class="sv-table">
         <thead>
           <tr>
@@ -47,18 +104,18 @@
             <th scope="col"><span class="sr-only">Ações</span></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |balance| %>
             <% item = balance.catalog_item %>
             <tr>
               <td>
-                <span class="block font-medium text-ink-900"><%= item.name %></span>
+                <span class="block font-medium text-ink-950"><%= item.name %></span>
                 <span class="text-xs text-ink-500"><%= [item.sku, item.unit_label].compact.join(" · ") %></span>
               </td>
               <td><%= balance.warehouse.name %><span class="block text-xs text-ink-500"><%= balance.warehouse.kind_label %></span></td>
               <td class="sv-num text-right"><%= quantity(balance.on_hand) %></td>
               <td class="sv-num text-right text-ink-600"><%= quantity(balance.reserved) %></td>
-              <td class="sv-num text-right font-semibold <%= balance.below_minimum? ? 'text-amber-800' : 'text-ink-900' %>">
+              <td class="sv-num text-right font-semibold text-ink-950">
                 <%= quantity(balance.available) %>
                 <% if balance.below_minimum? %><span class="block"><%= badge("Abaixo do mínimo", tone: :warning) %></span><% end %>
               </td>
@@ -66,7 +123,7 @@
                 <% if stock_policy.set_minimum? %>
                   <details class="relative inline-block text-left">
                     <summary class="sv-link cursor-pointer list-none" aria-label="Alterar estoque mínimo de <%= item.name %> em <%= balance.warehouse.name %>"><%= quantity(balance.minimum_quantity) %></summary>
-                    <%= form_with url: minimum_stock_balances_path, method: :patch, scope: :stock_minimum, class: "absolute right-0 z-10 mt-2 w-56 space-y-2 rounded-2xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
+                    <%= form_with url: minimum_stock_balances_path, method: :patch, scope: :stock_minimum, class: "absolute right-0 z-10 mt-2 w-56 space-y-2 rounded-xl border border-ink-200 bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
                       <%= f.hidden_field :warehouse_id, value: balance.warehouse_id %>
                       <%= f.hidden_field :catalog_item_id, value: balance.catalog_item_id %>
                       <div><%= f.label :minimum, "Estoque mínimo", class: "sv-label", for: "minimo-#{balance.id}" %><%= f.number_field :minimum, value: balance.minimum_quantity.to_s("F"), id: "minimo-#{balance.id}", step: "0.001", min: 0, class: "sv-input" %></div>
@@ -79,7 +136,7 @@
               </td>
               <% if show_costs %>
                 <td class="sv-num text-right text-ink-600"><%= unit_cost(balance.average_cost) %></td>
-                <td class="sv-num text-right"><%= money(balance.stock_value) %></td>
+                <td class="sv-num whitespace-nowrap text-right text-ink-950"><%= money(balance.stock_value) %></td>
               <% end %>
               <td class="text-right">
                 <%= link_to "Movimentações", stock_movements_path(deposito: balance.warehouse_id, item: balance.catalog_item_id), class: "sv-btn-ghost sv-btn-sm" %>

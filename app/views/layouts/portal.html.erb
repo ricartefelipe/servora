@@ -1,46 +1,89 @@
+<% content_for :theme_color, "#ffffff" unless content_for?(:theme_color) %>
+<% organization = current_portal_organization %>
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-ink-50">
+<html lang="pt-BR" class="h-full bg-ink-25">
   <head>
     <title><%= [content_for(:title), "Portal do cliente"].compact_blank.join(" · ") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="robots" content="noindex">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <meta name="theme-color" content="#c8102e">
-    <link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
-    <link rel="icon" href="/icon.png?v=2" type="image/png">
-    <link rel="apple-touch-icon" href="/icon.png?v=2">
+    <meta name="theme-color" content="<%= content_for(:theme_color) %>">
+    <link rel="icon" href="/icon.svg?v=3" type="image/svg+xml">
+    <link rel="icon" href="/icon.png?v=3" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png?v=3">
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
-  <body class="min-h-full">
+  <body class="flex min-h-full flex-col text-[15px] text-ink-900">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
+    <%= render "shared/brand_rule" %>
     <div id="flash"><%= render "shared/flash" %></div>
     <header class="border-b border-ink-200 bg-white">
-      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <%= render "shared/logo", mark_only: true, size: 30 %>
-          <div>
-            <p class="text-sm font-semibold leading-tight text-ink-900"><%= current_portal_organization&.name || "Portal do cliente" %></p>
-            <p class="text-xs leading-tight text-ink-500">Portal do cliente</p>
+      <div class="mx-auto flex h-16 max-w-3xl items-center justify-between gap-4 px-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <% if organization %>
+            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-xs font-semibold text-ink-800 ring-1 ring-ink-200" aria-hidden="true">
+              <%= organization.name.split.first(2).pluck(0).join.upcase %>
+            </span>
+          <% else %>
+            <%= render "shared/logo", mark_only: true, size: 28 %>
+          <% end %>
+          <div class="min-w-0">
+            <p class="truncate text-[15px] font-semibold leading-tight text-ink-950"><%= organization&.name || "Portal do cliente" %></p>
+            <% if organization %><p class="text-xs leading-tight text-ink-500 sm:hidden">Portal do cliente</p><% end %>
           </div>
         </div>
-        <% if current_contact %>
-          <nav aria-label="Portal" class="relative -mx-2 flex max-w-full items-center gap-1 overflow-x-auto text-sm">
-            <%= link_to "Início", portal_root_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= link_to "Chamados", portal_work_orders_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= link_to "Orçamentos", portal_quotes_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= link_to "Equipamentos", portal_equipment_index_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= link_to "Visitas", portal_visits_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= link_to "Cobranças", portal_receivables_path, class: "sv-btn-ghost sv-btn-sm" %>
-            <%= button_to "Sair", portal_sign_out_path, method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700" %>
-          </nav>
-        <% end %>
+        <div class="flex shrink-0 items-center gap-3">
+          <% if organization %><span class="hidden text-xs text-ink-500 sm:block">Portal do cliente</span><% end %>
+          <% if current_contact %>
+            <span class="hidden h-5 w-px bg-ink-200 sm:block" aria-hidden="true"></span>
+            <span class="hidden max-w-40 truncate text-[13px] font-medium text-ink-800 md:block"><%= current_contact.name %></span>
+            <%= button_to portal_sign_out_path, method: :delete, class: "sv-btn-ghost sv-btn-sm -mr-2" do %>
+              <%= icon(:logout, size: 16) %> Sair
+            <% end %>
+          <% end %>
+        </div>
       </div>
+      <% if current_contact %>
+        <% portal_tabs = [
+             ["Início", portal_root_path, %w[home]],
+             ["Chamados", portal_work_orders_path, %w[work_orders reports]],
+             ["Orçamentos", portal_quotes_path, %w[quotes]],
+             ["Equipamentos", portal_equipment_index_path, %w[equipment]],
+             ["Visitas", portal_visits_path, %w[visits]],
+             ["Cobranças", portal_receivables_path, %w[receivables]]
+           ] %>
+        <nav aria-label="Portal" class="mx-auto max-w-3xl overflow-x-auto px-4">
+          <ul class="-mb-px flex gap-1" role="list">
+            <% portal_tabs.each do |label, path, controllers| %>
+              <% active = controller_path.start_with?("portal/") && controllers.include?(controller_name) %>
+              <li class="shrink-0">
+                <%= link_to label, path, aria: { current: (active ? "page" : nil) },
+                      class: active ? "flex h-11 items-center whitespace-nowrap border-b-2 border-brand-600 px-3 text-sm font-semibold text-ink-950 forced-colors:border-[Highlight]" : "flex h-11 items-center whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-medium text-ink-500 transition-colors hover:border-ink-300 hover:text-ink-800" %>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      <% end %>
     </header>
-    <main id="conteudo" class="mx-auto max-w-4xl px-5 py-8">
+    <main id="conteudo" class="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
       <%= yield %>
     </main>
-    <footer class="mx-auto max-w-4xl px-5 pb-10 text-xs text-ink-500">Ambiente seguro operado com Servora.</footer>
+    <footer class="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 pb-10 text-xs text-ink-500">
+      <svg width="14" height="14" viewBox="56 100 288 236" aria-hidden="true" focusable="false">
+        <path d="M60 170 140 110 130 170Z" fill="#d91f3c"/>
+        <path d="M140 110 200 170H130Z" fill="#c8102e"/>
+        <path d="M140 110H260L200 170Z" fill="#c8102e"/>
+        <path d="M140 110H260L200 170Z" fill="#ffffff" fill-opacity="0.3"/>
+        <path d="M260 110 270 170H200Z" fill="#a80c28"/>
+        <path d="M260 110 340 170H270Z" fill="#a80c28"/>
+        <path d="M60 170H130L200 330Z" fill="#d91f3c"/>
+        <path d="M130 170H200V330Z" fill="#c8102e"/>
+        <path d="M200 170H270L200 330Z" fill="#a80c28"/>
+        <path d="M270 170H340L200 330Z" fill="#8c0e26"/>
+      </svg>
+      Operado com Servora
+    </footer>
   </body>
 </html>

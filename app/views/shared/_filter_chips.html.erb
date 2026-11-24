@@ -1,0 +1,12 @@
+<%# Single-choice filter chips.
+    locals: items — [[label, url, active?, count_or_nil], ...]; label — the nav's accessible name.
+    The applied chip is ink-950 with white text and aria-current; ruby is never a filter state. %>
+<% label = local_assigns.fetch(:label, "Filtrar por situação") %>
+<nav class="mb-4 flex flex-wrap gap-2" aria-label="<%= label %>">
+  <% items.each do |text, url, active, count| %>
+    <%= link_to url, class: (active ? "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full bg-ink-950 px-3 text-xs font-medium text-white ring-1 ring-inset ring-ink-950" : "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 text-xs font-medium text-ink-700 ring-1 ring-inset ring-ink-300 transition-colors duration-150 hover:bg-ink-25 hover:text-ink-950"),
+          aria: { current: (active ? "page" : nil) } do %>
+      <%= text %><% unless count.nil? %><span class="sv-num font-mono text-[11px] <%= active ? "text-white/72" : "text-ink-500" %>"><%= count %></span><% end %>
+    <% end %>
+  <% end %>
+</nav>

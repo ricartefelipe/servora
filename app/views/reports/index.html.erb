@@ -1,5 +1,5 @@
 <% content_for :title, "Relatórios" %>
-<%= page_header("Relatórios", subtitle: "Indicadores do período no fuso da organização. Custos e margens aparecem somente para perfis autorizados.") %>
+<%= page_header("Relatórios", eyebrow: "Gestão · Relatórios", subtitle: "Indicadores do período no fuso da organização. Custos e margens aparecem somente para perfis autorizados.") %>
 
 <%= form_with url: reports_path, method: :get, class: "mb-6 flex flex-wrap items-end gap-3" do |f| %>
   <%= f.hidden_field :relatorio, value: @selected %>
@@ -9,34 +9,40 @@
   <p class="pb-2.5 text-xs text-ink-500">Período máximo de <%= Reports::Period::MAX_DAYS %> dias.</p>
 <% end %>
 
-<nav class="mb-5 flex gap-1 overflow-x-auto border-b border-ink-200" aria-label="Relatórios disponíveis">
+<nav class="mb-6 flex gap-6 overflow-x-auto border-b border-ink-200" aria-label="Relatórios disponíveis">
   <% @available.each do |key| %>
     <% current = key == @selected %>
     <%= link_to Reports::Catalog::DEFINITIONS.fetch(key).first.new(period: @period, zone: current_organization.zone, show_costs: false).title,
           reports_path(relatorio: key, **@period.to_param), aria: { current: (current ? "page" : nil) },
-          class: "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium #{current ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-500 hover:text-ink-800'}" %>
+          class: "-mb-px flex h-10 shrink-0 items-center whitespace-nowrap border-b-2 px-0.5 text-[13px] transition-colors duration-150 #{current ? 'border-brand-600 font-semibold text-ink-950' : 'border-transparent font-medium text-ink-500 hover:text-ink-800'}" %>
   <% end %>
 </nav>
 
 <% summary = @report.summary %>
 <% figures = summary.reject { |key, _| key.is_a?(Symbol) } %>
-<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<%# KPI strip: one card split by hairlines; cells grow to fill each row. %>
+<p class="mb-2 font-mono text-[11px] text-ink-500">Período: <%= @period.label %></p>
+<section class="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-card)] bg-ink-150 ring-1 ring-ink-200 lg:flex lg:flex-wrap" aria-label="Indicadores do período">
   <% figures.each do |label, value| %>
-    <%= stat_tile(label, report_value(value), hint: @period.label) %>
+    <div class="min-w-0 bg-white p-4 sm:p-5 lg:min-w-48 lg:flex-1 lg:basis-48">
+      <p class="text-xs font-medium text-ink-600"><%= label %></p>
+      <p class="sv-num mt-2 text-[28px] font-semibold leading-none tracking-tight text-ink-950"><%= report_value(value) %></p>
+    </div>
   <% end %>
-</div>
+</section>
 
 <% %i[by_status by_origin].each do |group| %>
   <% next unless summary[group]&.any? %>
   <section class="sv-card mb-6 p-5" aria-label="<%= group == :by_status ? 'Por situação' : 'Por origem' %>">
-    <h2 class="mb-3 text-sm font-semibold text-ink-900"><%= group == :by_status ? "Abertas no período, por situação" : "Abertas no período, por origem" %></h2>
+    <h2 class="mb-4 text-[15px] font-semibold text-ink-950"><%= group == :by_status ? "Abertas no período, por situação" : "Abertas no período, por origem" %></h2>
     <% max = summary[group].values.max.to_f %>
     <ul class="space-y-2" role="list">
       <% summary[group].sort_by { |_, count| -count }.each do |label, count| %>
-        <li class="grid grid-cols-[10rem_1fr_3rem] items-center gap-3 text-sm">
+        <li class="grid grid-cols-[10rem_1fr_3rem] items-center gap-3 text-[13px]">
           <span class="truncate text-ink-700"><%= label %></span>
-          <progress class="h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-ink-100 [&::-webkit-progress-value]:bg-indigo-500 [&::-moz-progress-bar]:bg-indigo-500" value="<%= count %>" max="<%= max %>" aria-label="<%= label %>: <%= count %>"></progress>
-          <span class="sv-num text-right text-ink-900"><%= count %></span>
+          <%# Ink bars: ruby is reserved for a "today" mark, which these period totals do not have. %>
+          <progress class="h-1.5 w-full appearance-none overflow-hidden rounded-full bg-ink-100 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-ink-100 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-ink-700 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-ink-700" value="<%= count %>" max="<%= max %>" aria-label="<%= label %>: <%= count %>"></progress>
+          <span class="sv-num text-right font-medium text-ink-950"><%= count %></span>
         </li>
       <% end %>
     </ul>
@@ -44,8 +50,8 @@
 <% end %>
 
 <section class="sv-card overflow-hidden" aria-labelledby="tabela-title">
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
-    <h2 id="tabela-title" class="font-semibold text-ink-900"><%= @report.title %> · <%= @period.label %></h2>
+  <div class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-ink-150 px-5 py-2.5">
+    <h2 id="tabela-title" class="text-[15px] font-semibold text-ink-950"><%= @report.title %> · <%= @period.label %></h2>
     <%= link_to export_report_path(relatorio: @selected, **@period.to_param), class: "sv-btn-secondary sv-btn-sm", data: { turbo: false } do %><%= icon(:download, size: 16) %> Exportar CSV<% end %>
   </div>
   <% if @rows.empty? %>
@@ -54,13 +60,13 @@
     <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><% @report.headers.each do |header| %><th scope="col"><%= header %></th><% end %></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @rows.each do |row| %>
-            <tr><% row.each do |cell| %><td class="<%= 'sv-num text-right' if cell.is_a?(Numeric) || cell.is_a?(Reports::Money) %>"><%= report_value(cell) %></td><% end %></tr>
+            <tr><% row.each do |cell| %><td class="<%= 'sv-num text-right text-ink-950' if cell.is_a?(Numeric) || cell.is_a?(Reports::Money) %>"><%= report_value(cell) %></td><% end %></tr>
           <% end %>
         </tbody>
       </table>
     </div>
-    <% if @rows.size >= Reports::Base::SCREEN_ROWS %><p class="px-5 py-3 text-xs text-ink-500">Exibindo as primeiras <%= Reports::Base::SCREEN_ROWS %> linhas; a exportação inclui até <%= number_with_delimiter(Reports::Base::EXPORT_ROWS, delimiter: ".") %>.</p><% end %>
+    <% if @rows.size >= Reports::Base::SCREEN_ROWS %><p class="border-t border-ink-150 bg-ink-25 px-5 py-3 text-xs text-ink-500">Exibindo as primeiras <%= Reports::Base::SCREEN_ROWS %> linhas; a exportação inclui até <%= number_with_delimiter(Reports::Base::EXPORT_ROWS, delimiter: ".") %>.</p><% end %>
   <% end %>
 </section>

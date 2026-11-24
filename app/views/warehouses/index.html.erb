@@ -2,10 +2,10 @@
 <%= render "stock/header" %>
 
 <section class="sv-card overflow-hidden" aria-labelledby="depositos-title">
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-150 px-5 py-4">
     <div>
-      <h2 id="depositos-title" class="font-semibold text-ink-900">Depósitos</h2>
-      <p class="text-sm text-ink-500">Almoxarifado central, estoque sob responsabilidade de técnicos e veículos de atendimento.</p>
+      <h2 id="depositos-title" class="text-[15px] font-semibold text-ink-950">Depósitos</h2>
+      <p class="text-[13px] text-ink-600">Almoxarifado central, estoque sob responsabilidade de técnicos e veículos de atendimento.</p>
     </div>
     <% if policy(Warehouse).create? %>
       <%= link_to new_warehouse_path, class: "sv-btn-secondary sv-btn-sm", data: { turbo_frame: "modal" } do %><%= icon(:plus, size: 16) %> Novo depósito<% end %>
@@ -14,11 +14,11 @@
   <% if @warehouses.empty? %>
     <%= empty_state("Nenhum depósito", description: "Cadastre o almoxarifado central para começar a controlar peças.", icon_name: :stock) %>
   <% else %>
-    <ul class="divide-y divide-ink-100" role="list">
+    <ul class="divide-y divide-ink-150" role="list">
       <% @warehouses.each do |warehouse| %>
-        <li class="flex flex-wrap items-center gap-3 px-5 py-3 <%= 'opacity-60' unless warehouse.active? %>">
+        <li class="flex flex-wrap items-center gap-3 px-5 py-3">
           <div class="min-w-0 flex-1">
-            <p class="font-medium text-ink-900"><%= warehouse.name %></p>
+            <p class="text-sm font-medium text-ink-950"><%= warehouse.name %></p>
             <p class="text-xs text-ink-500"><%= warehouse.kind_label %><% if warehouse.custodian %> · responsável: <%= warehouse.custodian.user.name %><% end %></p>
           </div>
           <% unless warehouse.active? %><%= badge("Inativo") %><% end %>

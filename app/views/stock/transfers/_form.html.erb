@@ -7,5 +7,5 @@
           hint: "Sai do disponível da origem ao custo médio atual" %>
   </div>
   <%= f.field :reason, label: "Observação" %>
-  <div class="flex justify-end"><%= f.submit_button("Transferir") %></div>
+  <%= render "shared/form_footer", f:, submit: "Transferir", cancel_url: stock_balances_path, within: :modal %>
 <% end %>

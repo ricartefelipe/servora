@@ -1,52 +1,20 @@
-<%# Servora gem: a cut ruby drawn with facets. Decorative only. %>
+<%# Servora gem: the cut ruby of the brand mark, drawn with flat facets. Decorative only. %>
 <svg viewBox="0 0 400 360" fill="none" aria-hidden="true" focusable="false" class="<%= local_assigns[:class] %>">
-  <defs>
-    <linearGradient id="gem-table" x1="140" y1="110" x2="260" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffc7cf"/>
-      <stop offset="1" stop-color="#e82d4f"/>
-    </linearGradient>
-    <linearGradient id="gem-crown-left" x1="60" y1="110" x2="200" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f8607a"/>
-      <stop offset="1" stop-color="#a80c28"/>
-    </linearGradient>
-    <linearGradient id="gem-crown-right" x1="200" y1="110" x2="340" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#c8102e"/>
-      <stop offset="1" stop-color="#761025"/>
-    </linearGradient>
-    <linearGradient id="gem-pavilion-light" x1="60" y1="170" x2="200" y2="330" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#e82d4f"/>
-      <stop offset="1" stop-color="#8c0e26"/>
-    </linearGradient>
-    <linearGradient id="gem-pavilion-mid" x1="130" y1="170" x2="200" y2="330" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#c8102e"/>
-      <stop offset="1" stop-color="#42030f"/>
-    </linearGradient>
-    <linearGradient id="gem-pavilion-dark" x1="270" y1="170" x2="200" y2="330" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#8c0e26"/>
-      <stop offset="1" stop-color="#2a0209"/>
-    </linearGradient>
-    <radialGradient id="gem-floor" cx="200" cy="346" r="120" gradientTransform="matrix(1 0 0 0.12 0 304.5)" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#e82d4f" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#e82d4f" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <ellipse cx="200" cy="346" rx="120" ry="14" fill="url(#gem-floor)"/>
-
-  <g class="animate-float" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1" stroke-linejoin="round">
+  <g stroke="#ffffff" stroke-opacity="0.14" stroke-width="1" stroke-linejoin="round">
     <%# Crown %>
-    <path d="M60 170 140 110 130 170Z" fill="url(#gem-crown-left)"/>
-    <path d="M140 110 200 170H130Z" fill="url(#gem-crown-left)" fill-opacity="0.8"/>
-    <path d="M140 110H260L200 170Z" fill="url(#gem-table)"/>
-    <path d="M260 110 270 170H200Z" fill="url(#gem-crown-right)" fill-opacity="0.85"/>
-    <path d="M260 110 340 170H270Z" fill="url(#gem-crown-right)"/>
+    <path d="M60 170 140 110 130 170Z" fill="#d91f3c"/>
+    <path d="M140 110 200 170H130Z" fill="#c8102e"/>
+    <path d="M140 110H260L200 170Z" fill="#e8475f"/>
+    <path d="M260 110 270 170H200Z" fill="#a80c28"/>
+    <path d="M260 110 340 170H270Z" fill="#8c0e26"/>
     <%# Pavilion %>
-    <path d="M60 170H130L200 330Z" fill="url(#gem-pavilion-light)"/>
-    <path d="M130 170H200V330Z" fill="url(#gem-pavilion-mid)"/>
-    <path d="M200 170H270L200 330Z" fill="url(#gem-pavilion-dark)" fill-opacity="0.9"/>
-    <path d="M270 170H340L200 330Z" fill="url(#gem-pavilion-dark)"/>
-    <%# Glint on the table %>
-    <path class="animate-glint origin-center [transform-box:fill-box]" stroke="none" fill="#ffffff"
-          d="M168 104c1.2 6.4 3.6 8.8 10 10-6.4 1.2-8.8 3.6-10 10-1.2-6.4-3.6-8.8-10-10 6.4-1.2 8.8-3.6 10-10Z"/>
+    <path d="M60 170H130L200 330Z" fill="#c8102e"/>
+    <path d="M130 170H200V330Z" fill="#a80c28"/>
+    <path d="M200 170H270L200 330Z" fill="#8c0e26"/>
+    <path d="M270 170H340L200 330Z" fill="#6b0d20"/>
   </g>
+  <path d="M140 110H195L168 142Z" fill="#ffffff" fill-opacity="0.28"/>
+  <%# A single glint when the page opens; static under reduced motion. %>
+  <path class="animate-glint-once origin-center [transform-box:fill-box]" fill="#ffffff"
+        d="M168 96c1.2 6.4 3.6 8.8 10 10-6.4 1.2-8.8 3.6-10 10-1.2-6.4-3.6-8.8-10-10 6.4-1.2 8.8-3.6 10-10Z"/>
 </svg>

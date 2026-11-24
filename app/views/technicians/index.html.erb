@@ -1,5 +1,5 @@
 <% content_for :title, "Técnicos e equipes" %>
-<%= page_header("Técnicos e equipes", subtitle: "Competências e horários usados pelo despacho.") %>
+<%= page_header("Técnicos e equipes", eyebrow: "Gestão · Técnicos e equipes", subtitle: "Competências e horários usados pelo despacho.") %>
 <div class="grid gap-6 lg:grid-cols-3">
   <section class="min-w-0 space-y-3 lg:col-span-2" aria-label="Técnicos">
     <% if @technicians.empty? %>
@@ -9,12 +9,19 @@
       <article class="sv-card flex flex-wrap items-start gap-4 p-5">
         <%= avatar(technician.user.name) %>
         <div class="min-w-0 flex-1">
-          <p class="font-semibold text-ink-900"><%= technician.user.name %></p>
+          <p class="text-[15px] font-semibold text-ink-950"><%= technician.user.name %></p>
           <div class="mt-1 flex flex-wrap gap-1.5">
             <% technician.skills.each do |skill| %><%= badge(skill.name, tone: :neutral, dot: false) %><% end %>
             <% if technician.skills.empty? %><span class="text-xs text-ink-500">Sem competências cadastradas</span><% end %>
           </div>
-          <p class="mt-2 text-xs text-ink-500"><%= technician.work_schedules.map(&:label).join(" · ").presence || "Sem horário de trabalho definido" %></p>
+          <% schedules = technician.work_schedules.to_a %>
+          <% if schedules.any? %>
+            <ul class="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-ink-500" role="list" aria-label="Horário de trabalho">
+              <% schedules.each do |schedule| %><li class="sv-num whitespace-nowrap"><%= schedule.label %></li><% end %>
+            </ul>
+          <% else %>
+            <p class="mt-2 text-xs text-ink-500">Sem horário de trabalho definido</p>
+          <% end %>
         </div>
         <%= link_to "Editar perfil", edit_technician_path(technician), class: "sv-btn-secondary sv-btn-sm" %>
       </article>
@@ -22,21 +29,21 @@
   </section>
   <aside class="space-y-6">
     <section class="sv-card p-5" aria-labelledby="equipes-title">
-      <h2 id="equipes-title" class="mb-3 font-semibold text-ink-900">Equipes</h2>
+      <h2 id="equipes-title" class="mb-3 text-[15px] font-semibold text-ink-950">Equipes</h2>
       <ul class="space-y-2 text-sm" role="list">
         <% @teams.select(&:active?).each do |team| %>
           <li class="flex items-start justify-between gap-2">
-            <span><span class="font-medium text-ink-900"><%= team.name %></span><span class="block text-xs text-ink-500"><%= team.members.map { |m| m.user.name }.join(", ") %></span></span>
+            <span><span class="font-medium text-ink-950"><%= team.name %></span><span class="block text-xs text-ink-500"><%= team.members.map { |m| m.user.name }.join(", ") %></span></span>
             <%= button_to "Desativar", team_path(team), method: :delete, class: "sv-btn-ghost sv-btn-sm" %>
           </li>
         <% end %>
       </ul>
-      <%= form_with url: teams_path, scope: :team, class: "mt-4 space-y-3 border-t border-ink-100 pt-4" do |f| %>
+      <%= form_with url: teams_path, scope: :team, class: "mt-4 space-y-3 border-t border-ink-150 pt-4" do |f| %>
         <div><%= f.label :name, "Nova equipe", class: "sv-label" %><%= f.text_field :name, class: "sv-input", required: true %></div>
         <fieldset class="space-y-1">
           <legend class="sv-label">Integrantes</legend>
           <% @technicians.each do |technician| %>
-            <label class="flex items-center gap-2 text-sm"><%= check_box_tag "team[membership_ids][]", technician.id, false, id: "equipe_#{technician.id}", class: "rounded border-ink-300 text-brand-600" %><%= technician.user.name %></label>
+            <label class="flex items-center gap-2 text-sm text-ink-900"><%= check_box_tag "team[membership_ids][]", technician.id, false, id: "equipe_#{technician.id}", class: "rounded border-ink-400" %><%= technician.user.name %></label>
           <% end %>
         </fieldset>
         <%= f.button "Criar equipe", type: "submit", class: "sv-btn-secondary w-full" %>

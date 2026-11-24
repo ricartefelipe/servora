@@ -3,12 +3,12 @@
 <%= render "shared/auth_heading", title: "Ativar verificação em duas etapas",
       subtitle: "Use um aplicativo autenticador compatível com TOTP (padrão RFC 6238)." %>
 
-<ol class="space-y-6">
+<ol class="space-y-4">
   <li class="sv-card p-5">
-    <p class="text-sm font-semibold text-ink-900">1. Escaneie o QR code</p>
+    <p class="text-[15px] font-semibold text-ink-950">1. Escaneie o QR code</p>
     <div class="mx-auto mt-4 w-48 rounded-xl bg-white p-2 ring-1 ring-ink-200"><%= @provisioning.qr_svg %></div>
     <p class="mt-4 text-xs text-ink-500">Ou digite a chave manualmente:</p>
-    <p class="mt-1 select-all rounded-lg bg-ink-50 px-3 py-2 text-center font-mono text-sm tracking-wider text-ink-800"><%= @provisioning.formatted_secret %></p>
+    <p class="mt-1 select-all rounded-lg bg-ink-50 px-3 py-2 text-center font-mono text-sm tracking-wider text-ink-950 ring-1 ring-inset ring-ink-200"><%= @provisioning.formatted_secret %></p>
   </li>
   <li class="sv-card p-5">
     <%= form_with url: account_two_factor_path, method: :post, class: "space-y-4" do |f| %>

@@ -7,13 +7,12 @@
     <%= f.field :email, label: "E-mail", as: :email_field %>
     <%= f.field :phone, label: "Telefone", as: :telephone_field %>
   </div>
-  <fieldset class="space-y-3 rounded-2xl border border-ink-200 p-4">
-    <legend class="px-1 text-sm font-semibold text-ink-800">Permissões do contato</legend>
+  <fieldset class="space-y-3 rounded-xl border border-ink-200 p-4">
+    <legend class="px-1 text-[13px] font-semibold text-ink-950">Permissões do contato</legend>
     <%= f.toggle_field :can_follow, label: "Acompanha serviços", hint: "Recebe avisos de agendamento e conclusão." %>
     <%= f.toggle_field :can_approve, label: "Aprova orçamentos", hint: "Pode aceitar ou recusar propostas em nome do cliente." %>
     <%= f.toggle_field :portal_enabled, label: "Acesso ao portal do cliente", hint: "Exige e-mail. O acesso é feito por link temporário." %>
   </fieldset>
-  <div class="flex justify-end">
-    <%= f.submit_button(contact.persisted? ? "Salvar contato" : "Adicionar contato") %>
-  </div>
+  <%= render "shared/form_footer", f:, submit: (contact.persisted? ? "Salvar contato" : "Adicionar contato"),
+        cancel_url: customer_path(customer), within: :modal %>
 <% end %>

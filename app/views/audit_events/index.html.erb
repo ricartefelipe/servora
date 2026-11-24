@@ -1,5 +1,5 @@
 <% content_for :title, "Auditoria" %>
-<%= page_header("Auditoria", subtitle: "Registro imutável de ações relevantes. Valores sensíveis são filtrados.") %>
+<%= page_header("Auditoria", eyebrow: "Gestão · Auditoria", subtitle: "Registro imutável de ações relevantes. Valores sensíveis são filtrados.") %>
 
 <%= form_with url: audit_events_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do |f| %>
   <div>
@@ -16,12 +16,12 @@
     <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col">Detalhes</th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |event| %>
             <tr>
-              <td class="whitespace-nowrap sv-num text-ink-600"><%= l(event.created_at, format: :short) %></td>
-              <td><%= event.actor_label || "Sistema" %></td>
-              <td><code class="rounded bg-ink-100 px-1.5 py-0.5 text-xs text-ink-700"><%= event.action %></code></td>
+              <td class="sv-num whitespace-nowrap font-mono text-xs text-ink-600"><%= l(event.created_at, format: :short) %></td>
+              <td class="font-medium text-ink-950"><%= event.actor_label || "Sistema" %></td>
+              <td><code class="rounded-md bg-ink-50 px-1.5 py-0.5 font-mono text-xs text-ink-700 ring-1 ring-inset ring-ink-200"><%= event.action %></code></td>
               <td class="max-w-md truncate text-xs text-ink-500" title="<%= event.changeset.to_json %>"><%= event.changeset.map { |k, v| "#{k}: #{v}" }.join(" · ").truncate(140) %></td>
             </tr>
           <% end %>

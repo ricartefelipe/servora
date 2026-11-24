@@ -1,17 +1,13 @@
 <% content_for :title, "Orçamentos" %>
-<%= page_header("Orçamentos", subtitle: "Propostas versionadas com aprovação do cliente registrada.") do %>
+<%= page_header("Orçamentos", eyebrow: "Operação · Orçamentos", subtitle: "Propostas versionadas com aprovação do cliente registrada.") do %>
   <% if policy(Quote).create? %>
     <%= link_to new_quote_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Novo orçamento<% end %>
   <% end %>
 <% end %>
 
-<nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar por situação">
-  <%= link_to "Todos", quotes_path, class: "sv-btn-sm #{@status ? 'sv-btn-secondary' : 'sv-btn-primary'}", aria: { current: (@status ? nil : "page") } %>
-  <% Quote::STATUSES.each do |value, label| %>
-    <%= link_to label, quotes_path(situacao: value), class: "sv-btn-sm #{@status == value ? 'sv-btn-primary' : 'sv-btn-secondary'}",
-          aria: { current: (@status == value ? "page" : nil) } %>
-  <% end %>
-</nav>
+<%= render "shared/filter_chips", label: "Filtrar por situação", items: [
+      ["Todos", quotes_path, @status.nil?, nil],
+      *Quote::STATUSES.map { |value, text| [text, quotes_path(situacao: value), @status == value, nil] }] %>
 
 <section class="sv-card overflow-hidden">
   <% if @pagination.records.empty? %>
@@ -20,13 +16,13 @@
     <div class="relative overflow-x-auto">
       <table class="sv-table">
         <thead><tr><th scope="col">Número</th><th scope="col">Cliente</th><th scope="col">Versão</th><th scope="col" class="text-right">Total</th><th scope="col">Situação</th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <tbody class="divide-y divide-ink-150">
           <% @pagination.records.each do |quote| %>
             <tr>
-              <td><%= link_to quote.number, quote_path(quote), class: "sv-link font-mono text-xs" %><span class="block text-ink-700"><%= quote.title %></span></td>
+              <td><%= link_to quote.number, quote_path(quote), class: "sv-link font-mono text-xs text-ink-700" %><span class="block font-medium text-ink-950"><%= quote.title %></span></td>
               <td><%= quote.customer.display_name %></td>
-              <td><%= quote.current_version&.label %></td>
-              <td class="sv-num text-right"><%= money(quote.current_version&.total) %></td>
+              <td class="text-ink-600"><%= quote.current_version&.label %></td>
+              <td class="sv-num text-right font-medium text-ink-950"><%= money(quote.current_version&.total) %></td>
               <td><%= render "quotes/status_badge", quote: %></td>
             </tr>
           <% end %>

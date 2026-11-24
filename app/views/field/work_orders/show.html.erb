@@ -1,74 +1,94 @@
 <% content_for :title, @work_order.number %>
+<% content_for :theme_color, "#ffffff" %>
+<% content_for :field_title, "Ordem de serviço" %>
 <% zone = current_organization.zone %>
+<% location = @work_order.service_location %>
+<% customer = @work_order.customer %>
+<% phone = customer.phone.to_s.gsub(/[^\d+]/, "") %>
+<%# The visit that drives the single ruby action of this screen: the one in progress, otherwise the next one. %>
+<% current_visit = (@visits.find { |visit| visit.status == "in_progress" } || @visits.first) if @can_execute %>
 <div data-controller="service-worker"></div>
-<div class="mx-auto max-w-2xl space-y-5"
+<div class="mx-auto max-w-2xl space-y-4"
      data-controller="field-sync" data-field-sync-url-value="<%= field_operations_path %>"
      data-field-sync-context-key-value="<%= local_context_key %>" data-field-sync-work-order-id-value="<%= @work_order.id %>">
-  <nav aria-label="Voltar"><%= link_to "← Minha agenda", field_root_path, class: "sv-link text-sm" %></nav>
+  <nav aria-label="Voltar">
+    <%= link_to field_root_path, class: "sv-btn-ghost -ml-3 h-11 px-3 text-[15px] font-medium" do %>
+      <%= icon(:chevron_right, size: 18, css: "rotate-180") %> Minha agenda
+    <% end %>
+  </nav>
+
   <header>
-    <p class="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700"><%= @work_order.number %> · <%= @work_order.status_label %></p>
-    <h1 class="text-2xl font-bold tracking-tight text-ink-950"><%= @work_order.title %></h1>
-    <p class="text-ink-600"><%= @work_order.customer.display_name %></p>
+    <p class="flex flex-wrap items-center gap-2">
+      <span class="font-mono text-[13px] font-medium text-ink-600"><%= @work_order.number %></span>
+      <%= badge(@work_order.status_label, tone: work_order_status_tone(@work_order.status)) %>
+    </p>
+    <h1 class="sv-display mt-2 text-display-md text-ink-950"><%= @work_order.title %></h1>
+    <p class="mt-1 text-base text-ink-700"><%= customer.display_name %></p>
   </header>
 
-  <div class="rounded-2xl border border-ink-200 bg-white p-3 text-sm" role="status" aria-live="polite">
-    <p data-field-sync-target="status" class="text-ink-700">Pronto para registrar.</p>
-    <p data-field-sync-target="pending" class="text-xs text-ink-500" hidden></p>
+  <div class="flex items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-ink-200" role="status" aria-live="polite">
+    <%= icon(:device, size: 20, css: "mt-0.5 shrink-0 text-ink-500") %>
+    <div class="min-w-0">
+      <p data-field-sync-target="status" class="text-[15px] text-ink-800">Pronto para registrar.</p>
+      <p data-field-sync-target="pending" class="mt-0.5 text-sm font-medium text-ink-700" hidden></p>
+    </div>
   </div>
 
-  <section class="sv-card p-4 text-sm" aria-labelledby="local-title">
-    <h2 id="local-title" class="font-semibold text-ink-900">Local</h2>
-    <p class="text-ink-700"><%= @work_order.service_location.address_line %></p>
-    <p class="text-ink-500"><%= @work_order.service_location.city_line %></p>
-    <% if @work_order.service_location.access_instructions.present? %><p class="mt-2 rounded-xl bg-amber-50 p-2 text-amber-900"><%= @work_order.service_location.access_instructions %></p><% end %>
-    <%= link_to "Abrir no mapa", "https://www.google.com/maps/search/?api=1&query=#{ERB::Util.url_encode([@work_order.service_location.address_line, @work_order.service_location.city_line].join(', '))}",
-          class: "sv-btn-secondary sv-btn-sm mt-3", target: "_blank", rel: "noopener noreferrer" %>
-    <% if @work_order.equipment.any? %>
-      <p class="mt-3 text-ink-700"><strong>Equipamentos:</strong> <%= @work_order.equipment.map(&:title).to_sentence %></p>
-    <% end %>
-    <p class="mt-3 whitespace-pre-line text-ink-700"><strong>Problema:</strong> <%= @work_order.problem_description %></p>
+  <section class="sv-card" aria-labelledby="local-title">
+    <h2 id="local-title" class="flex h-12 items-center border-b border-ink-150 px-4 text-[15px] font-semibold text-ink-950">Local</h2>
+    <div class="space-y-4 p-4">
+      <div class="text-[15px]">
+        <p class="text-ink-900"><%= location.address_line %></p>
+        <p class="text-ink-600"><%= location.city_line %></p>
+      </div>
+      <% if location.access_instructions.present? %>
+        <p class="flex gap-2 rounded-xl bg-amber-50 p-3 text-[15px] text-amber-900 ring-1 ring-inset ring-amber-600/20">
+          <%= icon(:key, size: 18, css: "mt-0.5 shrink-0 text-amber-700") %>
+          <span><span class="sr-only">Instruções de acesso: </span><%= location.access_instructions %></span>
+        </p>
+      <% end %>
+      <div class="grid grid-cols-2 gap-2">
+        <%= link_to "https://www.google.com/maps/search/?api=1&query=#{ERB::Util.url_encode([location.address_line, location.city_line].join(', '))}",
+              class: phone.present? ? "sv-btn-secondary h-11 text-sm" : "sv-btn-secondary col-span-2 h-11 text-sm",
+              target: "_blank", rel: "noopener noreferrer" do %>
+          <%= icon(:pin, size: 18) %> Abrir no mapa
+        <% end %>
+        <% if phone.present? %>
+          <%= link_to "tel:#{phone}", class: "sv-btn-secondary h-11 text-sm" do %>
+            <%= icon(:phone, size: 18) %> Ligar<span class="sr-only"> para <%= customer.display_name %></span>
+          <% end %>
+        <% end %>
+      </div>
+      <dl class="space-y-3 border-t border-ink-150 pt-4 text-[15px]">
+        <% if @work_order.equipment.any? %>
+          <div>
+            <dt class="text-[13px] font-medium text-ink-600">Equipamentos</dt>
+            <dd class="text-ink-900"><%= @work_order.equipment.map(&:title).to_sentence %></dd>
+          </div>
+        <% end %>
+        <div>
+          <dt class="text-[13px] font-medium text-ink-600">Problema</dt>
+          <dd class="whitespace-pre-line text-ink-900"><%= @work_order.problem_description %></dd>
+        </div>
+      </dl>
+    </div>
   </section>
 
   <% if @can_execute && @visits.any? %>
-    <section class="sv-card space-y-3 p-4" aria-labelledby="visita-title">
-      <h2 id="visita-title" class="font-semibold text-ink-900">Visita</h2>
-      <% @visits.each do |visit| %>
-        <p class="text-sm text-ink-600"><%= l(visit.scheduled_start.in_time_zone(zone), format: :short) %></p>
-        <% if visit.status == "scheduled" %>
-          <%= button_to "Iniciar visita", start_work_order_visit_path(@work_order, visit, origem: "campo"), method: :patch, class: "sv-btn-primary w-full py-3" %>
-        <% elsif visit.status == "in_progress" %>
-          <%= form_with url: finish_work_order_visit_path(@work_order, visit, origem: "campo"), method: :patch, scope: :finish, class: "space-y-2" do |f| %>
-            <%= f.label :outcome_note, "Resumo da visita", class: "sv-label" %>
-            <%= f.text_area :outcome_note, rows: 2, class: "sv-input" %>
-            <label class="flex items-center gap-2 text-sm text-ink-700"><%= f.check_box :needs_return, class: "rounded border-ink-300 text-brand-600" %> Precisa de retorno</label>
-            <%= f.button "Finalizar visita", type: "submit", class: "sv-btn-primary w-full py-3" %>
-          <% end %>
-        <% end %>
-      <% end %>
-    </section>
-  <% end %>
-
-  <% if @work_order.checklist_items.any? %>
-    <section class="sv-card p-4" aria-labelledby="checklist-title">
-      <h2 id="checklist-title" class="mb-2 font-semibold text-ink-900">Checklist</h2>
-      <ul class="divide-y divide-ink-100" role="list">
-        <% @work_order.checklist_items.each do |item| %>
-          <li class="py-3">
-            <%= form_with url: field_operations_path, scope: :checklist, class: "space-y-2",
-                  data: { kind: "checklist", version: item.lock_version, item_id: item.id, draft_id: "checklist-#{item.id}",
-                          action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
-              <%= f.label :response, for: "item-#{item.id}", class: "block text-sm font-medium text-ink-800" do %><%= item.label %><% if item.required %> <span class="text-rose-600" aria-label="obrigatório">*</span><% end %><% end %>
-              <div class="flex gap-2">
-                <% case item.response_kind %>
-                <% when "check" %>
-                  <%= f.select :response, [["Selecione", ""], ["Sim", "sim"], ["Não", "nao"]], { selected: item.response }, id: "item-#{item.id}", class: "sv-input", disabled: !@can_execute %>
-                <% when "number" %>
-                  <%= f.text_field :response, value: item.response, id: "item-#{item.id}", inputmode: "decimal", class: "sv-input", disabled: !@can_execute %>
-                <% else %>
-                  <%= f.text_field :response, value: item.response, id: "item-#{item.id}", class: "sv-input", disabled: !@can_execute %>
-                <% end %>
-                <% if @can_execute %><%= f.button "Salvar", type: "submit", class: "sv-btn-secondary shrink-0" %><% end %>
-              </div>
+    <section class="sv-card" aria-labelledby="visita-title">
+      <h2 id="visita-title" class="flex h-12 items-center border-b border-ink-150 px-4 text-[15px] font-semibold text-ink-950">Visita</h2>
+      <ul class="divide-y divide-ink-150" role="list">
+        <% @visits.each do |visit| %>
+          <li class="space-y-3 p-4">
+            <p class="flex flex-wrap items-center justify-between gap-2">
+              <span class="sv-num font-mono text-base font-medium text-ink-900"><%= l(visit.scheduled_start.in_time_zone(zone), format: :short) %></span>
+              <%= badge(visit.status_label, tone: visit.status == "in_progress" ? :ember : :indigo) %>
+            </p>
+            <% if visit.status == "scheduled" && visit != current_visit %>
+              <%= button_to "Iniciar visita", start_work_order_visit_path(@work_order, visit, origem: "campo"), method: :patch,
+                    class: "sv-btn-secondary h-12 w-full text-base" %>
+            <% elsif visit.status == "in_progress" %>
+              <%= render "field/work_orders/finish_form", work_order: @work_order, visit:, submit_inline: visit != current_visit %>
             <% end %>
           </li>
         <% end %>
@@ -76,38 +96,97 @@
     </section>
   <% end %>
 
-  <section class="sv-card p-4" aria-labelledby="registro-title">
-    <h2 id="registro-title" class="mb-2 font-semibold text-ink-900">Registro técnico</h2>
-    <%= form_with url: field_operations_path, scope: :report, class: "space-y-3",
-          data: { kind: "technical_report", version: @work_order.lock_version, draft_id: "technical-report",
-                  action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
-      <div><%= f.label :diagnosis, "Diagnóstico", class: "sv-label", for: "diagnostico" %><%= f.text_area :diagnosis, value: @work_order.diagnosis, id: "diagnostico", rows: 3, class: "sv-input", disabled: !@can_execute %></div>
-      <div><%= f.label :solution, "Solução aplicada", class: "sv-label", for: "solucao" %><%= f.text_area :solution, value: @work_order.solution, id: "solucao", rows: 3, class: "sv-input", disabled: !@can_execute %></div>
-      <% if @can_execute %><%= f.button "Salvar registro", type: "submit", class: "sv-btn-primary w-full py-3" %><% end %>
-    <% end %>
-  </section>
-
-  <% if @can_execute %>
-    <section class="sv-card p-4" aria-labelledby="apontamento-title">
-      <h2 id="apontamento-title" class="mb-2 font-semibold text-ink-900">Apontar horas</h2>
-      <%= form_with url: field_operations_path, scope: :time_entry, class: "space-y-3",
-            data: { kind: "time_entry", draft_id: "time-entry", action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
-        <div class="grid grid-cols-2 gap-3">
-          <div><%= f.label :started_at, "Início", class: "sv-label", for: "inicio" %><%= f.datetime_local_field :started_at, id: "inicio", class: "sv-input", required: true %></div>
-          <div><%= f.label :ended_at, "Término", class: "sv-label", for: "termino" %><%= f.datetime_local_field :ended_at, id: "termino", class: "sv-input", required: true %></div>
-        </div>
-        <div><%= f.label :notes, "Observação", class: "sv-label", for: "observacao" %><%= f.text_field :notes, id: "observacao", class: "sv-input" %></div>
-        <%= f.button "Registrar horas", type: "submit", class: "sv-btn-secondary w-full py-3" %>
-      <% end %>
-      <% if @time_entries.any? %>
-        <ul class="mt-3 space-y-1 text-sm text-ink-600" role="list">
-          <% @time_entries.each do |entry| %>
-            <li><%= l(entry.started_at.in_time_zone(zone), format: :short) %> · <%= entry.minutes %> min</li>
-          <% end %>
-        </ul>
-      <% end %>
-    </section>
+  <% if @work_order.checklist_items.any? %>
+    <details class="group sv-card" open>
+      <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 [&::-webkit-details-marker]:hidden">
+        <h2 id="checklist-title" class="text-[15px] font-semibold text-ink-950">Checklist</h2>
+        <%= icon(:chevron_down, size: 18, css: "shrink-0 text-ink-500 transition-transform duration-150 group-open:rotate-180") %>
+      </summary>
+      <ul class="divide-y divide-ink-150 border-t border-ink-150 px-4" role="list" aria-labelledby="checklist-title">
+        <% @work_order.checklist_items.each do |item| %>
+          <li class="py-4">
+            <%= form_with url: field_operations_path, scope: :checklist, class: "space-y-2",
+                  data: { kind: "checklist", version: item.lock_version, item_id: item.id, draft_id: "checklist-#{item.id}",
+                          action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
+              <%= f.label :response, for: "item-#{item.id}", class: "block text-[15px] font-medium text-ink-900" do %><%= item.label %><% if item.required %> <span class="text-[13px] font-medium text-ink-600">· obrigatório</span><% end %><% end %>
+              <div class="flex gap-2">
+                <% case item.response_kind %>
+                <% when "check" %>
+                  <%= f.select :response, [["Selecione", ""], ["Sim", "sim"], ["Não", "nao"]], { selected: item.response }, id: "item-#{item.id}", class: "sv-input h-12 text-base", disabled: !@can_execute %>
+                <% when "number" %>
+                  <%= f.text_field :response, value: item.response, id: "item-#{item.id}", inputmode: "decimal", class: "sv-input h-12 text-base", disabled: !@can_execute %>
+                <% else %>
+                  <%= f.text_field :response, value: item.response, id: "item-#{item.id}", class: "sv-input h-12 text-base", disabled: !@can_execute %>
+                <% end %>
+                <% if @can_execute %><%= f.button "Salvar", type: "submit", class: "sv-btn-secondary h-12 shrink-0 px-4 text-[15px]" %><% end %>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </details>
   <% end %>
 
-  <p class="text-center text-sm"><%= link_to "Ver ordem completa", work_order_path(@work_order), class: "sv-link" %></p>
+  <details class="group sv-card" open>
+    <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 [&::-webkit-details-marker]:hidden">
+      <h2 id="registro-title" class="text-[15px] font-semibold text-ink-950">Registro técnico</h2>
+      <%= icon(:chevron_down, size: 18, css: "shrink-0 text-ink-500 transition-transform duration-150 group-open:rotate-180") %>
+    </summary>
+    <div class="border-t border-ink-150 p-4">
+      <%= form_with url: field_operations_path, scope: :report, class: "space-y-4",
+            data: { kind: "technical_report", version: @work_order.lock_version, draft_id: "technical-report",
+                    action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
+        <div><%= f.label :diagnosis, "Diagnóstico", class: "sv-label text-sm", for: "diagnostico" %><%= f.text_area :diagnosis, value: @work_order.diagnosis, id: "diagnostico", rows: 3, class: "sv-input text-base", disabled: !@can_execute %></div>
+        <div><%= f.label :solution, "Solução aplicada", class: "sv-label text-sm", for: "solucao" %><%= f.text_area :solution, value: @work_order.solution, id: "solucao", rows: 3, class: "sv-input text-base", disabled: !@can_execute %></div>
+        <% if @can_execute %>
+          <%= f.button "Salvar registro", type: "submit", class: current_visit ? "sv-btn-secondary h-12 w-full text-base" : "sv-btn-primary h-12 w-full text-base" %>
+        <% end %>
+      <% end %>
+    </div>
+  </details>
+
+  <% if @can_execute %>
+    <details class="group sv-card" open>
+      <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 [&::-webkit-details-marker]:hidden">
+        <h2 id="apontamento-title" class="text-[15px] font-semibold text-ink-950">Apontar horas</h2>
+        <%= icon(:chevron_down, size: 18, css: "shrink-0 text-ink-500 transition-transform duration-150 group-open:rotate-180") %>
+      </summary>
+      <div class="border-t border-ink-150 p-4">
+        <%= form_with url: field_operations_path, scope: :time_entry, class: "space-y-4",
+              data: { kind: "time_entry", draft_id: "time-entry", action: "submit->field-sync#submit input->field-sync#remember" } do |f| %>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div><%= f.label :started_at, "Início", class: "sv-label text-sm", for: "inicio" %><%= f.datetime_local_field :started_at, id: "inicio", class: "sv-input h-12 text-base", required: true %></div>
+            <div><%= f.label :ended_at, "Término", class: "sv-label text-sm", for: "termino" %><%= f.datetime_local_field :ended_at, id: "termino", class: "sv-input h-12 text-base", required: true %></div>
+          </div>
+          <div><%= f.label :notes, "Observação", class: "sv-label text-sm", for: "observacao" %><%= f.text_field :notes, id: "observacao", class: "sv-input h-12 text-base" %></div>
+          <%= f.button "Registrar horas", type: "submit", class: "sv-btn-secondary h-12 w-full text-base" %>
+        <% end %>
+        <% if @time_entries.any? %>
+          <ul class="mt-4 divide-y divide-ink-150 border-t border-ink-150 text-[15px] text-ink-700" role="list">
+            <% @time_entries.each do |entry| %>
+              <li class="flex items-center justify-between gap-3 py-2.5">
+                <span class="sv-num font-mono text-sm"><%= l(entry.started_at.in_time_zone(zone), format: :short) %></span>
+                <span class="sv-num font-mono text-sm text-ink-900"><%= entry.minutes %> min</span>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      </div>
+    </details>
+  <% end %>
+
+  <p class="text-center"><%= link_to "Ver ordem completa", work_order_path(@work_order), class: "sv-link inline-flex min-h-11 items-center text-[15px]" %></p>
+
+  <% if current_visit %>
+    <%# One ruby primary that follows the visit state: start it, then finish it. It docks right above the
+        fixed tab bar of the field layout (4rem + safe area), which already absorbs the safe-area inset. %>
+    <div class="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 border-t border-ink-200 bg-white px-4 py-3 sm:bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:mx-0 sm:rounded-2xl sm:border-t-0 sm:p-3 sm:ring-1 sm:ring-ink-200">
+      <% if current_visit.status == "in_progress" %>
+        <%= button_tag "Finalizar visita", type: "submit", form: "finalizar-visita-#{current_visit.id}", class: "sv-btn-primary h-12 w-full text-base" %>
+      <% else %>
+        <%= button_to "Iniciar visita", start_work_order_visit_path(@work_order, current_visit, origem: "campo"), method: :patch,
+              class: "sv-btn-primary h-12 w-full text-base", form: { class: "w-full" } %>
+      <% end %>
+    </div>
+  <% end %>
 </div>

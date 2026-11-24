@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<%# Technician shell (/campo): light and sunlight-safe. A white top bar with the gem and the page title, the
+    content in a single column and a fixed bottom tab bar. No sidebar, no blur. %>
+<% content_for :theme_color, "#ffffff" unless content_for?(:theme_color) %>
+<% on_agenda = controller_path == "field/agenda" %>
+<% tab_base = "relative flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] transition-colors duration-150 focus-visible:-outline-offset-2" %>
+<% tab_idle = "#{tab_base} font-medium text-ink-500 hover:text-ink-800" %>
+<% tab_active = "#{tab_base} font-semibold text-ink-950" %>
+<html lang="pt-BR" class="h-full bg-ink-25">
+  <head>
+    <title><%= [content_for(:title), current_organization&.name, "Servora"].compact_blank.join(" · ") %></title>
+    <%= render "layouts/head" %>
+  </head>
+  <body class="min-h-full text-base" data-controller="local-context" data-local-context-key-value="<%= local_context_key %>">
+    <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
+    <%= render "shared/brand_rule" %>
+    <%# The toasts sit above the bottom tab bar instead of behind it. %>
+    <div id="flash" class="[&>div]:bottom-[calc(5rem+env(safe-area-inset-bottom))]"><%= render "shared/flash" %></div>
+
+    <header class="sticky top-0 z-20 border-b border-ink-200 bg-white">
+      <div class="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4">
+        <%= render "shared/logo", size: 24, mark_only: true %>
+        <p class="min-w-0 flex-1 truncate text-[17px] font-semibold text-ink-950"><%= content_for(:field_title).presence || content_for(:title) %></p>
+        <p class="hidden max-w-[40%] truncate text-[13px] text-ink-500 sm:block"><%= current_organization.name %></p>
+      </div>
+    </header>
+
+    <%= render "layouts/mfa_banner" %>
+
+    <%# Bottom padding keeps the last block clear of the fixed tab bar (4rem + safe area). %>
+    <main id="conteudo" class="mx-auto w-full max-w-2xl px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))]" tabindex="-1">
+      <%= yield %>
+    </main>
+    <%= turbo_frame_tag "modal" %>
+
+    <nav aria-label="Navegação principal" class="fixed inset-x-0 bottom-0 z-30 border-t border-ink-200 bg-white pb-[env(safe-area-inset-bottom)]">
+      <ul class="mx-auto flex h-16 max-w-2xl" role="list">
+        <li class="flex-1">
+          <%= link_to field_root_path, class: tab_active, aria: { current: on_agenda ? "page" : "true" } do %>
+            <span class="absolute inset-x-4 top-0 h-0.5 rounded-b-full bg-brand-600 forced-colors:bg-[Highlight]" aria-hidden="true"></span>
+            <%= icon(:calendar, size: 22, css: "text-brand-600") %>
+            Hoje
+          <% end %>
+        </li>
+        <% if can?(:work_orders_view_all) || can?(:work_orders_execute) %>
+          <li class="flex-1">
+            <%= link_to work_orders_path, class: tab_idle do %>
+              <%= icon(:orders, size: 22) %>
+              Ordens
+            <% end %>
+          </li>
+        <% end %>
+        <li class="flex-1">
+          <%= link_to account_security_path, class: tab_idle do %>
+            <%= icon(:team, size: 22) %>
+            Perfil
+          <% end %>
+        </li>
+        <li class="flex-1">
+          <%= button_to destroy_user_session_path, method: :delete, form: { class: "h-full", data: { turbo: false } },
+                class: "#{tab_idle} cursor-pointer" do %>
+            <%= icon(:logout, size: 22) %>
+            Sair
+          <% end %>
+        </li>
+      </ul>
+    </nav>
+  </body>
+</html>

@@ -1,17 +1,28 @@
 <%# Modal dialog loaded into the "modal" Turbo Frame. Uses the native <dialog>
     (focus trap, Escape, inert background). Without Turbo the same content is
-    rendered as a regular page. %>
+    rendered as a regular page.
+    Optional locals: icon_name (neutral 32px tile in the title row) and
+    destructive: true (rose-tinted tile with the alert icon). %>
+<% destructive = local_assigns[:destructive] %>
+<% tile_icon = destructive ? :alert : local_assigns[:icon_name] %>
 <% if turbo_frame_request? %>
   <%= turbo_frame_tag "modal" do %>
     <dialog data-controller="modal" data-action="close->modal#closed"
-            class="m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-ink-200 bg-white p-0 shadow-[var(--shadow-float)] backdrop:bg-ink-950/50 backdrop:backdrop-blur-sm"
+            class="m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl bg-white p-0 text-ink-900 shadow-[var(--shadow-float)] backdrop:bg-ink-950/40"
             aria-labelledby="modal-title">
-      <div class="flex items-start justify-between gap-4 border-b border-ink-100 px-6 py-4">
-        <div>
-          <h2 id="modal-title" class="text-lg font-semibold text-ink-950"><%= title %></h2>
-          <% if local_assigns[:subtitle] %><p class="text-sm text-ink-500"><%= subtitle %></p><% end %>
+      <div class="flex items-start justify-between gap-4 border-b border-ink-150 px-6 py-4">
+        <div class="flex min-w-0 items-start gap-3">
+          <% if tile_icon %>
+            <span class="grid size-8 shrink-0 place-items-center rounded-lg <%= destructive ? 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20' : 'bg-ink-100 text-ink-700' %>" aria-hidden="true">
+              <%= icon(tile_icon, size: 16) %>
+            </span>
+          <% end %>
+          <div class="min-w-0">
+            <h2 id="modal-title" class="text-[17px] font-semibold leading-snug tracking-tight text-ink-950"><%= title %></h2>
+            <% if local_assigns[:subtitle] %><p class="mt-0.5 text-[13px] text-ink-500"><%= subtitle %></p><% end %>
+          </div>
         </div>
-        <button type="button" class="-mr-2 rounded-lg p-2 text-ink-500 hover:bg-ink-100 hover:text-ink-700" data-action="modal#close" aria-label="Fechar">
+        <button type="button" class="-mr-2 -mt-1 grid size-8 shrink-0 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-ink-950/[0.04] hover:text-ink-950" data-action="modal#close" aria-label="Fechar">
           <%= icon(:close, size: 18) %>
         </button>
       </div>
@@ -21,6 +32,6 @@
     </dialog>
   <% end %>
 <% else %>
-  <%= page_header(title, subtitle: local_assigns[:subtitle]) %>
+  <%= page_header(title, subtitle: local_assigns[:subtitle], size: :md) %>
   <section class="sv-card max-w-2xl p-6"><%= yield %></section>
 <% end %>

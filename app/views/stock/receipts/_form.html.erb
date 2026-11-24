@@ -7,5 +7,5 @@
           hint: "Recalcula o custo médio do item no depósito" %>
   </div>
   <%= f.field :reason, label: "Documento ou observação", hint: "Ex.: NF de compra 4521, fornecedor" %>
-  <div class="flex justify-end"><%= f.submit_button("Registrar entrada") %></div>
+  <%= render "shared/form_footer", f:, submit: "Registrar entrada", cancel_url: stock_balances_path, within: :modal %>
 <% end %>

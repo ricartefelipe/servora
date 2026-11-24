@@ -1,9 +1,9 @@
-<div class="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4" role="alert" tabindex="-1" data-controller="focus-on-connect">
+<div class="mb-6 rounded-xl bg-rose-50 p-4 ring-1 ring-inset ring-rose-600/20" role="alert" tabindex="-1" data-controller="focus-on-connect">
   <div class="flex gap-3">
-    <%= icon(:alert, css: "text-rose-600") %>
+    <%= icon(:alert, size: 18, css: "mt-px text-rose-600") %>
     <div>
-      <p class="text-sm font-semibold text-rose-900">Revise os campos destacados</p>
-      <ul class="mt-1 list-disc space-y-0.5 pl-5 text-sm text-rose-800">
+      <p class="text-[13px] font-semibold text-rose-900">Revise os campos destacados</p>
+      <ul class="mt-1 list-disc space-y-0.5 pl-5 text-[13px] text-rose-800 marker:text-rose-400">
         <% errors.full_messages.uniq.each do |message| %>
           <li><%= message %></li>
         <% end %>

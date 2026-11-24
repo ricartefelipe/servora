@@ -1,13 +1,13 @@
 <% content_for :title, "Orçamentos" %>
-<h1 class="mb-6 text-2xl font-bold tracking-tight text-ink-950">Orçamentos</h1>
+<h1 class="sv-display mb-6 text-display-md text-ink-950">Orçamentos</h1>
 <% if @quotes.empty? %>
   <div class="sv-card"><%= empty_state("Nenhum orçamento", icon_name: :quote) %></div>
 <% else %>
-  <ul class="sv-card divide-y divide-ink-100" role="list">
+  <ul class="sv-card divide-y divide-ink-150 overflow-hidden" role="list">
     <% @quotes.each do |quote| %>
       <li>
-        <%= link_to portal_quote_path(quote), class: "flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-ink-50" do %>
-          <span class="min-w-0 flex-1 font-medium text-ink-900"><%= quote.number %> · <%= quote.title %></span>
+        <%= link_to portal_quote_path(quote), class: "flex flex-wrap items-center gap-3 px-5 py-4 transition-colors hover:bg-ink-25" do %>
+          <span class="min-w-0 flex-1 font-medium text-ink-950"><%= quote.number %> · <%= quote.title %></span>
           <%= badge(quote.status_label, tone: { "sent" => :warning, "approved" => :success, "rejected" => :danger }.fetch(quote.status, :neutral)) %>
         <% end %>
       </li>

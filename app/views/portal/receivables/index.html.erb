@@ -1,26 +1,34 @@
 <% content_for :title, "Cobranças" %>
-<h1 class="text-2xl font-bold tracking-tight text-ink-950">Cobranças</h1>
-<p class="mb-6 text-sm text-ink-600">Valores dos atendimentos. Este demonstrativo não é nota fiscal; quando emitida, a NFS-e fica disponível em cada cobrança.</p>
+<h1 class="sv-display text-display-md text-ink-950">Cobranças</h1>
+<p class="mb-6 mt-1 max-w-prose text-sm text-ink-600">Valores dos atendimentos. Este demonstrativo não é nota fiscal; quando emitida, a NFS-e fica disponível em cada cobrança.</p>
 <% if @receivables.empty? %>
   <div class="sv-card"><%= empty_state("Nenhuma cobrança", icon_name: :finance) %></div>
 <% else %>
   <ul class="space-y-3" role="list">
     <% @receivables.each do |receivable| %>
       <% charge = @charges[receivable.id] %>
-      <li class="sv-card flex flex-wrap items-center gap-4 p-4">
+      <li class="sv-card flex flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:p-5">
         <div class="min-w-0 flex-1">
-          <p class="font-semibold text-ink-900"><%= receivable.description %></p>
-          <p class="text-sm text-ink-500"><%= receivable.number %> · vence <%= l(receivable.due_on) %></p>
+          <p class="font-semibold text-ink-950"><%= receivable.description %></p>
+          <p class="text-sm text-ink-500"><span class="sv-num"><%= receivable.number %></span> · vence <span class="sv-num"><%= l(receivable.due_on) %></span></p>
         </div>
-        <div class="text-right">
-          <p class="sv-num font-semibold text-ink-900"><%= money(receivable.balance.positive? ? receivable.balance : receivable.amount - receivable.discount_amount) %></p>
-          <%= render "receivables/status_badge", receivable: %>
+        <div class="flex flex-col items-end gap-1.5 text-right">
+          <p class="sv-num text-lg font-semibold tracking-tight text-ink-950"><%= money(receivable.balance.positive? ? receivable.balance : receivable.amount - receivable.discount_amount) %></p>
+          <div class="flex flex-wrap justify-end gap-1.5"><%= render "receivables/status_badge", receivable: %></div>
         </div>
-        <% if (invoice = @invoices[receivable.id]) %>
-          <%= link_to "Nota fiscal", invoice.pdf_url, class: "sv-btn-secondary", target: "_blank", rel: "noopener noreferrer" %>
-        <% end %>
-        <% if charge && receivable.outstanding? %>
-          <%= link_to "Pagar", charge.payment_url, class: "sv-btn-primary", target: "_blank", rel: "noopener noreferrer" %>
+        <% invoice = @invoices[receivable.id] %>
+        <% payable = charge && receivable.outstanding? %>
+        <% if invoice || payable %>
+          <div class="flex w-full flex-wrap justify-end gap-2 border-t border-ink-150 pt-3">
+            <% if invoice %>
+              <%= link_to invoice.pdf_url, class: "sv-btn-secondary h-11 px-4 text-sm", target: "_blank", rel: "noopener noreferrer" do %><%= icon(:download, size: 16) %> Nota fiscal<% end %>
+            <% end %>
+            <% if payable %>
+              <% pay_label = charge.billing_type == "boleto" ? "Pagar boleto" : "Pagar com Pix" %>
+              <%= link_to pay_label, charge.payment_url,
+                    class: "sv-btn-dark h-11 px-4 text-sm", target: "_blank", rel: "noopener noreferrer" %>
+            <% end %>
+          </div>
         <% end %>
       </li>
     <% end %>

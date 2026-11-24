@@ -1,9 +1,15 @@
 <% content_for :title, @quote.number %>
 <% snapshot = @version&.snapshot || {} %>
+<% if @can_decide %>
+  <p class="mb-5 flex items-center gap-2.5 rounded-lg bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-900">
+    <span class="sv-facet" aria-hidden="true"></span>
+    Orçamento aguardando sua aprovação
+  </p>
+<% end %>
 <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-  <div>
-    <p class="text-xs font-semibold uppercase tracking-widest text-brand-700">Proposta <%= @quote.number %> · <%= @version&.label %></p>
-    <h1 class="mt-1 text-2xl font-bold tracking-tight text-ink-950"><%= snapshot.dig("quote", "title") %></h1>
+  <div class="min-w-0">
+    <p class="text-[13px] font-medium text-ink-500">Proposta <span class="sv-num"><%= @quote.number %></span> · <%= @version&.label %></p>
+    <h1 class="sv-display mt-1 text-display-md text-ink-950"><%= snapshot.dig("quote", "title") %></h1>
     <p class="mt-1 text-sm text-ink-600"><%= snapshot.dig("location", "name") %> · <%= snapshot.dig("location", "address") %></p>
   </div>
   <div class="flex items-center gap-2">
@@ -17,37 +23,37 @@
     <h2 id="itens-title" class="sr-only">Itens da proposta</h2>
     <div class="relative overflow-x-auto">
       <table class="sv-table">
-        <thead><tr><th scope="col">Descrição</th><th scope="col" class="text-right">Qtd.</th><th scope="col" class="text-right">Valor unit.</th><th scope="col" class="text-right">Total</th></tr></thead>
-        <tbody class="divide-y divide-ink-100">
+        <thead><tr><th scope="col">Descrição</th><th scope="col" class="whitespace-nowrap text-right">Qtd.</th><th scope="col" class="whitespace-nowrap text-right">Valor unit.</th><th scope="col" class="whitespace-nowrap text-right">Total</th></tr></thead>
+        <tbody class="divide-y divide-ink-150">
           <% snapshot.fetch("items", []).each do |item| %>
             <tr>
-              <td><%= item["description"] %></td>
-              <td class="sv-num text-right"><%= quantity(BigDecimal(item["quantity"]), item["unit"]) %></td>
-              <td class="sv-num text-right"><%= money(BigDecimal(item["unit_price"])) %></td>
-              <td class="sv-num text-right font-medium"><%= money(BigDecimal(item["total"])) %></td>
+              <td class="min-w-40 text-ink-900"><%= item["description"] %></td>
+              <td class="sv-num whitespace-nowrap text-right"><%= quantity(BigDecimal(item["quantity"]), item["unit"]) %></td>
+              <td class="sv-num whitespace-nowrap text-right"><%= money(BigDecimal(item["unit_price"])) %></td>
+              <td class="sv-num whitespace-nowrap text-right font-medium text-ink-950"><%= money(BigDecimal(item["total"])) %></td>
             </tr>
           <% end %>
         </tbody>
       </table>
     </div>
-    <dl class="space-y-1 border-t border-ink-100 px-5 py-4 text-sm">
-      <div class="flex justify-between"><dt class="text-ink-500">Subtotal</dt><dd class="sv-num"><%= money(BigDecimal(snapshot.dig("totals", "subtotal"))) %></dd></div>
+    <dl class="space-y-1.5 border-t border-ink-150 bg-ink-25 px-5 py-4 text-sm">
+      <div class="flex justify-between"><dt class="text-ink-500">Subtotal</dt><dd class="sv-num text-ink-900"><%= money(BigDecimal(snapshot.dig("totals", "subtotal"))) %></dd></div>
       <% if BigDecimal(snapshot.dig("totals", "discount")).positive? %>
-        <div class="flex justify-between"><dt class="text-ink-500">Desconto</dt><dd class="sv-num">− <%= money(BigDecimal(snapshot.dig("totals", "discount"))) %></dd></div>
+        <div class="flex justify-between"><dt class="text-ink-500">Desconto</dt><dd class="sv-num text-ink-900">− <%= money(BigDecimal(snapshot.dig("totals", "discount"))) %></dd></div>
       <% end %>
-      <div class="flex justify-between text-base font-bold text-ink-950"><dt>Total</dt><dd class="sv-num"><%= money(BigDecimal(snapshot.dig("totals", "total"))) %></dd></div>
+      <div class="flex items-baseline justify-between pt-1.5 text-ink-950"><dt class="text-sm font-semibold">Total</dt><dd class="sv-num text-xl font-semibold tracking-tight"><%= money(BigDecimal(snapshot.dig("totals", "total"))) %></dd></div>
     </dl>
   </section>
 
   <section class="mt-6 grid gap-4 sm:grid-cols-2">
     <div class="sv-card p-5 text-sm">
-      <h2 class="font-semibold text-ink-900">Condições</h2>
+      <h2 class="text-[15px] font-semibold text-ink-950">Condições</h2>
       <p class="mt-2 text-ink-700"><%= snapshot.dig("terms", "payment_terms") %></p>
       <p class="mt-2 text-ink-500">Válida até <%= l(Date.iso8601(snapshot.dig("terms", "valid_until"))) %></p>
       <% if snapshot.dig("terms", "notes").present? %><p class="mt-2 whitespace-pre-line text-ink-600"><%= snapshot.dig("terms", "notes") %></p><% end %>
     </div>
     <div class="sv-card p-5 text-sm">
-      <h2 class="font-semibold text-ink-900">Situação</h2>
+      <h2 class="text-[15px] font-semibold text-ink-950">Situação</h2>
       <% if @version.decided_at %>
         <p class="mt-2 text-ink-700"><%= @version.status_label %> por <%= @version.decided_by_contact&.name %> em <%= l(@version.decided_at, format: :short) %>.</p>
       <% elsif @can_decide %>
@@ -60,25 +66,28 @@
 
   <% if @can_decide %>
     <section class="mt-6 sv-card p-6" aria-labelledby="decisao-title">
-      <h2 id="decisao-title" class="font-semibold text-ink-900">Sua decisão</h2>
+      <h2 id="decisao-title" class="text-[15px] font-semibold text-ink-950">Sua decisão</h2>
       <p class="mt-1 text-sm text-ink-600">A confirmação registra esta versão, a data, o horário e o endereço de rede de origem. Ela não substitui uma assinatura digital certificada.</p>
-      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+      <div class="mt-5 grid items-start gap-3 sm:grid-cols-2">
         <%= form_with url: decide_portal_quote_path(@quote), method: :post, scope: :decision do |f| %>
           <%= f.hidden_field :version_id, value: @version.id %>
           <%= f.hidden_field :content_digest, value: @version.content_digest %>
           <%= f.hidden_field :outcome, value: "approved" %>
-          <%= f.button "Aprovar proposta de #{money(@version.total)}", type: "submit", class: "sv-btn-primary w-full",
-                data: { turbo_confirm: "Confirmar a aprovação da #{@version.label}?" } %>
+          <%= f.button type: "submit", class: "sv-btn-primary h-11 w-full px-4 text-sm",
+                data: { turbo_confirm: "Confirmar a aprovação da #{@version.label}?" } do %><%= icon(:check, size: 18) %> <%= "Aprovar proposta de #{money(@version.total)}" %><% end %>
         <% end %>
-        <details class="rounded-xl border border-ink-200 p-3">
-          <summary class="cursor-pointer text-sm font-semibold text-rose-700">Recusar proposta</summary>
-          <%= form_with url: decide_portal_quote_path(@quote), method: :post, scope: :decision, class: "mt-3 space-y-3" do |f| %>
+        <details class="group">
+          <summary class="sv-btn-secondary h-11 w-full cursor-pointer list-none px-4 text-sm [&::-webkit-details-marker]:hidden">
+            Recusar proposta
+            <%= icon(:chevron_down, size: 16, css: "text-ink-500 transition-transform group-open:rotate-180") %>
+          </summary>
+          <%= form_with url: decide_portal_quote_path(@quote), method: :post, scope: :decision, class: "sv-card-inset mt-3 space-y-3 p-4" do |f| %>
             <%= f.hidden_field :version_id, value: @version.id %>
             <%= f.hidden_field :content_digest, value: @version.content_digest %>
             <%= f.hidden_field :outcome, value: "rejected" %>
             <%= f.label :note, "Motivo da recusa", class: "sv-label" %>
             <%= f.text_area :note, rows: 3, required: true, class: "sv-input" %>
-            <%= f.button "Confirmar recusa", type: "submit", class: "sv-btn-danger w-full" %>
+            <%= f.button "Confirmar recusa", type: "submit", class: "sv-btn-secondary h-11 w-full px-4 text-sm" %>
           <% end %>
         </details>
       </div>

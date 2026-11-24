@@ -23,7 +23,7 @@ module Authentication
     # as modules, never emitted as text), so it is safe to render as HTML.
     def qr_svg
       svg = RQRCode::QRCode.new(uri).as_svg(
-        use_path: true, viewbox: true, color: "121215", shape_rendering: "crispEdges", module_size: 4, standalone: true,
+        use_path: true, viewbox: true, color: "1a1416", shape_rendering: "crispEdges", module_size: 4, standalone: true,
         svg_attributes: { role: "img", "aria-label": "QR code para configurar o aplicativo autenticador" }
       )
       svg.html_safe # rubocop:disable Rails/OutputSafety

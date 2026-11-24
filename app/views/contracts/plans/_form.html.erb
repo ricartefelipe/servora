@@ -2,7 +2,7 @@
       scope: :maintenance_plan, class: "space-y-6" do |f| %>
   <%= f.error_summary %>
   <section class="sv-card space-y-5 p-6">
-    <h2 class="font-semibold text-ink-900">O que e onde</h2>
+    <h2 class="text-[15px] font-semibold text-ink-950">O que e onde</h2>
     <%= f.field :title, label: "Título", required: true, hint: "Ex.: Preventiva mensal dos splits da loja" %>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= f.select_field :service_location_id, locations.map { |l| [l.name, l.id] }, label: "Local", include_blank: "Selecione", required: true %>
@@ -17,8 +17,8 @@
       <% else %>
         <div class="grid gap-2 sm:grid-cols-2">
           <% equipment.each do |item| %>
-            <label class="flex items-center gap-2 text-sm text-ink-700">
-              <%= check_box_tag "maintenance_plan[equipment_ids][]", item.id, selected.include?(item.id), id: "equipamento-#{item.id}", class: "rounded border-ink-300 text-brand-600" %>
+            <label class="flex items-center gap-2 text-sm text-ink-800">
+              <%= check_box_tag "maintenance_plan[equipment_ids][]", item.id, selected.include?(item.id), id: "equipamento-#{item.id}", class: "size-4" %>
               <%= item.title %>
             </label>
           <% end %>
@@ -30,7 +30,7 @@
   </section>
 
   <section class="sv-card space-y-5 p-6">
-    <h2 class="font-semibold text-ink-900">Quando</h2>
+    <h2 class="text-[15px] font-semibold text-ink-950">Quando</h2>
     <div class="grid gap-5 sm:grid-cols-3">
       <%= f.field :frequency_interval, label: "A cada", as: :number_field, min: 1, max: 104, required: true %>
       <%= f.select_field :frequency_unit, [["semana(s)", "week"], ["mês(es)", "month"], ["ano(s)", "year"]], label: "Período" %>
@@ -43,10 +43,11 @@
       <%= f.field :lead_days, label: "Gerar com antecedência (dias)", as: :number_field, min: 0, max: 90 %>
     </div>
     <% if plan.persisted? && plan.last_sequence.positive? %>
-      <p class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Alterar período, modo ou data base vale a partir da próxima ocorrência (nº <%= plan.next_sequence %>). As <%= plan.last_sequence %> ocorrências já geradas e suas ordens não mudam.</p>
+      <p class="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/20" role="note"><%= icon(:info, size: 16, css: "mt-0.5 text-amber-700") %><span>Alterar período, modo ou data base vale a partir da próxima ocorrência (nº <%= plan.next_sequence %>). As <%= plan.last_sequence %> ocorrências já geradas e suas ordens não mudam.</span></p>
       <%= f.toggle_field :active, label: "Plano ativo" %>
     <% end %>
   </section>
 
-  <div class="flex justify-end"><%= f.submit_button(plan.persisted? ? "Salvar plano" : "Criar plano") %></div>
+  <%= render "shared/form_footer", f:, submit: (plan.persisted? ? "Salvar plano" : "Criar plano"),
+        cancel_url: (plan.persisted? ? contract_plan_path(contract, plan) : contract_path(contract)), sticky: true, within: :stacked %>
 <% end %>

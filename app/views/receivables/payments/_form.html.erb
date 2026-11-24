@@ -1,12 +1,12 @@
 <%= form_with model: form, url: receivable_payments_path(receivable), class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
   <%= f.error_summary %>
   <%= f.hidden_field :operation_key %>
-  <p class="rounded-xl bg-ink-50 p-3 text-sm text-ink-700">Saldo em aberto: <strong class="sv-num"><%= money(receivable.balance) %></strong>. Pagamentos parciais são aceitos.</p>
+  <p class="rounded-lg bg-ink-50 p-3 text-sm text-ink-700">Saldo em aberto: <strong class="sv-num text-ink-950"><%= money(receivable.balance) %></strong>. Pagamentos parciais são aceitos.</p>
   <div class="grid gap-5 sm:grid-cols-2">
     <%= f.field :amount, label: "Valor recebido (R$)", as: :number_field, step: "0.01", min: "0.01", max: receivable.balance.to_s("F"), required: true, autofocus: true %>
     <%= f.field :paid_on, label: "Data do recebimento", as: :date_field, required: true, max: Time.zone.today.iso8601 %>
   </div>
   <%= f.select_field :payment_method, Payment::MANUAL_METHODS.map { |value, label| [label, value] }, label: "Forma de pagamento" %>
   <%= f.field :notes, label: "Observação", hint: "Ex.: comprovante, banco, identificador da transferência" %>
-  <div class="flex justify-end"><%= f.submit_button("Registrar pagamento") %></div>
+  <%= render "shared/form_footer", f:, submit: "Registrar pagamento", cancel_url: receivable_path(receivable), within: :modal %>
 <% end %>

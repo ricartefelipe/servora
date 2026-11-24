@@ -358,3 +358,18 @@ status atualizado.
 - **Consequências**: um único ponto de entrada; o redirecionamento de quem já entrou não é armazenado pelo
   navegador, evitando ciclos após a saída; ícones servidos com versão no endereço para renovar caches e
   instalações do aplicativo.
+
+## DEC-044 — Interface "Precisão": rubi como função, não como decoração
+
+- **Decisão**: interior claro em porcelana quente, texto ameixa e hierarquia tipográfica (Inter e JetBrains Mono
+  servidas pela aplicação). O rubi tem funções fixas: fio no topo, marcador do item ativo e das abas, faceta nos
+  títulos, gema da marca, uma única ação principal por área, foco e marcas de "agora". Há apenas duas superfícies
+  rubi: a capa do painel e o cartão da próxima visita na área do técnico. Perigo usa rosa claro com ícone e texto,
+  botões de perigo são contornados e valores em dinheiro nunca ficam vermelhos.
+- **Alternativas**: moldura escura rubi em toda a navegação (forte presença de marca, porém com brilho e mais
+  vermelho na tela durante o trabalho diário); layout editorial com blocos vermelhos (impacto visual, menor
+  densidade para listas e agenda). A escolha resultou de pesquisa de referências e avaliação comparativa.
+- **Consequências**: telas de trabalho calmas e legíveis por longos períodos, marca reconhecível e alerta sem
+  ambiguidade; testes de proteção impedem rubi em etiquetas de status, preenchimentos rosa sólidos e capas fora
+  do painel.
+

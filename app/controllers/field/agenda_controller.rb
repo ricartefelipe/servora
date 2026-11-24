@@ -4,6 +4,8 @@ module Field
   # "Minha agenda": the technician's visits for the next days and assigned
   # work orders without a visit.
   class AgendaController < TenantController
+    layout "field"
+
     DAYS = 7
 
     def show
