@@ -7,6 +7,7 @@ class Subscription < TenantRecord
                "canceled" => "Cancelada" }.freeze
 
   belongs_to :plan
+  has_many :invoices, class_name: "SubscriptionInvoice", dependent: nil, inverse_of: :subscription
 
   def status_label = STATUSES.fetch(status)
   def trial_expired?(today = Time.zone.today) = status == "trialing" && trial_ends_on < today

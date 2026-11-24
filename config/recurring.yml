@@ -20,6 +20,11 @@ default: &default
     queue: default
     schedule: every 5 minutes
 
+  subscription_billing:
+    class: Subscriptions::BillingJob
+    queue: default
+    schedule: every day at 02:00
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default
