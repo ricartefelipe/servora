@@ -116,6 +116,41 @@ Escopos adicionais aplicados pelas policies:
 - Equipamentos com histórico de atendimento não são excluídos: apenas arquivados. A exclusão existe só para
   cadastros feitos por engano e é bloqueada também por chaves estrangeiras restritivas.
 
+## Catálogo e orçamentos
+
+- Catálogo com serviços e peças, preço de venda (público aos papéis operacionais) e custo (apenas com
+  `costs_view`). Alterações no catálogo não afetam orçamentos: itens copiam descrição, unidade, preço e custo.
+- Orçamentos têm número sequencial por organização e ano (`ORC-AAAA-NNNNN`, alocação atômica com
+  `INSERT … ON CONFLICT DO UPDATE … RETURNING`) e versões.
+
+### Máquina de estados da versão de orçamento
+
+```
+draft ──enviar──▶ sent ──▶ approved ──┐
+                    │──▶ rejected ────┼──(nova versão enviada)──▶ superseded
+                    └──▶ expired ─────┘
+```
+
+- Ao enviar, a versão recebe um **snapshot** (dados do cliente, local, itens, totais e condições, sem custos)
+  e o **digest SHA-256** do JSON canônico. Triggers impedem qualquer alteração de itens, totais, condições,
+  snapshot e decisão de versões que saíram de `draft`.
+- A decisão exige: versão vigente, situação `sent`, validade não expirada no fuso da organização, digest igual
+  ao conteúdo apresentado e contato autorizado (`can_approve`) do mesmo cliente. Registra canal, contato,
+  membro que registrou (canais internos), IP, agente e observação. É uma confirmação eletrônica simples, não
+  uma assinatura certificada.
+- Mudança após envio ou aprovação: nova versão (cópia dos itens) e nova decisão do cliente.
+- A conversão em ordem de serviço usa a versão aprovada (feature de ordens de serviço).
+
+## Portal do cliente
+
+- Acesso por concessão de uso único enviada por e-mail (72 h, finalidade registrada, revogável). O GET apenas
+  mostra a confirmação; o POST consome a concessão e cria uma **sessão de portal** (12 h, revogável) em cookie
+  assinado HttpOnly e SameSite=Lax, separada das sessões da equipe.
+- Tokens nunca ficam no banco ou em argumentos de jobs: apenas digests; o token em claro é gerado no envio.
+- Funções `SECURITY DEFINER` resolvem somente o `organization_id` a partir do digest; sessão e contato são
+  carregados sob RLS e revalidados a cada requisição (contato ativo com portal habilitado, cliente ativo).
+- O contato vê apenas registros do próprio cliente, apenas versões enviadas (nunca rascunhos ou custos).
+
 ## Consistência assíncrona (Transactional Outbox)
 
 A fila (Solid Queue) usa outro banco; enfileirar um job não é atômico com a transação de negócio.

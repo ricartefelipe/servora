@@ -44,11 +44,11 @@ module Customers
     private
 
     def load_customer
-      @customer = policy_scope(current_organization.customers).find(params.expect(:customer_id))
+      @customer = policy_scope(tenant_relation(Customer)).find(params.expect(:customer_id))
     end
 
     def load_contact
-      @contact = @customer.contacts.find(params.expect(:id))
+      @contact = tenant_relation(CustomerContact).where(customer_id: @customer.id).find(params.expect(:id))
       authorize @contact, :"#{action_name == "edit" ? "update" : action_name}?"
     end
 

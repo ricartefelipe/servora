@@ -5,6 +5,11 @@ default: &default
     queue: outbox
     schedule: every 10 seconds
 
+  quote_expiry:
+    class: Quotes::ExpireJob
+    queue: default
+    schedule: every day at 00:15
+
 development:
   <<: *default
 

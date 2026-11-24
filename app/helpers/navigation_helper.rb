@@ -7,11 +7,13 @@ module NavigationHelper
 
   NAVIGATION = [
     ["Operação", [
-      NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards])
+      NavItem.new("Painel", :dashboard_path, :dashboard, nil, %w[dashboards]),
+      NavItem.new("Orçamentos", :quotes_path, :quote, :quotes_view, %w[quotes items decisions])
     ]],
     ["Cadastros", [
       NavItem.new("Clientes", :customers_path, :customers, :customers_view, %w[customers locations contacts]),
-      NavItem.new("Equipamentos", :equipment_index_path, :equipment, :equipment_view, %w[equipment])
+      NavItem.new("Equipamentos", :equipment_index_path, :equipment, :equipment_view, %w[equipment]),
+      NavItem.new("Catálogo", :catalog_items_path, :catalog, :catalog_view, %w[catalog_items])
     ]],
     ["Gestão", [
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),

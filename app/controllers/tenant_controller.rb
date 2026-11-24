@@ -33,6 +33,13 @@ class TenantController < ApplicationController
     current_membership&.can?(permission) || false
   end
 
+  # Explicitly tenant-scoped relation (RLS enforces the same rule). Used to load
+  # single records: rows loaded through a has_many of the organization would
+  # be flagged for strict loading as if they were part of an N+1 iteration.
+  def tenant_relation(model)
+    model.where(organization_id: current_organization.id)
+  end
+
   def pundit_user
     PolicyContext.new(user: current_user, membership: current_membership)
   end

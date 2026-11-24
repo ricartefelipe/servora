@@ -51,11 +51,11 @@ module Customers
     private
 
     def load_customer
-      @customer = policy_scope(current_organization.customers).find(params.expect(:customer_id))
+      @customer = policy_scope(tenant_relation(Customer)).find(params.expect(:customer_id))
     end
 
     def load_location
-      @location = @customer.service_locations.find(params.expect(:id))
+      @location = tenant_relation(ServiceLocation).where(customer_id: @customer.id).find(params.expect(:id))
       authorize @location, :"#{action_name == "edit" ? "update" : action_name}?"
     end
 

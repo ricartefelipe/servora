@@ -39,6 +39,16 @@ COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching
 
 
 --
+-- Name: servora_active_organizations(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_active_organizations() RETURNS TABLE(organization_id uuid)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$ SELECT id FROM organizations WHERE status = 'active' ORDER BY id $$;
+
+
+--
 -- Name: servora_claim_outbox_events(text, integer, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -86,6 +96,79 @@ CREATE FUNCTION public.servora_current_user_id() RETURNS uuid
 
 
 --
+-- Name: servora_forbid_sent_quote_version_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_forbid_sent_quote_version_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+  BEGIN
+    RAISE EXCEPTION 'sent quote versions cannot be deleted'
+      USING ERRCODE = 'integrity_constraint_violation';
+  END
+$$;
+
+
+--
+-- Name: servora_guard_frozen_quote_items(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_guard_frozen_quote_items() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+  DECLARE
+    version_status text;
+  BEGIN
+    SELECT status INTO version_status FROM quote_versions
+    WHERE id = COALESCE(NEW.quote_version_id, OLD.quote_version_id);
+    -- NULL: the parent draft version is being deleted (cascade).
+    IF version_status IS NOT NULL AND version_status <> 'draft' THEN
+      RAISE EXCEPTION 'quote version is frozen (status %)', version_status
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+    RETURN COALESCE(NEW, OLD);
+  END
+$$;
+
+
+--
+-- Name: servora_guard_frozen_quote_versions(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_guard_frozen_quote_versions() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+  BEGIN
+    IF OLD.status <> 'draft' AND (
+         NEW.quote_id IS DISTINCT FROM OLD.quote_id OR
+         NEW.version_number IS DISTINCT FROM OLD.version_number OR
+         NEW.valid_until IS DISTINCT FROM OLD.valid_until OR
+         NEW.payment_terms IS DISTINCT FROM OLD.payment_terms OR
+         NEW.notes IS DISTINCT FROM OLD.notes OR
+         NEW.subtotal IS DISTINCT FROM OLD.subtotal OR
+         NEW.discount_amount IS DISTINCT FROM OLD.discount_amount OR
+         NEW.total IS DISTINCT FROM OLD.total OR
+         NEW.snapshot IS DISTINCT FROM OLD.snapshot OR
+         NEW.content_digest IS DISTINCT FROM OLD.content_digest OR
+         NEW.sent_at IS DISTINCT FROM OLD.sent_at) THEN
+      RAISE EXCEPTION 'sent quote versions are immutable'
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+    IF OLD.status IN ('approved', 'rejected') AND (
+         NEW.decided_at IS DISTINCT FROM OLD.decided_at OR
+         NEW.decided_by_contact_id IS DISTINCT FROM OLD.decided_by_contact_id OR
+         NEW.decided_by_membership_id IS DISTINCT FROM OLD.decided_by_membership_id OR
+         NEW.decision_ip IS DISTINCT FROM OLD.decision_ip OR
+         NEW.decision_note IS DISTINCT FROM OLD.decision_note) THEN
+      RAISE EXCEPTION 'quote decisions are immutable'
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+    RETURN NEW;
+  END
+$$;
+
+
+--
 -- Name: servora_outbox_backlog(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -108,6 +191,29 @@ CREATE FUNCTION public.servora_resolve_invitation(p_token_digest text) RETURNS u
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
     AS $$ SELECT organization_id FROM invitations WHERE token_digest = p_token_digest $$;
+
+
+--
+-- Name: servora_resolve_portal_grant(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_resolve_portal_grant(p_token_digest text) RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$ SELECT organization_id FROM portal_access_grants WHERE token_digest = p_token_digest $$;
+
+
+--
+-- Name: servora_resolve_portal_session(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.servora_resolve_portal_session(p_token_digest text) RETURNS uuid
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+    SELECT organization_id FROM portal_sessions
+    WHERE token_digest = p_token_digest AND revoked_at IS NULL AND expires_at > clock_timestamp()
+  $$;
 
 
 SET default_tablespace = '';
@@ -144,6 +250,33 @@ CREATE TABLE public.audit_events (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT audit_events_actor_type CHECK (((actor_type)::text = ANY (ARRAY['user'::text, 'portal_contact'::text, 'api_credential'::text, 'system'::text])))
+);
+
+
+--
+-- Name: catalog_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_items (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    name character varying NOT NULL,
+    sku character varying,
+    description text,
+    unit character varying DEFAULT 'un'::character varying NOT NULL,
+    unit_price numeric(14,2) DEFAULT 0.0 NOT NULL,
+    unit_cost numeric(14,4),
+    estimated_minutes integer,
+    tracks_inventory boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    CONSTRAINT catalog_items_estimated_minutes CHECK (((estimated_minutes IS NULL) OR ((estimated_minutes >= 1) AND (estimated_minutes <= 10080)))),
+    CONSTRAINT catalog_items_inventory_only_parts CHECK ((((kind)::text = 'part'::text) OR (NOT tracks_inventory))),
+    CONSTRAINT catalog_items_kind CHECK (((kind)::text = ANY (ARRAY['service'::text, 'part'::text]))),
+    CONSTRAINT catalog_items_money CHECK (((unit_price >= (0)::numeric) AND ((unit_cost IS NULL) OR (unit_cost >= (0)::numeric)))),
+    CONSTRAINT catalog_items_unit CHECK (((unit)::text = ANY (ARRAY['un'::text, 'h'::text, 'min'::text, 'm'::text, 'm2'::text, 'm3'::text, 'kg'::text, 'l'::text, 'par'::text, 'cj'::text, 'vb'::text])))
 );
 
 
@@ -308,6 +441,21 @@ CREATE TABLE public.notifications (
 
 
 --
+-- Name: organization_counters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.organization_counters (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    scope character varying NOT NULL,
+    year integer NOT NULL,
+    value integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
+);
+
+
+--
 -- Name: organizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -371,6 +519,148 @@ CREATE TABLE public.outbox_events (
     updated_at timestamp(6) with time zone NOT NULL,
     CONSTRAINT outbox_events_attempts CHECK (((attempts >= 0) AND ((max_attempts >= 1) AND (max_attempts <= 50)))),
     CONSTRAINT outbox_events_status CHECK (((status)::text = ANY (ARRAY['pending'::text, 'processing'::text, 'processed'::text, 'dead'::text])))
+);
+
+
+--
+-- Name: portal_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_access_grants (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    purpose character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    quote_id uuid,
+    outbox_event_id uuid,
+    expires_at timestamp(6) with time zone NOT NULL,
+    used_at timestamp(6) with time zone,
+    revoked_at timestamp(6) with time zone,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    contact_id uuid NOT NULL,
+    CONSTRAINT portal_access_grants_purpose CHECK (((purpose)::text = ANY (ARRAY['quote_review'::text, 'portal'::text])))
+);
+
+
+--
+-- Name: portal_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_sessions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    token_digest character varying NOT NULL,
+    expires_at timestamp(6) with time zone NOT NULL,
+    last_seen_at timestamp(6) with time zone NOT NULL,
+    revoked_at timestamp(6) with time zone,
+    ip_address inet,
+    user_agent character varying(255),
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    contact_id uuid NOT NULL,
+    grant_id uuid NOT NULL
+);
+
+
+--
+-- Name: quote_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quote_events (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    actor_type character varying NOT NULL,
+    actor_label character varying,
+    note text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    quote_id uuid NOT NULL,
+    quote_version_id uuid
+);
+
+
+--
+-- Name: quote_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quote_items (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    kind character varying NOT NULL,
+    description character varying NOT NULL,
+    unit character varying NOT NULL,
+    quantity numeric(14,3) NOT NULL,
+    unit_price numeric(14,2) NOT NULL,
+    unit_cost numeric(14,4),
+    discount_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    line_total numeric(14,2) NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    quote_version_id uuid NOT NULL,
+    catalog_item_id uuid,
+    CONSTRAINT quote_items_kind CHECK (((kind)::text = ANY (ARRAY['service'::text, 'part'::text, 'other'::text]))),
+    CONSTRAINT quote_items_line_total CHECK (((line_total = (round((quantity * unit_price), 2) - discount_amount)) AND (line_total >= (0)::numeric))),
+    CONSTRAINT quote_items_values CHECK (((quantity > (0)::numeric) AND (unit_price >= (0)::numeric) AND (discount_amount >= (0)::numeric)))
+);
+
+
+--
+-- Name: quote_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quote_versions (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    version_number integer NOT NULL,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    valid_until date NOT NULL,
+    payment_terms text,
+    notes text,
+    subtotal numeric(14,2) DEFAULT 0.0 NOT NULL,
+    discount_amount numeric(14,2) DEFAULT 0.0 NOT NULL,
+    total numeric(14,2) DEFAULT 0.0 NOT NULL,
+    snapshot jsonb,
+    content_digest character varying,
+    sent_at timestamp(6) with time zone,
+    decided_at timestamp(6) with time zone,
+    decision_channel character varying,
+    decided_by_contact_id uuid,
+    decided_by_membership_id uuid,
+    decision_ip inet,
+    decision_user_agent character varying,
+    decision_note text,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    quote_id uuid NOT NULL,
+    CONSTRAINT quote_versions_decision_evidence CHECK ((((status)::text <> ALL (ARRAY['approved'::text, 'rejected'::text])) OR ((decided_at IS NOT NULL) AND ((decided_by_contact_id IS NOT NULL) OR (decided_by_membership_id IS NOT NULL))))),
+    CONSTRAINT quote_versions_frozen_content CHECK ((((status)::text = 'draft'::text) OR ((snapshot IS NOT NULL) AND (content_digest IS NOT NULL) AND (sent_at IS NOT NULL)))),
+    CONSTRAINT quote_versions_status CHECK (((status)::text = ANY (ARRAY['draft'::text, 'sent'::text, 'approved'::text, 'rejected'::text, 'superseded'::text, 'expired'::text]))),
+    CONSTRAINT quote_versions_totals CHECK (((discount_amount >= (0)::numeric) AND (discount_amount <= subtotal) AND (total = (subtotal - discount_amount))))
+);
+
+
+--
+-- Name: quotes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quotes (
+    id uuid DEFAULT uuidv7() NOT NULL,
+    organization_id uuid NOT NULL,
+    number character varying NOT NULL,
+    title character varying NOT NULL,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    customer_id uuid NOT NULL,
+    service_location_id uuid NOT NULL,
+    current_version_id uuid,
+    approved_version_id uuid,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL,
+    created_by_membership_id uuid NOT NULL,
+    CONSTRAINT quotes_status CHECK (((status)::text = ANY (ARRAY['draft'::text, 'sent'::text, 'approved'::text, 'rejected'::text, 'expired'::text, 'converted'::text, 'canceled'::text])))
 );
 
 
@@ -476,6 +766,14 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: catalog_items catalog_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_items
+    ADD CONSTRAINT catalog_items_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: customer_contacts customer_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -532,6 +830,14 @@ ALTER TABLE ONLY public.notifications
 
 
 --
+-- Name: organization_counters organization_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_counters
+    ADD CONSTRAINT organization_counters_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -553,6 +859,54 @@ ALTER TABLE ONLY public.outbox_event_failures
 
 ALTER TABLE ONLY public.outbox_events
     ADD CONSTRAINT outbox_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_access_grants portal_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_access_grants
+    ADD CONSTRAINT portal_access_grants_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_sessions portal_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_sessions
+    ADD CONSTRAINT portal_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_events quote_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_events
+    ADD CONSTRAINT quote_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_items quote_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_items
+    ADD CONSTRAINT quote_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_versions quote_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_versions
+    ADD CONSTRAINT quote_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quotes quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT quotes_pkey PRIMARY KEY (id);
 
 
 --
@@ -609,6 +963,13 @@ CREATE INDEX idx_on_organization_id_invited_by_membership_id_24eab2f90c ON publi
 
 
 --
+-- Name: idx_on_organization_id_kind_active_name_677c9f430a; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_kind_active_name_677c9f430a ON public.catalog_items USING btree (organization_id, kind, active, name);
+
+
+--
 -- Name: idx_on_organization_id_outbox_event_id_4fefddfda1; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -641,6 +1002,20 @@ CREATE INDEX index_audit_events_on_organization_id_and_created_at ON public.audi
 --
 
 CREATE UNIQUE INDEX index_audit_events_on_tenant_key ON public.audit_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_catalog_items_on_organization_id_and_sku; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_catalog_items_on_organization_id_and_sku ON public.catalog_items USING btree (organization_id, sku) WHERE (sku IS NOT NULL);
+
+
+--
+-- Name: index_catalog_items_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_catalog_items_on_tenant_key ON public.catalog_items USING btree (organization_id, id);
 
 
 --
@@ -798,6 +1173,20 @@ CREATE UNIQUE INDEX index_notifications_on_tenant_key ON public.notifications US
 
 
 --
+-- Name: index_organization_counters_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_organization_counters_key ON public.organization_counters USING btree (organization_id, scope, year);
+
+
+--
+-- Name: index_organization_counters_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_organization_counters_on_tenant_key ON public.organization_counters USING btree (organization_id, id);
+
+
+--
 -- Name: index_outbox_event_failures_on_tenant_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -830,6 +1219,132 @@ CREATE UNIQUE INDEX index_outbox_events_on_organization_id_and_dedup_key ON publ
 --
 
 CREATE UNIQUE INDEX index_outbox_events_on_tenant_key ON public.outbox_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_portal_access_grants_on_organization_id_and_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_access_grants_on_organization_id_and_contact_id ON public.portal_access_grants USING btree (organization_id, contact_id);
+
+
+--
+-- Name: index_portal_access_grants_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_access_grants_on_tenant_key ON public.portal_access_grants USING btree (organization_id, id);
+
+
+--
+-- Name: index_portal_access_grants_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_access_grants_on_token_digest ON public.portal_access_grants USING btree (token_digest);
+
+
+--
+-- Name: index_portal_grants_per_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_grants_per_event ON public.portal_access_grants USING btree (organization_id, outbox_event_id, contact_id) WHERE (outbox_event_id IS NOT NULL);
+
+
+--
+-- Name: index_portal_sessions_on_organization_id_and_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_sessions_on_organization_id_and_contact_id ON public.portal_sessions USING btree (organization_id, contact_id);
+
+
+--
+-- Name: index_portal_sessions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_sessions_on_tenant_key ON public.portal_sessions USING btree (organization_id, id);
+
+
+--
+-- Name: index_portal_sessions_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_sessions_on_token_digest ON public.portal_sessions USING btree (token_digest);
+
+
+--
+-- Name: index_quote_events_on_organization_id_and_quote_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quote_events_on_organization_id_and_quote_id ON public.quote_events USING btree (organization_id, quote_id);
+
+
+--
+-- Name: index_quote_events_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quote_events_on_tenant_key ON public.quote_events USING btree (organization_id, id);
+
+
+--
+-- Name: index_quote_items_on_organization_id_and_catalog_item_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quote_items_on_organization_id_and_catalog_item_id ON public.quote_items USING btree (organization_id, catalog_item_id);
+
+
+--
+-- Name: index_quote_items_on_organization_id_and_quote_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quote_items_on_organization_id_and_quote_version_id ON public.quote_items USING btree (organization_id, quote_version_id);
+
+
+--
+-- Name: index_quote_items_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quote_items_on_tenant_key ON public.quote_items USING btree (organization_id, id);
+
+
+--
+-- Name: index_quote_versions_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quote_versions_number ON public.quote_versions USING btree (organization_id, quote_id, version_number);
+
+
+--
+-- Name: index_quote_versions_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quote_versions_on_tenant_key ON public.quote_versions USING btree (organization_id, id);
+
+
+--
+-- Name: index_quotes_on_organization_id_and_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quotes_on_organization_id_and_customer_id ON public.quotes USING btree (organization_id, customer_id);
+
+
+--
+-- Name: index_quotes_on_organization_id_and_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quotes_on_organization_id_and_number ON public.quotes USING btree (organization_id, number);
+
+
+--
+-- Name: index_quotes_on_organization_id_and_status_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quotes_on_organization_id_and_status_and_created_at ON public.quotes USING btree (organization_id, status, created_at);
+
+
+--
+-- Name: index_quotes_on_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_quotes_on_tenant_key ON public.quotes USING btree (organization_id, id);
 
 
 --
@@ -896,6 +1411,27 @@ CREATE UNIQUE INDEX index_users_on_unlock_token ON public.users USING btree (unl
 
 
 --
+-- Name: quote_items quote_items_frozen; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER quote_items_frozen BEFORE INSERT OR DELETE OR UPDATE ON public.quote_items FOR EACH ROW EXECUTE FUNCTION public.servora_guard_frozen_quote_items();
+
+
+--
+-- Name: quote_versions quote_versions_frozen; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER quote_versions_frozen BEFORE UPDATE ON public.quote_versions FOR EACH ROW EXECUTE FUNCTION public.servora_guard_frozen_quote_versions();
+
+
+--
+-- Name: quote_versions quote_versions_no_delete_after_draft; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER quote_versions_no_delete_after_draft BEFORE DELETE ON public.quote_versions FOR EACH ROW WHEN (((old.status)::text <> 'draft'::text)) EXECUTE FUNCTION public.servora_forbid_sent_quote_version_delete();
+
+
+--
 -- Name: customer_contacts fk_customer_contacts_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -952,6 +1488,142 @@ ALTER TABLE ONLY public.outbox_event_failures
 
 
 --
+-- Name: portal_access_grants fk_portal_access_grants_contact_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_access_grants
+    ADD CONSTRAINT fk_portal_access_grants_contact_id_tenant FOREIGN KEY (organization_id, contact_id) REFERENCES public.customer_contacts(organization_id, id);
+
+
+--
+-- Name: portal_access_grants fk_portal_access_grants_quote_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_access_grants
+    ADD CONSTRAINT fk_portal_access_grants_quote_id_tenant FOREIGN KEY (organization_id, quote_id) REFERENCES public.quotes(organization_id, id);
+
+
+--
+-- Name: portal_sessions fk_portal_sessions_contact_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_sessions
+    ADD CONSTRAINT fk_portal_sessions_contact_id_tenant FOREIGN KEY (organization_id, contact_id) REFERENCES public.customer_contacts(organization_id, id);
+
+
+--
+-- Name: portal_sessions fk_portal_sessions_grant_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_sessions
+    ADD CONSTRAINT fk_portal_sessions_grant_id_tenant FOREIGN KEY (organization_id, grant_id) REFERENCES public.portal_access_grants(organization_id, id);
+
+
+--
+-- Name: quote_events fk_quote_events_quote_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_events
+    ADD CONSTRAINT fk_quote_events_quote_id_tenant FOREIGN KEY (organization_id, quote_id) REFERENCES public.quotes(organization_id, id);
+
+
+--
+-- Name: quote_events fk_quote_events_quote_version_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_events
+    ADD CONSTRAINT fk_quote_events_quote_version_id_tenant FOREIGN KEY (organization_id, quote_version_id) REFERENCES public.quote_versions(organization_id, id);
+
+
+--
+-- Name: quote_items fk_quote_items_catalog_item_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_items
+    ADD CONSTRAINT fk_quote_items_catalog_item_id_tenant FOREIGN KEY (organization_id, catalog_item_id) REFERENCES public.catalog_items(organization_id, id);
+
+
+--
+-- Name: quote_items fk_quote_items_quote_version_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_items
+    ADD CONSTRAINT fk_quote_items_quote_version_id_tenant FOREIGN KEY (organization_id, quote_version_id) REFERENCES public.quote_versions(organization_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: quote_versions fk_quote_versions_decided_by_contact_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_versions
+    ADD CONSTRAINT fk_quote_versions_decided_by_contact_id_tenant FOREIGN KEY (organization_id, decided_by_contact_id) REFERENCES public.customer_contacts(organization_id, id);
+
+
+--
+-- Name: quote_versions fk_quote_versions_decided_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_versions
+    ADD CONSTRAINT fk_quote_versions_decided_by_membership_id_tenant FOREIGN KEY (organization_id, decided_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: quote_versions fk_quote_versions_quote_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_versions
+    ADD CONSTRAINT fk_quote_versions_quote_id_tenant FOREIGN KEY (organization_id, quote_id) REFERENCES public.quotes(organization_id, id);
+
+
+--
+-- Name: quotes fk_quotes_approved_version_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_quotes_approved_version_id_tenant FOREIGN KEY (organization_id, approved_version_id) REFERENCES public.quote_versions(organization_id, id);
+
+
+--
+-- Name: quotes fk_quotes_created_by_membership_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_quotes_created_by_membership_id_tenant FOREIGN KEY (organization_id, created_by_membership_id) REFERENCES public.memberships(organization_id, id);
+
+
+--
+-- Name: quotes fk_quotes_current_version_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_quotes_current_version_id_tenant FOREIGN KEY (organization_id, current_version_id) REFERENCES public.quote_versions(organization_id, id);
+
+
+--
+-- Name: quotes fk_quotes_customer_id_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_quotes_customer_id_tenant FOREIGN KEY (organization_id, customer_id) REFERENCES public.customers(organization_id, id);
+
+
+--
+-- Name: quotes fk_quotes_location_of_customer; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_quotes_location_of_customer FOREIGN KEY (organization_id, customer_id, service_location_id) REFERENCES public.service_locations(organization_id, customer_id, id);
+
+
+--
+-- Name: organization_counters fk_rails_02bad7a88a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_counters
+    ADD CONSTRAINT fk_rails_02bad7a88a FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: invitations fk_rails_0fe4c14f0e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1000,6 +1672,30 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: portal_sessions fk_rails_6c5460f6fc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_sessions
+    ADD CONSTRAINT fk_rails_6c5460f6fc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: quote_items fk_rails_6cfe192463; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_items
+    ADD CONSTRAINT fk_rails_6cfe192463 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: portal_access_grants fk_rails_721b04c463; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_access_grants
+    ADD CONSTRAINT fk_rails_721b04c463 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: outbox_event_failures fk_rails_93d0f08c9e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1021,6 +1717,14 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.user_sessions
     ADD CONSTRAINT fk_rails_9fa262d742 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: quote_events fk_rails_b3e599d683; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_events
+    ADD CONSTRAINT fk_rails_b3e599d683 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -1056,6 +1760,30 @@ ALTER TABLE ONLY public.customer_contacts
 
 
 --
+-- Name: quote_versions fk_rails_d2d917b73a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_versions
+    ADD CONSTRAINT fk_rails_d2d917b73a FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: catalog_items fk_rails_d72295177d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_items
+    ADD CONSTRAINT fk_rails_d72295177d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: quotes fk_rails_de7694c307; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quotes
+    ADD CONSTRAINT fk_rails_de7694c307 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: equipment_events fk_rails_e71dc665bc; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1076,6 +1804,12 @@ ALTER TABLE ONLY public.service_locations
 --
 
 ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: catalog_items; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.catalog_items ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: customer_contacts; Type: ROW SECURITY; Schema: public; Owner: -
@@ -1141,6 +1875,12 @@ CREATE POLICY memberships_update ON public.memberships FOR UPDATE USING ((organi
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: organization_counters; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.organization_counters ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: organizations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1182,6 +1922,42 @@ ALTER TABLE public.outbox_event_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbox_events ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: portal_access_grants; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.portal_access_grants ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: portal_sessions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.portal_sessions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: quote_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quote_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: quote_items; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quote_items ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: quote_versions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quote_versions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: quotes; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: service_locations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1192,6 +1968,13 @@ ALTER TABLE public.service_locations ENABLE ROW LEVEL SECURITY;
 --
 
 CREATE POLICY tenant_isolation ON public.audit_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: catalog_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.catalog_items USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -1237,6 +2020,13 @@ CREATE POLICY tenant_isolation ON public.notifications USING ((organization_id =
 
 
 --
+-- Name: organization_counters tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.organization_counters USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
 -- Name: outbox_event_failures tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1248,6 +2038,48 @@ CREATE POLICY tenant_isolation ON public.outbox_event_failures USING ((organizat
 --
 
 CREATE POLICY tenant_isolation ON public.outbox_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: portal_access_grants tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.portal_access_grants USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: portal_sessions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.portal_sessions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: quote_events tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.quote_events USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: quote_items tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.quote_items USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: quote_versions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.quote_versions USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
+
+
+--
+-- Name: quotes tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.quotes USING ((organization_id = public.servora_current_organization_id())) WITH CHECK ((organization_id = public.servora_current_organization_id()));
 
 
 --
@@ -1264,6 +2096,10 @@ CREATE POLICY tenant_isolation ON public.service_locations USING ((organization_
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261124004300'),
+('20261124004200'),
+('20261124004100'),
+('20261124004000'),
 ('20261124003100'),
 ('20261124003000'),
 ('20261124002100'),

@@ -6,7 +6,10 @@ module Outbox
   module Registry
     HANDLERS = {
       "invitation.issued" => ["Invitations::Handlers::DeliverInvitation"],
-      "invitation.accepted" => ["Notifications::Handlers::InvitationAccepted"]
+      "invitation.accepted" => ["Notifications::Handlers::InvitationAccepted"],
+      "quote.sent" => ["Quotes::Handlers::NotifyApprovers"],
+      "quote.approved" => ["Notifications::Handlers::QuoteDecided"],
+      "quote.rejected" => ["Notifications::Handlers::QuoteDecided"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

@@ -16,7 +16,7 @@ class InvitationsController < TenantController
   end
 
   def destroy
-    invitation = current_organization.invitations.find(params.expect(:id))
+    invitation = tenant_relation(Invitation).find(params.expect(:id))
     authorize invitation
     Invitations::Revoke.new(invitation:).call
     redirect_to members_path, notice: "Convite revogado."

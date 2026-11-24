@@ -83,12 +83,37 @@ Rails.application.routes.draw do
         patch :restore, path: "reativar"
       end
     end
+    resources :catalog_items, path: "catalogo", except: %i[show destroy]
+    resources :quotes, path: "orcamentos", only: %i[index new create show] do
+      member do
+        patch :update_terms, path: "condicoes"
+        post :send_version, path: "enviar"
+        post :new_version, path: "nova-versao"
+        post :send_portal_link, path: "enviar-link"
+        patch :cancel, path: "cancelar"
+      end
+      scope module: :quotes do
+        resources :items, path: "itens", only: %i[create destroy]
+        resources :decisions, path: "decisoes", only: :create
+      end
+    end
     resources :audit_events, path: "auditoria", only: :index
     resources :outbox_events, path: "eventos", only: %i[index show] do
       patch :reprocess, on: :member, path: "reprocessar"
     end
     resources :notifications, path: "notificacoes", only: %i[index update] do
       patch :read_all, on: :collection, path: "marcar-todas"
+    end
+  end
+
+  # Customer portal: separate, restricted session obtained from an e-mailed link.
+  namespace :portal, path: "portal" do
+    get "acesso/:token", to: "access#show", as: :access
+    post "acesso/:token", to: "access#create", as: nil
+    delete "sair", to: "sessions#destroy", as: :sign_out
+    root "home#show"
+    resources :quotes, path: "orcamentos", only: %i[index show] do
+      post :decide, on: :member, path: "decisao"
     end
   end
 

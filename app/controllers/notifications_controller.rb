@@ -7,7 +7,7 @@ class NotificationsController < TenantController
   end
 
   def update
-    notification = policy_scope(current_organization.notifications).find(params.expect(:id))
+    notification = policy_scope(tenant_relation(Notification)).find(params.expect(:id))
     authorize notification
     notification.update!(read_at: Time.current) unless notification.read?
     redirect_to notification.path.presence || notifications_path

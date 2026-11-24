@@ -13,13 +13,13 @@ class OutboxEventsController < TenantController
   end
 
   def show
-    @event = policy_scope(current_organization.outbox_events).find(params.expect(:id))
+    @event = policy_scope(tenant_relation(OutboxEvent)).find(params.expect(:id))
     authorize @event
     @failures = @event.failures.recent_first.limit(50)
   end
 
   def reprocess
-    @event = policy_scope(current_organization.outbox_events).find(params.expect(:id))
+    @event = policy_scope(tenant_relation(OutboxEvent)).find(params.expect(:id))
     authorize @event
     Outbox::Reprocess.new(event: @event).call
     redirect_to outbox_event_path(@event), notice: "Evento reenviado para processamento."

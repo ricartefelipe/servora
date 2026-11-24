@@ -1,0 +1,25 @@
+<% content_for :title, "Início" %>
+<h1 class="text-2xl font-bold tracking-tight text-ink-950">Olá, <%= current_contact.name.split.first %></h1>
+<p class="mt-1 text-sm text-ink-600"><%= current_contact.customer.display_name %></p>
+
+<section class="mt-8" aria-labelledby="pendentes-title">
+  <h2 id="pendentes-title" class="mb-3 font-semibold text-ink-900">Propostas aguardando sua análise</h2>
+  <% if @pending_quotes.empty? %>
+    <div class="sv-card"><%= empty_state("Nenhuma proposta pendente", description: "Quando houver uma nova proposta, ela aparecerá aqui.", icon_name: :quote) %></div>
+  <% else %>
+    <ul class="space-y-3" role="list">
+      <% @pending_quotes.each do |quote| %>
+        <li>
+          <%= link_to portal_quote_path(quote), class: "sv-card flex items-center gap-4 p-5 transition hover:border-brand-300" do %>
+            <span class="grid size-10 place-items-center rounded-xl bg-ember-50 text-ember-600"><%= icon(:quote) %></span>
+            <span class="min-w-0 flex-1">
+              <span class="block font-semibold text-ink-900"><%= quote.number %> · <%= quote.title %></span>
+              <span class="block text-sm text-ink-500">Válida até <%= l(quote.current_version.valid_until) %></span>
+            </span>
+            <span class="sv-num font-semibold text-ink-900"><%= money(quote.current_version.total) %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>
