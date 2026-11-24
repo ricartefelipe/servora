@@ -4,8 +4,9 @@
     <title><%= [content_for(:title), current_organization&.name, "Servora"].compact_blank.join(" · ") %></title>
     <%= render "layouts/head" %>
   </head>
-  <body class="h-full" data-controller="shell local-context" data-local-context-key-value="<%= local_context_key %>"
-        data-action="keydown.esc@window->shell#close">
+  <body class="h-full" data-controller="shell local-context command-palette" data-local-context-key-value="<%= local_context_key %>"
+        data-command-palette-url-value="<%= search_path %>"
+        data-action="keydown.esc@window->shell#close keydown.ctrl+k@window->command-palette#open keydown.meta+k@window->command-palette#open turbo:before-cache@document->command-palette#dismiss">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
     <%= render "shared/brand_rule" %>
     <div id="flash"><%= render "shared/flash" %></div>
@@ -31,6 +32,13 @@
           </nav>
         <% end %>
         <div class="ml-auto flex items-center gap-1.5">
+          <button type="button" data-action="command-palette#open" aria-haspopup="dialog" aria-controls="busca-rapida"
+                  aria-keyshortcuts="Control+K Meta+K" aria-label="Buscar"
+                  class="grid size-9 place-items-center rounded-lg text-ink-600 transition-colors hover:bg-ink-950/[0.04] hover:text-ink-950 sm:mr-1.5 sm:flex sm:h-9 sm:w-64 sm:items-center sm:gap-2 sm:bg-white sm:px-2.5 sm:text-ink-500 sm:shadow-[var(--shadow-xs)] sm:ring-1 sm:ring-inset sm:ring-ink-200 sm:hover:bg-white sm:hover:text-ink-700 sm:hover:ring-ink-300">
+            <%= icon(:search, size: 18) %>
+            <span class="hidden flex-1 text-left text-[13px] sm:block">Buscar…</span>
+            <kbd class="sv-kbd hidden sm:inline" aria-hidden="true" data-command-palette-target="shortcut">Ctrl K</kbd>
+          </button>
           <%= turbo_stream_from current_membership, :notifications, channel: NotificationsChannel %>
           <%= link_to notifications_path, class: "relative grid size-9 place-items-center rounded-lg text-ink-600 hover:bg-ink-950/[0.04] hover:text-ink-950", aria: { label: "Notificações" } do %>
             <%= icon(:bell, size: 18) %>
@@ -69,5 +77,6 @@
       </main>
       <%= turbo_frame_tag "modal" %>
     </div>
+    <%= render "shared/command_palette" %>
   </body>
 </html>

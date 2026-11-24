@@ -7,6 +7,9 @@ module Audit
   module Redactor
     SENSITIVE_KEY = /pass|token|secret|otp|api_?key|authorization|cookie|signature|card|cvv|cvc|digest|encrypted|session/i
     MASK = "[FILTRADO]"
+    # Recorded instead of a secret to say that it was replaced; it carries no
+    # secret material, so it is kept as is.
+    CHANGED_MARKER = "[ALTERADA]"
     MAX_STRING = 500
     MAX_DEPTH = 5
 
@@ -32,7 +35,10 @@ module Audit
 
     def redact_hash(hash, depth)
       hash.each_with_object({}) do |(key, val), result|
-        result[key.to_s] = SENSITIVE_KEY.match?(key.to_s) ? MASK : redact(val, depth + 1)
+        result[key.to_s] = if !SENSITIVE_KEY.match?(key.to_s) then redact(val, depth + 1)
+                           elsif val == CHANGED_MARKER then CHANGED_MARKER
+                           else MASK
+                           end
       end
     end
   end
