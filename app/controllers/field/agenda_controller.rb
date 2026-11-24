@@ -21,7 +21,7 @@ module Field
     def visits(zone)
       range = @today.in_time_zone(zone)...(@today + DAYS).in_time_zone(zone)
       Visit.joins(:allocations).active_allocations.where(technician_allocations: { membership_id: current_membership.id })
-        .where(scheduled_start: range, status: %w[scheduled in_progress])
+        .where(scheduled_start: range, status: Visits::OPEN)
         .includes(work_order: %i[customer service_location]).order(:scheduled_start).distinct.to_a
     end
 

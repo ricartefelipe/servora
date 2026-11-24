@@ -129,10 +129,10 @@
               <p class="text-sm text-ink-600"><%= visit.allocations.map { |a| a.membership.user.name }.uniq.join(", ") %> · deslocamento <%= visit.travel_minutes %> min</p>
               <% if visit.outcome_note.present? %><p class="mt-1 text-sm text-ink-500"><%= visit.outcome_note %><%= " · precisa de retorno" if visit.needs_return %></p><% end %>
             </div>
-            <%= badge(visit.status_label, tone: { "scheduled" => :indigo, "in_progress" => :ember, "completed" => :success }.fetch(visit.status, :neutral)) %>
+            <%= badge(visit.status_label, tone: visit.status_tone) %>
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
-            <% if visit.scheduled? && visit_policy.execute? %>
+            <% if (visit.scheduled? || visit.traveling?) && visit_policy.execute? %>
               <%= button_to "Iniciar visita", start_work_order_visit_path(@work_order, visit), method: :patch, class: "sv-btn-secondary sv-btn-sm" %>
             <% end %>
             <% if visit.in_progress? && visit_policy.execute? %>
@@ -148,6 +148,8 @@
             <% end %>
             <% if visit.scheduled? && visit_policy.manage? %>
               <%= link_to "Reagendar", edit_work_order_visit_path(@work_order, visit), class: "sv-btn-ghost sv-btn-sm" %>
+            <% end %>
+            <% if (visit.scheduled? || visit.traveling?) && visit_policy.manage? %>
               <details class="relative">
                 <summary class="sv-btn-danger sv-btn-sm cursor-pointer list-none"><%= icon(:close, size: 14) %> Cancelar</summary>
                 <%= form_with url: cancel_work_order_visit_path(@work_order, visit), method: :patch, scope: :cancellation, class: "absolute left-0 z-10 mt-2 w-80 space-y-2 rounded-2xl bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
