@@ -44,13 +44,14 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | PDFs | Proposta comercial da versão enviada e relatório de execução por versão | `spec/requests/documents_spec.rb` |
 | Área do técnico | Agenda e execução móvel, fila offline idempotente, conflitos por versão, revalidação de acesso, rascunho recuperado, service worker restrito | `spec/services/field/sync_spec.rb`, `spec/requests/field_spec.rb`, `spec/system/field_offline_spec.rb` (rede desligada no navegador) |
 | Portal ampliado | Chamados com triagem e notificação, ordens, visitas, equipamentos e histórico, PDFs, cobranças; isolamento por cliente; uso no celular | `spec/requests/portal_service_spec.rb`, `spec/system/portal_requests_spec.rb` |
+| Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
 | Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `bash bin/test-all` | 82 exemplos (regras puras) + 429 exemplos (Rails e system) — 0 falhas |
+| `bash bin/test-all` | 82 exemplos (regras puras) + 435 exemplos (Rails e system) — 0 falhas |
 | Cobertura do núcleo | linhas 98,70%, branches 84,77% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |

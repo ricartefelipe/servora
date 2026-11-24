@@ -45,6 +45,10 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   das ordens e visitas, equipamentos com histórico, relatórios e propostas em PDF e cobranças com link de
   pagamento; navegação adaptada ao celular.
 
+- Observabilidade: logs JSON por requisição, job e consulta lenta com id de correlação; métricas Prometheus
+  protegidas por token (HTTP, jobs, outbox, filas, integrações, consultas lentas) sem rótulos de alta
+  cardinalidade.
+
 ### Corrigido
 
 - CI com limite de tempo por job e no passo de instalação do cliente PostgreSQL (com retentativas de rede),
