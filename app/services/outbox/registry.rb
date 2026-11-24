@@ -11,6 +11,7 @@ module Outbox
       "quote.approved" => ["Notifications::Handlers::QuoteDecided", "Webhooks::Handlers::Fanout"],
       "quote.rejected" => ["Notifications::Handlers::QuoteDecided", "Webhooks::Handlers::Fanout"],
       "work_order.created" => ["Webhooks::Handlers::Fanout"],
+      "work_order.requested" => ["Notifications::Handlers::PortalRequest"],
       "work_order.completed" => ["Inventory::Handlers::ReleaseWorkOrderReservations", "Webhooks::Handlers::Fanout"],
       "work_order.canceled" => ["Scheduling::Handlers::ReleaseCanceledWorkOrder", "Inventory::Handlers::ReleaseWorkOrderReservations",
                                 "Webhooks::Handlers::Fanout"],
