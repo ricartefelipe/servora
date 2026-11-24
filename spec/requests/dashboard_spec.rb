@@ -173,9 +173,9 @@ RSpec.describe "Dashboard" do
       end
 
       it "draws today's receipts in ruby, summarised for assistive technology, with its data table" do
-        chart = page.at_css('[role="img"][aria-label^="Recebido nos últimos 7 dias"]')
+        chart = page.css("figure").find { |figure| figure.at_css("figcaption").text.start_with?("Recebido nos últimos 7 dias") }
 
-        expect(chart["aria-label"]).to include("R$ 1.250,00", "Hoje: R$ 1.250,00")
+        expect(chart.at_css("figcaption").text).to include("R$ 1.250,00", "Hoje: R$ 1.250,00")
         expect(chart.css("path.fill-brand-600").size).to eq(1)
         expect(chart.css("path.fill-ink-300")).to be_empty
         expect(page.css("details summary").map { |summary| summary.text.strip }.count("Ver dados")).to eq(2)
