@@ -12,6 +12,7 @@ module NavigationHelper
     ["Gestão", [
       NavItem.new("Equipe", :members_path, :team, :members_view, %w[members invitations]),
       NavItem.new("Auditoria", :audit_events_path, :audit, :audit_view, %w[audit_events]),
+      NavItem.new("Eventos", :outbox_events_path, :integrations, :outbox_reprocess, %w[outbox_events]),
       NavItem.new("Configurações", :edit_settings_path, :settings, :organization_manage, %w[settings])
     ]]
   ].freeze

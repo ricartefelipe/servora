@@ -1,0 +1,38 @@
+<% content_for :title, "Evento" %>
+<%= page_header(@event.event_type, eyebrow: "Evento assíncrono", subtitle: "Criado em #{l(@event.created_at, format: :long)}") do %>
+  <% if policy(@event).reprocess? %>
+    <%= button_to "Reprocessar", reprocess_outbox_event_path(@event), method: :patch, class: "sv-btn-primary",
+          form: { data: { turbo_confirm: "Reenviar este evento para processamento?" } } %>
+  <% end %>
+<% end %>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="sv-card p-6">
+    <dl class="space-y-3 text-sm">
+      <div><dt class="text-ink-500">Situação</dt><dd class="mt-1"><%= render "outbox_events/status", event: @event %></dd></div>
+      <div><dt class="text-ink-500">Tentativas</dt><dd class="sv-num font-medium"><%= @event.attempts %> de <%= @event.max_attempts %></dd></div>
+      <div><dt class="text-ink-500">Próxima execução</dt><dd><%= @event.pending? ? l(@event.available_at, format: :short) : "—" %></dd></div>
+      <div><dt class="text-ink-500">Processado em</dt><dd><%= date_time(@event.processed_at) %></dd></div>
+      <div><dt class="text-ink-500">Requisição de origem</dt><dd class="font-mono text-xs"><%= @event.request_id || "—" %></dd></div>
+    </dl>
+  </section>
+  <section class="sv-card overflow-hidden lg:col-span-2" aria-labelledby="failures-title">
+    <h2 id="failures-title" class="border-b border-ink-100 px-5 py-4 font-semibold text-ink-900">Histórico de falhas</h2>
+    <% if @failures.empty? %>
+      <%= empty_state("Sem falhas registradas", icon_name: :check) %>
+    <% else %>
+      <ul class="divide-y divide-ink-100" role="list">
+        <% @failures.each do |failure| %>
+          <li class="px-5 py-3">
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+              <span class="font-medium text-ink-900">Tentativa <%= failure.attempt %></span>
+              <%= failure.transient? ? badge("Transitória", tone: :warning) : badge("Permanente", tone: :danger) %>
+              <span class="text-xs text-ink-500"><%= l(failure.created_at, format: :short) %></span>
+            </div>
+            <p class="mt-1 font-mono text-xs text-ink-600"><%= failure.error_class %>: <%= failure.error_message %></p>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+</div>

@@ -60,6 +60,12 @@ Rails.application.routes.draw do
       patch :complete_onboarding, path: "concluir-primeiros-passos"
     end
     resources :audit_events, path: "auditoria", only: :index
+    resources :outbox_events, path: "eventos", only: %i[index show] do
+      patch :reprocess, on: :member, path: "reprocessar"
+    end
+    resources :notifications, path: "notificacoes", only: %i[index update] do
+      patch :read_all, on: :collection, path: "marcar-todas"
+    end
   end
 
   root "pages#home"
