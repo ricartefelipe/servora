@@ -1,0 +1,19 @@
+<% content_for :title, "Meus dados" %>
+<% content_for :container_width, "max-w-lg" %>
+<%= render "shared/auth_heading", title: "Meus dados", subtitle: "Nome, e-mail e senha de acesso." %>
+
+<%= form_for resource, as: resource_name, url: registration_path(resource_name), html: { method: :put, class: "space-y-5" } do |f| %>
+  <%= f.error_summary %>
+  <%= f.field :name, label: "Nome completo", autocomplete: "name", required: true %>
+  <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "email", required: true,
+        hint: (resource.pending_reconfirmation? ? "Aguardando confirmação de #{resource.unconfirmed_email}." : nil) %>
+  <fieldset class="space-y-5 rounded-2xl border border-ink-200 p-4">
+    <legend class="px-1 text-sm font-semibold text-ink-800">Alterar senha</legend>
+    <%= f.field :password, label: "Nova senha", as: :password_field, autocomplete: "new-password", hint: "Deixe em branco para manter a atual." %>
+    <%= f.field :password_confirmation, label: "Confirme a nova senha", as: :password_field, autocomplete: "new-password" %>
+  </fieldset>
+  <%= f.field :current_password, label: "Senha atual", as: :password_field, autocomplete: "current-password", required: true,
+        hint: "Necessária para confirmar qualquer alteração." %>
+  <%= f.submit_button "Salvar alterações", class: "w-full" %>
+<% end %>
+<p class="mt-6 text-sm"><%= link_to "Voltar para segurança da conta", account_security_path, class: "sv-link" %></p>

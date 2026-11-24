@@ -1,0 +1,14 @@
+<% content_for :title, "Códigos de recuperação" %>
+<% content_for :container_width, "max-w-lg" %>
+<div class="mb-6 grid size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><%= icon(:check, size: 24) %></div>
+<%= render "shared/auth_heading", title: "Verificação ativada",
+      subtitle: "Guarde estes códigos de recuperação em local seguro. Cada um funciona uma única vez e eles não serão exibidos novamente." %>
+<ul class="grid grid-cols-2 gap-2 rounded-2xl border border-ink-200 bg-ink-50 p-4 font-mono text-sm" role="list" aria-label="Códigos de recuperação">
+  <% @backup_codes.each do |code| %>
+    <li class="rounded-lg bg-white px-3 py-2 text-center tracking-wider text-ink-800 ring-1 ring-ink-200"><%= code %></li>
+  <% end %>
+</ul>
+<div class="mt-6 flex gap-3">
+  <%= link_to "Continuar", organizations_path, class: "sv-btn-primary" %>
+  <%= link_to "Segurança da conta", account_security_path, class: "sv-btn-secondary" %>
+</div>

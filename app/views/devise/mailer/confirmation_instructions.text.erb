@@ -1,0 +1,6 @@
+Olá, <%= @resource.name %>.
+
+Confirme o endereço <%= @email %> para ativar sua conta no Servora:
+<%= user_confirmation_url(confirmation_token: @token) %>
+
+O link vale por 3 dias. Se você não criou esta conta, ignore esta mensagem.

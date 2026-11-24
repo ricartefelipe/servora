@@ -89,3 +89,40 @@ status atualizado.
 - **Decisão**: actions referenciadas por SHA de commit com o número da versão em comentário; Trivy e
   Gitleaks executados por imagens com tag de versão exata. Nenhuma referência `latest`.
 - **Consequências**: atualizações são feitas explicitamente (Dependabot abre PRs para `develop`).
+
+## DEC-011 — Registro de sessões no servidor
+
+- **Contexto**: cookies de sessão não podem ser revogados individualmente pelo servidor.
+- **Decisão**: cada login cria uma linha em `user_sessions`; hooks documentados do Warden validam a linha a
+  cada requisição e a revogam no logout. Troca e redefinição de senha encerram as demais sessões.
+  `rememberable` não é usado para não criar um caminho de autenticação paralelo.
+- **Consequências**: uma consulta adicional por requisição autenticada; `last_seen_at` é atualizado no
+  máximo a cada 5 minutos.
+
+## DEC-012 — MFA obrigatório para perfis privilegiados com prazo de adesão
+
+- **Decisão**: TOTP (devise-two-factor, segredo cifrado com Active Record Encryption) e 10 códigos de
+  recuperação armazenados com hash. Login em duas etapas, com tentativas de código contando para o
+  bloqueio do Devise. Proprietário, administrador e financeiro têm prazo configurável para ativar.
+- **Consequências**: a organização pode desligar a exigência; a interface sinaliza o prazo restante.
+
+## DEC-013 — Token de convite gerado na entrega
+
+- **Decisão**: o banco guarda somente o digest SHA-256; o token em claro é gerado no momento do envio do
+  e-mail e nunca é serializado em jobs. Reenviar invalida o link anterior.
+
+## DEC-014 — Paginação por offset com limite rígido
+
+- **Decisão**: objeto `Pagination` próprio (máximo de 100 itens por página, sem `COUNT(*)`), em vez de
+  uma dependência externa. Suficiente para listas administrativas; a API usará paginação por cursor.
+
+## DEC-015 — Rate limiting nativo do Rails com Solid Cache
+
+- **Decisão**: `rate_limit` do Action Controller em login, segundo fator, cadastro, recuperação de senha,
+  confirmação, desbloqueio, convites e criação de organização. O contador fica no Solid Cache
+  compartilhado entre processos (memória nos testes).
+
+## DEC-016 — Jobs concluídos não são preservados
+
+- **Decisão**: `solid_queue.preserve_finished_jobs = false`, para que argumentos de jobs (por exemplo,
+  tokens de e-mails do Devise) não permaneçam no banco da fila após a execução.

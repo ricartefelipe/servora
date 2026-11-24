@@ -1,0 +1,13 @@
+<% content_for :title, "Criar conta" %>
+<%= render "shared/auth_heading", title: "Crie sua conta", subtitle: "Depois de confirmar o e-mail, você cadastra sua empresa ou aceita um convite." %>
+
+<%= form_for resource, as: resource_name, url: registration_path(resource_name), html: { class: "space-y-5" } do |f| %>
+  <%= f.error_summary %>
+  <%= f.field :name, label: "Nome completo", autocomplete: "name", autofocus: true, required: true %>
+  <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "email", required: true %>
+  <%= f.field :password, label: "Senha", as: :password_field, autocomplete: "new-password", required: true,
+        hint: "Mínimo de #{@minimum_password_length || 12} caracteres. Prefira uma frase longa." %>
+  <%= f.field :password_confirmation, label: "Confirme a senha", as: :password_field, autocomplete: "new-password", required: true %>
+  <%= f.submit_button "Criar conta", class: "w-full" %>
+<% end %>
+<p class="mt-6 text-sm text-ink-600">Já tem conta? <%= link_to "Entrar", new_session_path(resource_name), class: "sv-link" %></p>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-white">
+  <head>
+    <title><%= [content_for(:title), "Servora"].compact_blank.join(" · ") %></title>
+    <%= render "layouts/head" %>
+  </head>
+  <body class="h-full" data-controller="local-context" data-local-context-key-value="<%= local_context_key %>">
+    <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
+    <div id="flash"><%= render "shared/flash" %></div>
+    <div class="grid min-h-full lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <aside class="relative hidden overflow-hidden bg-ink-950 lg:flex lg:flex-col lg:justify-between lg:p-12" aria-hidden="true">
+        <div class="pointer-events-none absolute -left-32 top-24 size-[28rem] rounded-full bg-brand-600/25 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-40 -right-20 size-[24rem] rounded-full bg-ember-500/15 blur-3xl"></div>
+        <%= link_to root_path, class: "relative" do %><%= render "shared/logo", tone: :light %><% end %>
+        <div class="relative">
+          <p class="text-3xl font-bold leading-tight tracking-tight text-white">Cada visita registrada.<br>Cada peça rastreada.<br>Cada margem conhecida.</p>
+          <p class="mt-4 max-w-sm text-sm leading-relaxed text-ink-300">Orçamentos, ordens de serviço, agenda, estoque e recebimentos em um só lugar, com histórico completo.</p>
+        </div>
+        <p class="relative text-xs text-ink-500">Servora · gestão de serviços de campo</p>
+      </aside>
+      <main id="conteudo" class="flex items-center justify-center px-5 py-12 sm:px-10">
+        <div class="w-full <%= content_for(:container_width).presence || "max-w-md" %> animate-slide-up">
+          <div class="mb-8 lg:hidden"><%= link_to root_path do %><%= render "shared/logo" %><% end %></div>
+          <%= yield %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

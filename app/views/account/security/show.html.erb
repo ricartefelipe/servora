@@ -1,0 +1,64 @@
+<% content_for :title, "Segurança da conta" %>
+<% content_for :container_width, "max-w-2xl" %>
+<div class="mb-6 flex items-center justify-between gap-4">
+  <%= render "shared/auth_heading", title: "Segurança da conta", subtitle: current_user.email %>
+</div>
+
+<section class="sv-card mb-6 p-6" aria-labelledby="mfa-title">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 id="mfa-title" class="font-semibold text-ink-900">Verificação em duas etapas</h2>
+      <p class="mt-1 text-sm text-ink-600">Código temporário de um aplicativo autenticador exigido a cada login.</p>
+    </div>
+    <%= current_user.mfa_enabled? ? badge("Ativa", tone: :success) : badge("Inativa", tone: :warning) %>
+  </div>
+  <div class="mt-5">
+    <% if current_user.mfa_enabled? %>
+      <details class="group">
+        <summary class="sv-btn-secondary cursor-pointer list-none">Desativar verificação</summary>
+        <%= form_with url: account_two_factor_path, method: :delete, class: "mt-4 flex flex-wrap items-end gap-3" do |f| %>
+          <div class="min-w-56 flex-1">
+            <%= f.label :current_password, "Confirme com sua senha", class: "sv-label" %>
+            <%= f.password_field :current_password, class: "sv-input", required: true, autocomplete: "current-password" %>
+          </div>
+          <%= f.button "Desativar", type: "submit", class: "sv-btn-danger" %>
+        <% end %>
+      </details>
+    <% else %>
+      <%= link_to "Ativar verificação em duas etapas", new_account_two_factor_path, class: "sv-btn-primary" %>
+    <% end %>
+  </div>
+</section>
+
+<section class="sv-card p-6" aria-labelledby="sessions-title">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 id="sessions-title" class="font-semibold text-ink-900">Sessões ativas</h2>
+      <p class="mt-1 text-sm text-ink-600">Encerre acessos que você não reconhece.</p>
+    </div>
+    <% if @sessions.size > 1 %>
+      <%= button_to "Encerrar as demais", others_account_sessions_path, method: :delete, class: "sv-btn-secondary sv-btn-sm" %>
+    <% end %>
+  </div>
+  <ul class="divide-y divide-ink-100" role="list">
+    <% @sessions.each do |user_session| %>
+      <li class="flex flex-wrap items-center gap-3 py-3">
+        <%= icon(:device, css: "text-ink-400") %>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink-800"><%= user_session.user_agent.presence || "Navegador desconhecido" %></p>
+          <p class="text-xs text-ink-500">IP <%= user_session.ip_address %> · último acesso <%= l(user_session.last_seen_at, format: :short) %></p>
+        </div>
+        <% if user_session.id == @current_session_id %>
+          <%= badge("Esta sessão", tone: :brand) %>
+        <% else %>
+          <%= button_to "Encerrar", account_session_path(user_session), method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700" %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</section>
+
+<div class="mt-6 flex flex-wrap gap-3 text-sm">
+  <%= link_to "Meus dados e senha", edit_user_registration_path, class: "sv-link" %>
+  <%= link_to "Voltar às organizações", organizations_path(escolher: 1), class: "sv-link" %>
+</div>

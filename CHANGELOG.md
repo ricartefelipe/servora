@@ -12,3 +12,7 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
   de migrations.
 - Probes de liveness (`/up`) e readiness (`/ready`).
 - Documentação inicial: requisitos, decisões, arquitetura, status e guia de contribuição.
+- Identidade com Devise: cadastro, confirmação por POST, bloqueio por tentativas, recuperação de senha,
+  sessões revogáveis no servidor e verificação em duas etapas (TOTP e códigos de recuperação).
+- Organizações multitenant com RLS, FKs compostas e contexto transacional; onboarding, seleção e troca.
+- Equipe: sete papéis com matriz de permissões, convites de uso único, desativação imediata e auditoria.

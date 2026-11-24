@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+module Dashboards
+  # Figures shown on the dashboard, each one filtered by the member's
+  # permissions. Runs inside the request's tenant context.
+  class Overview
+    OnboardingStep = Data.define(:title, :description, :done, :path_helper)
+
+    def initialize(membership:)
+      @membership = membership
+      @organization = membership.organization
+    end
+
+    def active_members_count
+      @organization.memberships.active.count
+    end
+
+    def pending_invitations_count
+      return nil unless @membership.can?(:members_view)
+
+      @organization.invitations.pending.where("expires_at > ?", Time.current).count
+    end
+
+    def onboarding_steps
+      [
+        OnboardingStep.new("Cadastre sua organização", "Dados da empresa, fuso horário e deslocamento padrão.", true,
+          :edit_settings_path),
+        OnboardingStep.new("Convide sua equipe", "Atendentes, coordenadores, técnicos e financeiro.", active_members_count > 1 ||
+          @organization.invitations.exists?, :members_path),
+        OnboardingStep.new("Proteja sua conta", "Ative a verificação em duas etapas.", @membership.user.mfa_enabled?,
+          :new_account_two_factor_path)
+      ]
+    end
+
+    def show_onboarding?
+      @membership.can?(:organization_manage) && !@organization.onboarding_completed?
+    end
+  end
+end

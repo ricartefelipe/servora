@@ -20,13 +20,27 @@ module TestSupport
   end
 end
 
-# Examples tagged `committed: true` run without the wrapping test transaction so
+# Examples tagged `:committed` run without the wrapping test transaction so
 # that commits, row locks, constraint checks and concurrent connections behave
-# exactly as in production. Data is removed afterwards.
-RSpec.shared_context "with committed transactions", :committed do
-  self.use_transactional_tests = false
+# exactly as in production. Data is removed afterwards with the owner role.
+#
+# Implemented as a module included by metadata: rspec-rails' FixtureSupport is
+# included first and resets use_transactional_tests, so this inclusion must
+# come after it (a shared_context would be applied too early).
+module CommittedTransactions
+  def self.included(group)
+    group.use_transactional_tests = false
+    group.after { TestSupport::MaintenanceRecord.truncate_all! }
+  end
+end
 
-  after do
-    TestSupport::MaintenanceRecord.truncate_all!
+RSpec.configure do |config|
+  config.include CommittedTransactions, :committed
+
+  config.before(:each, :committed) do
+    raise "transactional tests are still enabled" if self.class.use_transactional_tests
+
+    # Each thread must get its own connection (no shared test connection).
+    ActiveRecord::Base.connection_pool.unlock_thread if ActiveRecord::Base.connection_pool.respond_to?(:unlock_thread)
   end
 end

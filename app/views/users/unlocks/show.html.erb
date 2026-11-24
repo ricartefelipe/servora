@@ -1,0 +1,6 @@
+<% content_for :title, "Desbloquear conta" %>
+<%= render "shared/auth_heading", title: "Desbloquear conta", subtitle: "Confirme para liberar novamente o acesso à sua conta." %>
+<%= form_with url: confirm_user_unlock_path, method: :post do |f| %>
+  <%= f.hidden_field :unlock_token, value: @unlock_token %>
+  <%= f.button "Desbloquear", type: "submit", class: "sv-btn-primary w-full" %>
+<% end %>

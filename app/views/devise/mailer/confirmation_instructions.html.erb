@@ -1,0 +1,4 @@
+<h1 style="font-size:20px;margin:0 0 16px;color:#0e1621;">Confirme seu e-mail</h1>
+<p style="margin:0 0 24px;">Olá, <%= @resource.name %>. Confirme o endereço <strong><%= @email %></strong> para ativar sua conta no Servora.</p>
+<p style="margin:0 0 24px;"><a href="<%= user_confirmation_url(confirmation_token: @token) %>" style="display:inline-block;background:#0a877a;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;">Confirmar e-mail</a></p>
+<p style="margin:0;color:#536780;font-size:13px;">O link vale por 3 dias. Se você não criou esta conta, ignore esta mensagem.</p>

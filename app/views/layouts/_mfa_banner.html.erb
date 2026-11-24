@@ -1,0 +1,12 @@
+<% requirement = Authentication::MfaRequirement.new(membership: current_membership, user: current_user) %>
+<% if requirement.pending? %>
+  <div class="border-b border-ember-100 bg-ember-50 px-4 py-3 sm:px-6 lg:px-8" role="status">
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-3 text-sm text-ember-600">
+      <%= icon(:key, size: 18) %>
+      <p class="flex-1">
+        Seu perfil exige verificação em duas etapas. Ative até <strong><%= l(requirement.deadline, format: :short) %></strong> para manter o acesso.
+      </p>
+      <%= link_to "Ativar agora", new_account_two_factor_path, class: "sv-btn-secondary sv-btn-sm" %>
+    </div>
+  </div>
+<% end %>

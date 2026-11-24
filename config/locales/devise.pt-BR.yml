@@ -1,0 +1,64 @@
+pt-BR:
+  devise:
+    confirmations:
+      confirmed: "Seu e-mail foi confirmado. Você já pode entrar."
+      send_instructions: "Em instantes você receberá um e-mail com as instruções para confirmar seu endereço."
+      send_paranoid_instructions: "Se o e-mail estiver cadastrado, você receberá em instantes as instruções para confirmá-lo."
+    failure:
+      already_authenticated: "Você já está conectado."
+      inactive: "Sua conta ainda não está ativa."
+      invalid: "E-mail ou senha inválidos."
+      locked: "Sua conta foi bloqueada temporariamente por excesso de tentativas. Verifique seu e-mail para desbloqueá-la."
+      last_attempt: "Você tem mais uma tentativa antes de a conta ser bloqueada."
+      not_found_in_database: "E-mail ou senha inválidos."
+      timeout: "Sua sessão expirou por inatividade. Entre novamente para continuar."
+      unauthenticated: "Entre na sua conta para continuar."
+      unconfirmed: "Confirme seu e-mail antes de continuar."
+      session_revoked: "Esta sessão foi encerrada. Entre novamente para continuar."
+    mailer:
+      confirmation_instructions:
+        subject: "Confirme seu e-mail no Servora"
+      reset_password_instructions:
+        subject: "Redefinição de senha do Servora"
+      unlock_instructions:
+        subject: "Desbloqueio da sua conta no Servora"
+      email_changed:
+        subject: "Seu e-mail no Servora foi alterado"
+      password_change:
+        subject: "Sua senha do Servora foi alterada"
+    omniauth_callbacks:
+      failure: "Não foi possível autenticar via %{kind}: %{reason}."
+      success: "Autenticado com a conta %{kind}."
+    passwords:
+      no_token: "Esta página só pode ser acessada pelo link enviado por e-mail. Verifique se utilizou o endereço completo."
+      send_instructions: "Em instantes você receberá um e-mail com as instruções para redefinir sua senha."
+      send_paranoid_instructions: "Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha."
+      updated: "Senha alterada. Você já está conectado."
+      updated_not_active: "Senha alterada. Entre novamente com a nova senha."
+    registrations:
+      destroyed: "Sua conta foi encerrada."
+      signed_up: "Conta criada com sucesso."
+      signed_up_but_inactive: "Conta criada, mas ainda não ativada."
+      signed_up_but_locked: "Conta criada, mas está bloqueada."
+      signed_up_but_unconfirmed: "Enviamos um link de confirmação para o seu e-mail. Confirme o endereço para ativar a conta."
+      update_needs_confirmation: "Dados atualizados. Enviamos um link para confirmar o novo e-mail."
+      updated: "Dados da conta atualizados."
+      updated_but_not_signed_in: "Dados atualizados. Como a senha mudou, entre novamente."
+    sessions:
+      signed_in: "Bem-vindo de volta."
+      signed_out: "Você saiu da sua conta."
+      already_signed_out: "Você saiu da sua conta."
+    unlocks:
+      send_instructions: "Em instantes você receberá um e-mail com as instruções para desbloquear a conta."
+      send_paranoid_instructions: "Se a conta existir, você receberá em instantes as instruções para desbloqueá-la."
+      unlocked: "Conta desbloqueada. Entre para continuar."
+  errors:
+    messages:
+      already_confirmed: "já foi confirmado; tente entrar"
+      confirmation_period_expired: "precisa ser confirmado em até %{period}; solicite um novo link"
+      expired: "expirou; solicite um novo link"
+      not_found: "não encontrado"
+      not_locked: "não está bloqueado"
+      not_saved:
+        one: "Não foi possível salvar %{resource}: 1 erro."
+        other: "Não foi possível salvar %{resource}: %{count} erros."

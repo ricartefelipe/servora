@@ -11,15 +11,21 @@ module Servora
   # * has Row-Level Security enabled with a policy bound to the transaction-local
   #   setting servora.organization_id (absent setting => no rows).
   module MigrationHelpers
-    def create_tenant_table(table_name, **, &)
+    # isolation: false is used only by tables with bespoke policies (memberships).
+    # timestamps: :created_only suits append-only history tables.
+    def create_tenant_table(table_name, isolation: true, timestamps: true, **)
       create_table(table_name, id: :uuid, default: -> { "uuidv7()" }, **) do |t|
         t.references :organization, type: :uuid, null: false, foreign_key: true, index: false
         yield t if block_given?
-        t.timestamps
+        if timestamps == :created_only
+          t.datetime :created_at, null: false, default: -> { "CURRENT_TIMESTAMP" }
+        elsif timestamps
+          t.timestamps
+        end
       end
 
       add_index table_name, %i[organization_id id], unique: true, name: "index_#{table_name}_on_tenant_key"
-      enable_tenant_isolation(table_name)
+      enable_tenant_isolation(table_name) if isolation
     end
 
     # Adds a reference column plus a composite foreign key on
@@ -37,6 +43,14 @@ module Servora
         primary_key: %i[organization_id id],
         name: "fk_#{table_name}_#{column}_tenant",
         on_delete:
+    end
+
+    # CHECK (column IN values) written in PostgreSQL's canonical form, so the
+    # text in db/structure.sql is identical whether the constraint was created
+    # by a migration or by loading the dump.
+    def add_inclusion_constraint(table_name, column, values, name:)
+      list = values.map { |value| "#{connection.quote(value.to_s)}::text" }.join(", ")
+      add_check_constraint table_name, "(#{connection.quote_column_name(column)})::text = ANY (ARRAY[#{list}])", name:
     end
 
     def enable_tenant_isolation(table_name)

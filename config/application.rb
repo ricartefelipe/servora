@@ -46,6 +46,10 @@ module Servora
     config.action_mailer.deliver_later_queue_name = "mailers"
     config.active_job.queue_name_prefix = nil
 
+    # Finished jobs are deleted immediately: job arguments (e.g. Devise e-mail
+    # tokens) must not linger in the queue database.
+    config.solid_queue.preserve_finished_jobs = false
+
     # Request IDs are propagated to jobs, outbox events and integration calls.
     config.action_dispatch.request_id_header = "X-Request-Id"
 

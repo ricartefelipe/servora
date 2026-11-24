@@ -1,13 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <style>
-      /* Email styles need to be inline */
-    </style>
   </head>
-
-  <body>
-    <%= yield %>
+  <body style="margin:0;padding:0;background:#f6f8fa;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1b2532;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fa;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;border:1px solid #d9e1ea;">
+            <tr>
+              <td style="padding:28px 32px 0;">
+                <span style="display:inline-block;width:28px;height:28px;border-radius:8px;background:#0a877a;vertical-align:middle;"></span>
+                <span style="font-weight:700;font-size:17px;vertical-align:middle;margin-left:8px;color:#0e1621;">Servora</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 32px 32px;font-size:15px;line-height:1.6;">
+                <%= yield %>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font-size:12px;color:#8ca0b6;">Mensagem automática do Servora. Não responda a este e-mail.</p>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

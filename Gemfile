@@ -26,6 +26,9 @@ gem "devise-two-factor", "~> 6.4"
 gem "pundit", "~> 2.5"
 gem "rqrcode", "~> 3.2"
 
+# Portuguese defaults for dates, numbers and validation messages
+gem "rails-i18n", "~> 8.1"
+
 # Documents
 gem "prawn", "~> 2.5"
 

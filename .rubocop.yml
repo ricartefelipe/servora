@@ -19,6 +19,8 @@ AllCops:
     - "node_modules/**/*"
     - "coverage/**/*"
 
+# --- Style -------------------------------------------------------------------
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
@@ -35,14 +37,29 @@ Style/FrozenStringLiteralComment:
     - "Rakefile"
     - "config.ru"
 
+# --- Layout ------------------------------------------------------------------
+
 Layout/LineLength:
   Max: 130
   AllowedPatterns:
     - '\A\s*#'
+  Exclude:
+    # SVG path data is kept on one line per glyph.
+    - "app/helpers/icons_helper.rb"
+
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+# --- Metrics -----------------------------------------------------------------
 
 Metrics/MethodLength:
   Max: 20
   CountAsOne: ["array", "hash", "heredoc", "method_call"]
+  Exclude:
+    - "db/migrate/*"
 
 Metrics/ClassLength:
   Max: 200
@@ -50,6 +67,8 @@ Metrics/ClassLength:
 
 Metrics/AbcSize:
   Max: 25
+  Exclude:
+    - "db/migrate/*"
 
 Metrics/BlockLength:
   Exclude:
@@ -61,6 +80,8 @@ Metrics/BlockLength:
 Metrics/ParameterLists:
   CountKeywordArgs: false
 
+# --- Rails -------------------------------------------------------------------
+
 Rails/I18nLocaleTexts:
   Enabled: false
 
@@ -68,19 +89,34 @@ Rails/CreateTableWithTimestamps:
   Exclude:
     - "db/migrate/*"
 
-Rails/ReversibleMigration:
-  Enabled: true
+# Function bodies (PL/pgSQL) must keep their line structure.
+Rails/SquishedSQLHeredocs:
+  Exclude:
+    - "db/migrate/*"
 
 Rails/SkipsModelValidations:
   Exclude:
     - "spec/**/*"
 
+# Seeds report progress on stdout.
+Rails/Output:
+  Exclude:
+    - "db/seeds/**/*"
+    - "db/seeds.rb"
+
+# --- RSpec -------------------------------------------------------------------
+
 RSpec/ExampleLength:
   Max: 25
   CountAsOne: ["array", "hash", "heredoc", "method_call"]
+  Exclude:
+    # End-to-end journeys follow a whole flow in one example.
+    - "spec/system/**/*"
 
 RSpec/MultipleExpectations:
   Max: 6
+  Exclude:
+    - "spec/system/**/*"
 
 RSpec/NestedGroups:
   Max: 4
@@ -94,14 +130,6 @@ RSpec/DescribeClass:
     - "spec/system/**/*"
     - "spec/integration/**/*"
     - "spec/database/**/*"
-
-Layout/ArgumentAlignment:
-  EnforcedStyle: with_fixed_indentation
-
-Layout/MultilineMethodCallIndentation:
-  EnforcedStyle: indented
-
-# Function bodies (PL/pgSQL) must keep their line structure.
-Rails/SquishedSQLHeredocs:
-  Exclude:
-    - "db/migrate/*"
+    # Grouped specs covering several identity classes.
+    - "spec/models/identity_spec.rb"
+    - "spec/policies/identity_policies_spec.rb"
