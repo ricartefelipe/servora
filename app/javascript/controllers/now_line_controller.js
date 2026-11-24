@@ -25,7 +25,7 @@ import { Controller } from "@hotwired/stimulus"
 const PILL_END_THRESHOLD = 0.98
 const PILL_END_SHIFT = -22
 
-export default class extends Controller {
+export default class NowLineController extends Controller {
   static targets = ["marker", "line", "pill", "pillBody", "time", "label"]
   static values = {
     start: Number,

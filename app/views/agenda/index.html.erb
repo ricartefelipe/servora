@@ -77,8 +77,8 @@
         <%# Header rows mirror the technician rows: a sticky blank cell keeps scrolled labels out of the names column. %>
         <%= tag.div class: "flex gap-3 pb-1", hidden: !now_line[:visible], aria: { hidden: true }, data: { now_line_target: "marker" } do %>
           <div class="sticky left-0 z-20 w-28 shrink-0 bg-white sm:w-41"></div>
-          <svg class="block h-[18px] min-w-0 flex-1 overflow-visible" focusable="false">
-            <svg x="<%= now_line[:percent] %>" overflow="visible" data-now-line-target="pill">
+          <svg class="block h-[18px] min-w-0 flex-1 overflow-visible" aria-hidden="true" focusable="false">
+            <svg x="<%= now_line[:percent] %>" overflow="visible" aria-hidden="true" data-now-line-target="pill">
               <g transform="translate(<%= now_line[:shift] %> 0)" data-now-line-target="pillBody">
                 <rect x="-28" y="0" width="56" height="18" rx="9" class="fill-noir-950" />
                 <rect x="-21" y="7" width="4" height="4" transform="rotate(45 -19 9)" class="fill-brand-300" />
@@ -136,7 +136,7 @@
         <% if now_line %>
           <%# A single overlay across all rows: the 960-unit viewBox spans the window and the stroke stays 1.5px when stretched. %>
           <%= tag.div class: "pointer-events-none absolute top-0 bottom-2 right-0 left-31 sm:left-44", hidden: !now_line[:visible], aria: { hidden: true }, data: { now_line_target: "marker" } do %>
-            <svg class="block size-full" viewBox="0 0 960 1" preserveAspectRatio="none" focusable="false">
+            <svg class="block size-full" viewBox="0 0 960 1" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <line x1="<%= now_line[:x] %>" x2="<%= now_line[:x] %>" y1="0" y2="1" class="stroke-brand-600" stroke-width="1.5" vector-effect="non-scaling-stroke" data-now-line-target="line" />
             </svg>
           <% end %>
