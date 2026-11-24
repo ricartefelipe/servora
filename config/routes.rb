@@ -115,6 +115,9 @@ Rails.application.routes.draw do
       end
     end
     resources :service_types, path: "tipos-de-servico", only: %i[index new create edit update]
+    scope "ordens-de-servico", module: :work_orders, as: :work_orders do
+      resource :bulk_status, path: "lote/situacao", only: :create
+    end
     resources :work_orders, path: "ordens-de-servico", only: %i[index new create show] do
       member do
         patch :update_report, path: "registro-tecnico"

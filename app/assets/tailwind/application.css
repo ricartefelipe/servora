@@ -190,7 +190,8 @@
 @utility sv-btn-primary {
   @apply sv-btn bg-brand-600 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(61_6_18/0.25)]
     hover:bg-brand-700 active:translate-y-px active:bg-brand-800 focus-visible:outline-brand-600
-    forced-colors:outline forced-colors:outline-1;
+    forced-colors:outline forced-colors:outline-1
+    disabled:bg-ink-200 disabled:text-ink-500 disabled:shadow-none disabled:opacity-100 disabled:active:translate-y-0;
 }
 
 @utility sv-btn-secondary {
@@ -292,6 +293,11 @@
 
   .sv-table tbody tr[aria-selected="true"] {
     @apply bg-select shadow-[inset_2px_0_0_var(--color-brand-600)];
+  }
+
+  /* Compact density (density_controller.js on <body>): 36px rows instead of 44px. */
+  body[data-density="compact"] .sv-table td {
+    padding-block: 0.5rem;
   }
 }
 

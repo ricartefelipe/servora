@@ -1,17 +1,18 @@
-<%# Toast notifications on noir, bottom right. Alerts use role="alert"; notices use
-    role="status" with a polite live region. The status icon carries a label, so the
-    tone never depends on colour alone. %>
+<%# Toast notifications on noir, bottom right. Alerts use role="alert" and persist
+    until dismissed (timeout 0); notices use role="status" with a polite live region
+    and clear after 5s, pausing on hover or focus. Esc closes the focused toast. The
+    status icon carries a label, so the tone never depends on colour alone. %>
 <% messages = local_assigns.fetch(:flash_messages) { flash.to_hash } %>
 <div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:items-end sm:px-0">
   <% messages.each do |type, message| %>
     <% next if message.blank? || !%w[notice alert].include?(type.to_s) %>
     <% alert = type.to_s == "alert" %>
-    <div class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl bg-noir-900 py-3 pl-3.5 pr-2.5 text-white shadow-[var(--shadow-float)] ring-1 ring-white/10 animate-slide-up sm:w-96"
+    <div class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl bg-noir-900 py-3 pl-3.5 pr-2.5 text-white shadow-[var(--shadow-float)] ring-1 ring-white/10 animate-slide-up motion-reduce:animate-none sm:w-96"
          role="<%= alert ? 'alert' : 'status' %>" <%= tag.attributes(aria: { live: (alert ? nil : "polite"), atomic: (alert ? nil : true) }) %>
-         data-controller="flash" data-flash-timeout-value="<%= alert ? 9000 : 5000 %>">
+         data-controller="flash" data-flash-timeout-value="<%= alert ? 0 : 5000 %>" data-turbo-temporary>
       <%= icon(alert ? :alert : :check, size: 18, css: alert ? "mt-px text-rose-300" : "mt-px text-emerald-300", label: alert ? "Atenção" : "Concluído") %>
       <p class="min-w-0 flex-1 text-[13px] font-medium leading-5 text-white"><%= message %></p>
-      <button type="button" class="-my-0.5 grid size-7 shrink-0 place-items-center rounded-md text-white/55 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-white" data-action="flash#dismiss" aria-label="Fechar aviso">
+      <button type="button" class="-my-2 -mr-1 grid size-11 shrink-0 sm:-my-0.5 sm:mr-0 sm:size-8 place-items-center rounded-md text-white/55 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-white" data-action="flash#dismiss" aria-label="Fechar aviso">
         <%= icon(:close, size: 16) %>
       </button>
     </div>

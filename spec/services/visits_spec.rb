@@ -33,6 +33,72 @@ RSpec.describe Visits do
     expect(schedule(scenario, other, [technician], from: tuesday_at(10, 15), to: tuesday_at(11))).to be_persisted
   end
 
+  describe "trip to the site" do
+    def start_trip(at: Time.current)
+      in_tenant(organization) { Visits::Travel.new(visit: visit.reload, actor: technician, at:).call }
+    end
+
+    it "marks the visit on the way, keeps the work order scheduled and audits the trip" do
+      travel_to(1.hour.from_now) do
+        start_trip(at: 5.minutes.ago)
+
+        expect(reload(visit)).to have_attributes(status: "traveling", travel_started_at: 5.minutes.ago)
+        expect(reload(work_order).status).to eq("scheduled")
+        in_tenant(organization) do
+          expect(visit.transitions.first).to have_attributes(from_status: "scheduled", to_status: "traveling",
+            actor_membership_id: technician.id)
+          expect(AuditEvent.where(action: "visit.travel_started", auditable_id: work_order.id).sole.changeset)
+            .to include("visit_id" => visit.id)
+        end
+      end
+    end
+
+    it "keeps a wrong device clock from recording a trip in the future" do
+      freeze_time do
+        start_trip(at: 3.hours.from_now)
+
+        expect(reload(visit).travel_started_at).to eq(Time.current)
+      end
+    end
+
+    it "starts the visit on arrival and still allows starting without the trip" do
+      start_trip
+      in_tenant(organization) { Visits::Start.new(visit: visit.reload, actor: technician, at: tuesday_at(9, 5)).call }
+
+      expect(reload(visit)).to have_attributes(status: "in_progress", started_at: tuesday_at(9, 5))
+      expect(reload(work_order).status).to eq("in_progress")
+    end
+
+    it "never goes back to scheduled nor starts twice" do
+      start_trip
+
+      expect { start_trip }.to raise_error(Visits::Transition::InvalidTransition, /em deslocamento/)
+      expect { in_tenant(organization) { Visits::Finish.new(visit: visit.reload, actor: technician).call } }
+        .to raise_error(Visits::Transition::InvalidTransition)
+    end
+
+    it "records a no-show on arrival, releasing the technician and waiting for the customer" do
+      start_trip
+      in_tenant(organization) { Visits::Cancel.new(visit: visit.reload, actor: technician, reason: "Ninguém no local", no_show: true).call }
+
+      in_tenant(organization) do
+        expect(visit.reload).to have_attributes(status: "no_show", cancel_reason: "Ninguém no local")
+        expect(visit.allocations.active).to be_empty
+        expect(work_order.reload.status).to eq("waiting_customer")
+      end
+    end
+
+    it "counts a visit on the way as upcoming, so a second visit keeps the order scheduled" do
+      other_visit = schedule(scenario, work_order, [technician], from: tuesday_at(14), to: tuesday_at(15))
+      in_tenant(organization) { Visits::Travel.new(visit: other_visit, actor: technician).call }
+
+      in_tenant(organization) { Visits::Cancel.new(visit: visit.reload, actor: scenario[:coordinator], reason: "Remarcar").call }
+
+      expect(in_tenant(organization) { Visit.upcoming.where(work_order_id: work_order.id).pluck(:status) }).to eq(["traveling"])
+      expect(reload(work_order).status).to eq("scheduled")
+    end
+  end
+
   it "rejects invalid visit transitions" do
     expect { in_tenant(organization) { Visits::Finish.new(visit:, actor: technician).call } }
       .to raise_error(Visits::Transition::InvalidTransition, /agendada/)
@@ -89,6 +155,29 @@ RSpec.describe Visits do
     expect(in_tenant(organization) { TechnicianAllocation.active.count }).to eq(0)
   end
 
+  it "also cancels a visit whose technician is already on the way when the work order is canceled" do
+    in_tenant(organization) { Visits::Travel.new(visit: visit.reload, actor: technician).call }
+    as_member(scenario[:coordinator]) { WorkOrders::Cancel.new(work_order: work_order.reload, actor: scenario[:coordinator], reason: "Desistiu").call }
+
+    run_dispatcher
+
+    expect(reload(visit).status).to eq("canceled")
+    expect(in_tenant(organization) { TechnicianAllocation.active.count }).to eq(0)
+  end
+
+  it "blocks completion of the work order while the technician is on the way" do
+    in_tenant(organization) { Visits::Travel.new(visit: visit.reload, actor: technician).call }
+    in_tenant(organization) do
+      work_order.reload.update!(diagnosis: "Ok", solution: "Ok")
+      work_order.checklist_items.each { |item| item.update!(response: item.response_kind == "number" ? "1" : "sim") }
+    end
+
+    complete = -> { WorkOrders::Complete.new(work_order: work_order.reload, actor: scenario[:coordinator]).call }
+
+    expect { as_member(scenario[:coordinator], &complete) }
+      .to raise_error(WorkOrders::Complete::RequirementsMissing, /visita em deslocamento ou em andamento/)
+  end
+
   it "blocks completion of the work order while a visit is in progress" do
     in_tenant(organization) { Visits::Start.new(visit:, actor: technician).call }
     in_tenant(organization) do
@@ -99,6 +188,6 @@ RSpec.describe Visits do
     complete = -> { WorkOrders::Complete.new(work_order: work_order.reload, actor: scenario[:coordinator]).call }
 
     expect { as_member(scenario[:coordinator], &complete) }
-      .to raise_error(WorkOrders::Complete::RequirementsMissing, /visita em andamento/)
+      .to raise_error(WorkOrders::Complete::RequirementsMissing, /visita em deslocamento ou em andamento/)
   end
 end

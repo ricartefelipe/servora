@@ -29,7 +29,7 @@ RSpec.describe WorkOrders do
 
       expect(missing).to eq([
                               "Responder os itens obrigatórios do checklist: Pressão de sucção", "Registrar o diagnóstico",
-                              "Registrar a solução aplicada", "Finalizar a visita em andamento",
+                              "Registrar a solução aplicada", "Finalizar a visita em deslocamento ou em andamento",
                               "Decidir os serviços adicionais pendentes de autorização"
                             ])
     end

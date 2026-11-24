@@ -143,7 +143,7 @@
               <%= link_to visit.work_order.customer.name, work_order_path(visit.work_order), class: "block truncate text-[13px] font-medium text-ink-950 hover:underline hover:decoration-ink-300 hover:underline-offset-4" %>
               <span class="block truncate text-xs text-ink-500"><%= visit.work_order.number %> · <%= visit.work_order.service_location.city %></span>
             </span>
-            <%= badge(visit.status_label, tone: visit.in_progress? ? :ember : :indigo) %>
+            <%= badge(visit.status_label, tone: visit.status_tone) %>
           </li>
         <% end %>
       </ul>

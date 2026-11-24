@@ -373,3 +373,15 @@ status atualizado.
   ambiguidade; testes de proteção impedem rubi em etiquetas de status, preenchimentos rosa sólidos e capas fora
   do painel.
 
+## DEC-045 — Deslocamento como estado da visita, sem retorno a "agendada"
+
+- **Decisão**: a visita ganha o estado "em deslocamento" (agendada → em deslocamento → em andamento; agendada →
+  em andamento continua permitido). Do deslocamento só se segue para atendimento, cancelamento ou cliente
+  ausente; não há retorno a "agendada". O deslocamento e o cliente ausente são operações da fila offline, com
+  versão obrigatória da visita e restrição ao técnico alocado; ações gravadas em sequência no aparelho encadeiam
+  a versão.
+- **Alternativas**: registrar o deslocamento apenas como apontamento de tempo (sem efeito na agenda nem no
+  painel); permitir voltar a "agendada" (apagaria o registro de que alguém saiu para o local).
+- **Consequências**: o painel conta quem está a caminho como "em campo"; cancelar a ordem libera também visitas
+  em deslocamento e a conclusão formal aguarda o técnico a caminho; reagendar exige cancelar e agendar de novo.
+
