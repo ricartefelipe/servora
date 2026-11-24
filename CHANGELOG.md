@@ -19,3 +19,5 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 - Transactional Outbox com despachante recorrente, lease, retentativas com backoff, histórico de falhas e
   reprocessamento autorizado; convites e notificações passam a ser entregues pela outbox.
 - Notificações internas em tempo real por stream privado de cada vínculo.
+- Clientes PF/PJ com locais de atendimento e contatos; equipamentos com histórico de localização, proprietário e
+  estado operacional, arquivamento e garantia informada.

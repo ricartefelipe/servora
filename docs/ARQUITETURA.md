@@ -104,6 +104,18 @@ Escopos adicionais aplicados pelas policies:
 - Somente proprietários concedem ou alteram o papel de proprietário; ninguém altera o próprio acesso.
 - A organização sempre mantém ao menos um proprietário ativo (`Memberships::OwnerGuard`, com lock).
 
+## Clientes, locais e equipamentos
+
+- `Customer` (PF/PJ, CPF/CNPJ validados e únicos por organização) possui vários `ServiceLocation` e
+  `CustomerContact` (acompanha serviços, aprova orçamentos, acesso ao portal).
+- `Equipment` referencia `(organization_id, customer_id, service_location_id)` em
+  `service_locations (organization_id, customer_id, id)`: o banco garante que o local pertence ao cliente
+  proprietário, além da validação no model.
+- Mudança de local e transferência de proprietário passam por `EquipmentLifecycle::Relocate`, com bloqueio
+  otimista (`lock_version`) e registro em `equipment_events` (append-only).
+- Equipamentos com histórico de atendimento não são excluídos: apenas arquivados. A exclusão existe só para
+  cadastros feitos por engano e é bloqueada também por chaves estrangeiras restritivas.
+
 ## Consistência assíncrona (Transactional Outbox)
 
 A fila (Solid Queue) usa outro banco; enfileirar um job não é atômico com a transação de negócio.
