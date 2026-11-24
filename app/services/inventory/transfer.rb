@@ -19,7 +19,7 @@ module Inventory
     # Returns the outgoing movement; its transfer_group_id links both legs.
     def call
       validate!
-      Idempotency.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
+      IdempotentOperation.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
         same: ->(movement) { same_transfer?(movement) }) { transfer }
     rescue Inventory::Error => e
       raise Errors.translate(e, @item.name)

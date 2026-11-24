@@ -17,7 +17,7 @@ module Inventory
       Errors.ensure_stockable!(@item)
       raise Errors::InvalidOperation, "O depósito #{@warehouse.name} está inativo." unless @warehouse.active?
 
-      Idempotency.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
+      IdempotentOperation.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
         same: ->(movement) { same_receipt?(movement) }) { receive }
     rescue Inventory::Error => e
       raise Errors.translate(e, @item.name)

@@ -18,7 +18,7 @@ module Inventory
 
     def call
       validate!
-      Idempotency.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
+      IdempotentOperation.perform(@idempotency_key, find: -> { StockMovement.find_by(idempotency_key: @idempotency_key) },
         same: ->(movement) { same_adjustment?(movement) }) do
         ledger = Ledger.new(organization_id: @warehouse.organization_id, actor: @actor)
         ActiveRecord::Base.transaction(requires_new: true) do
