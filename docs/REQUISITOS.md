@@ -94,6 +94,8 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
   feriados e fuso da organização.
 - **RF-SLA-02** Eventos que iniciam, pausam (espera por cliente/peças) e encerram a contagem.
 - **RF-SLA-03** Alertas de vencimento sem duplicidade.
+- **RF-SLA-04** Prazos em contagem mantêm o alvo da política vigente no início; reabertura retoma a resolução
+  com o tempo já consumido.
 
 ## 7. Contratos e manutenção preventiva
 
@@ -105,6 +107,8 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
   da ocorrência (plano + número sequencial).
 - **RF-PRV-04** Alterar o plano não recria ocorrências já geradas nem reescreve ordens executadas.
 - **RF-PRV-05** Modo "após conclusão" calcula a próxima data a partir da conclusão efetiva.
+- **RF-PRV-06** Contrato suspenso não gera ocorrências; ao retomar, datas que caíram na suspensão não são
+  geradas. O término do contrato limita as datas e desativa os planos.
 
 ## 8. Estoque
 
@@ -116,9 +120,12 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
 - **RF-EST-04** Proteção contra saldo negativo, reserva acima do disponível, consumo duplicado,
   devolução acima do consumido, transferência parcial e disputa pela última unidade.
   - CA: spec concorrente com duas ordens reservando a última unidade resulta em uma reserva.
-- **RF-EST-05** Custo médio móvel com 4 casas decimais (arredondamento half-even); o custo aplicado
-  ao consumo fica registrado e não muda com compras posteriores.
-- **RF-EST-06** Cancelamento libera reservas não consumidas.
+- **RF-EST-05** Custo médio móvel com 4 casas decimais (arredondamento comercial, metade para cima, igual ao
+  `round` do PostgreSQL); quantidades com 3 casas e valores com 2. O custo aplicado ao consumo fica registrado
+  e não muda com compras posteriores; devoluções voltam ao custo do consumo original.
+- **RF-EST-06** Cancelamento e conclusão da ordem liberam reservas não consumidas (via outbox).
+- **RF-EST-07** Técnicos veem apenas os depósitos sob sua responsabilidade e registram consumo nas ordens em
+  que atuam; ajustes e estoque mínimo exigem permissão própria; custos só com `costs_view`.
 
 ## 9. Financeiro operacional
 
@@ -131,10 +138,13 @@ Dois relacionamentos comerciais são distintos e nunca compartilham tabelas:
 - **RF-FIN-04** Dinheiro em BRL com `decimal(14,2)`; quantidades `decimal(14,3)`; custos unitários
   `decimal(14,4)`. Nunca `Float`.
 - **RF-FIN-05** Adaptador de pagamentos: simulador determinístico e Asaas (sandbox), com criação de
-  cobrança, consulta, confirmação, falha e estorno.
+  cobrança, consulta, confirmação, falha e cancelamento. Estornos são registrados no Servora (histórico,
+  saldo e auditoria); a devolução no meio de pagamento é uma etapa operacional fora do sistema nesta versão.
 - **RF-FIN-06** Resposta perdida do provedor é resolvida por consulta pela referência externa; a
   cobrança não é repetida cegamente.
 - **RF-FIN-07** Fatura comercial não é apresentada como nota fiscal. Dados de cartão nunca são armazenados.
+- **RF-FIN-08** Chamadas ao provedor nunca ocorrem dentro de transações; o envio é disparado pela outbox
+  após o commit e uma conciliação periódica cobre confirmações perdidas.
 
 ## 10. Campo e funcionamento offline
 

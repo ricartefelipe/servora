@@ -5,6 +5,21 @@ default: &default
     queue: outbox
     schedule: every 10 seconds
 
+  payment_reconciliation:
+    class: Payments::ReconcileJob
+    queue: integrations
+    schedule: every 5 minutes
+
+  preventive_generation:
+    class: Preventive::GenerateDueJob
+    queue: default
+    schedule: every day at 01:30
+
+  sla_scan:
+    class: Sla::ScanJob
+    queue: default
+    schedule: every 5 minutes
+
   quote_expiry:
     class: Quotes::ExpireJob
     queue: default

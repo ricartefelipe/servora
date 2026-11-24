@@ -22,6 +22,9 @@ export default class extends Controller {
     Object.keys(localStorage)
       .filter((key) => key.startsWith(PREFIX) && key !== MARKER)
       .forEach((key) => localStorage.removeItem(key))
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith(PREFIX))
+      .forEach((key) => sessionStorage.removeItem(key))
     if (window.indexedDB?.deleteDatabase) window.indexedDB.deleteDatabase("servora-drafts")
   }
 }

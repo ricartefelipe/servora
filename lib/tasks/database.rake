@@ -2,7 +2,7 @@
 
 namespace :db do
   namespace :privileges do
-    desc "Grant runtime privileges to the application role (run with SERVORA_DB_ROLE=owner)"
+    desc "Grant runtime privileges to the application role and load platform reference data (SERVORA_DB_ROLE=owner)"
     task apply: :load_config do
       app_role = ENV.fetch("DB_APP_USER", "servora_app")
 
@@ -11,6 +11,7 @@ namespace :db do
 
         ActiveRecord::Base.establish_connection(db_config)
         Servora::DatabasePrivileges.new(connection: ActiveRecord::Base.connection, app_role:).apply!
+        Servora::ReferenceData.load!(ActiveRecord::Base.connection) if db_config.name == "primary"
         puts "Privileges applied to #{app_role} on #{db_config.database}"
       end
     ensure

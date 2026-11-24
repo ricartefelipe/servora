@@ -19,7 +19,7 @@ module Servora
     config.load_defaults 8.1
 
     # lib/servora/version.rb defines Servora::VERSION and is required above.
-    config.autoload_lib(ignore: %w[assets tasks servora/version.rb])
+    config.autoload_lib(ignore: %w[assets tasks servora/version.rb servora/json_log_formatter.rb])
 
     # Product defaults: Portuguese UI, BRL, organization-specific time zones are
     # applied per request from the organization record.
@@ -44,6 +44,11 @@ module Servora
     # so that every download goes through tenant-aware authorization.
     config.active_storage.draw_routes = false
     config.active_storage.variant_processor = :disabled
+    # Files are validated by the application (Evidences::Upload); no analysis,
+    # previews or variants run in background jobs outside the tenant context.
+    config.active_storage.analyzers = []
+    config.active_storage.previewers = []
+    config.active_storage.track_variants = false
     config.active_storage.content_types_allowed_inline = %w[image/png image/jpeg image/webp application/pdf]
 
     config.action_mailer.deliver_later_queue_name = "mailers"

@@ -24,11 +24,10 @@ class WorkOrdersController < TenantController
 
   def show
     authorize @work_order
-    @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if policy(@work_order).add_item?
-    @technicians = current_organization.memberships.technicians.includes(:user).ordered if policy(@work_order).assign?
-    return unless policy(@work_order).decide_item?
-
-    @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)
+    wo_policy = policy(@work_order)
+    @catalog = policy_scope(current_organization.catalog_items).active.alphabetical if wo_policy.add_item?
+    @technicians = current_organization.memberships.technicians.includes(:user).ordered if wo_policy.assign?
+    load_panels(wo_policy)
   end
 
   def new
@@ -91,6 +90,45 @@ class WorkOrdersController < TenantController
   end
 
   private
+
+  def load_panels(wo_policy)
+    load_module_panels(wo_policy)
+    load_approvers if wo_policy.decide_item?
+    @coverage = Contracts::Coverage.new(@work_order).call if @work_order.contract_id
+    @sla_clocks = tenant_relation(SlaClock).where(work_order_id: @work_order.id).order(:metric).to_a
+    @evidences = tenant_relation(WorkOrderEvidence).where(work_order_id: @work_order.id).includes(uploaded_by: :user)
+      .recent_first.to_a
+  end
+
+  def load_module_panels(wo_policy)
+    load_materials if wo_policy.view_materials? && module_enabled?(:inventory)
+    load_finance(wo_policy) if (wo_policy.view_finance? || wo_policy.view_costs?) && module_enabled?(:finance)
+  end
+
+  def load_approvers
+    @approvers = tenant_relation(CustomerContact).approvers.where(customer_id: @work_order.customer_id)
+  end
+
+  def load_finance(wo_policy)
+    @financials = WorkOrderFinancialsQuery.new(@work_order)
+    @receivables = []
+    if wo_policy.view_finance?
+      @receivables = tenant_relation(Receivable).where(work_order_id: @work_order.id).order(:due_on,
+        :number)
+    end
+    @expenses = tenant_relation(Expense).where(work_order_id: @work_order.id).order(:incurred_on, :created_at)
+  end
+
+  def load_materials
+    @reservations = tenant_relation(StockReservation).where(work_order_id: @work_order.id)
+      .includes(:warehouse, :catalog_item).order(:created_at)
+    @consumptions = tenant_relation(MaterialConsumption).where(work_order_id: @work_order.id)
+      .includes(:warehouse, :catalog_item).order(:created_at)
+    return unless policy(@work_order).consume_material? || policy(@work_order).reserve_material?
+
+    @stock_warehouses = policy_scope(tenant_relation(Warehouse)).active.alphabetical
+    @stock_items = tenant_relation(CatalogItem).stockable.active.alphabetical
+  end
 
   def load_work_order
     @work_order = policy_scope(tenant_relation(WorkOrder)).includes(*ORDER_INCLUDES).find(params.expect(:id))

@@ -12,6 +12,9 @@ module Memberships
         if @membership.owner? && @attributes[:role].present? && @attributes[:role] != "owner"
           OwnerGuard.new(@membership.organization).ensure_other_owner_remains!(@membership)
         end
+        if @attributes[:role].to_s == "technician" && !@membership.technician? && @membership.active?
+          Subscriptions::Seats.ensure_available!(@membership.organization_id)
+        end
         @membership.update!(@attributes)
         audit_changes
       end

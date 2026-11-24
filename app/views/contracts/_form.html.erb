@@ -1,0 +1,49 @@
+<%= form_with model: contract, class: "space-y-6" do |f| %>
+  <%= f.error_summary %>
+  <section class="sv-card space-y-5 p-6">
+    <h2 class="font-semibold text-ink-900">Identificação e vigência</h2>
+    <% if contract.new_record? %>
+      <%= f.select_field :customer_id, customers.map { |c| [c.display_name, c.id] }, label: "Cliente", include_blank: "Selecione", required: true %>
+    <% end %>
+    <%= f.field :title, label: "Título", required: true, hint: "Ex.: Manutenção preventiva mensal — climatização" %>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= f.field :starts_on, label: "Início", as: :date_field, required: true %>
+      <%= f.field :ends_on, label: "Término", as: :date_field, hint: "Em branco para prazo indeterminado" %>
+    </div>
+  </section>
+
+  <section class="sv-card space-y-5 p-6">
+    <h2 class="font-semibold text-ink-900">Condições</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= f.field :monthly_fee, label: "Mensalidade (R$)", as: :number_field, step: "0.01", min: 0 %>
+      <%= f.field :monthly_visit_limit, label: "Limite de atendimentos por mês", as: :number_field, min: 1, hint: "Em branco para ilimitado" %>
+    </div>
+    <%= f.toggle_field :covers_parts, label: "Peças incluídas", hint: "Quando desmarcado, peças são cobradas à parte." %>
+    <%= f.text_area_field :scope, label: "Escopo", rows: 4, hint: "Serviços, equipamentos e exclusões acordados." %>
+    <fieldset>
+      <legend class="sv-label">Tipos de serviço cobertos</legend>
+      <p class="sv-hint mb-2">Sem seleção, todos os tipos de serviço são cobertos.</p>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <% selected = contract.contract_service_types.map(&:service_type_id) %>
+        <% service_types.each do |type| %>
+          <label class="flex items-center gap-2 text-sm text-ink-700">
+            <%= check_box_tag "contract[service_type_ids][]", type.id, selected.include?(type.id), id: "tipo-#{type.id}", class: "rounded border-ink-300 text-brand-600" %>
+            <%= type.name %>
+          </label>
+        <% end %>
+      </div>
+      <%= hidden_field_tag "contract[service_type_ids][]", "" %>
+    </fieldset>
+  </section>
+
+  <% if contract.persisted? %>
+    <section class="sv-card space-y-3 p-6">
+      <h2 class="font-semibold text-ink-900">Revisão</h2>
+      <%= label_tag "contract_reason", "Motivo da alteração", class: "sv-label" %>
+      <%= text_field_tag "contract[reason]", nil, id: "contract_reason", class: "sv-input", required: !contract.status.eql?("draft") %>
+      <p class="sv-hint">Cada alteração de condições gera uma nova versão do contrato, preservando as anteriores.</p>
+    </section>
+  <% end %>
+
+  <div class="flex justify-end"><%= f.submit_button(contract.persisted? ? "Salvar nova versão" : "Criar contrato") %></div>
+<% end %>

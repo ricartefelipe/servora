@@ -181,3 +181,133 @@ status atualizado.
 - **Decisão**: a agenda diária usa CSS Grid de 64 colunas (15 min) com classes `col-start-*`/`col-span-*`
   geradas pelo Tailwind (`@source inline`), em vez de `style` com porcentagens, preservando a CSP sem
   `unsafe-inline`. Reagendamento é feito por formulário (alternativa acessível a arrastar e soltar).
+
+## DEC-025 — Estoque como razão append-only com saldo protegido por trigger
+
+- **Contexto**: o saldo precisa ser consultado rapidamente e nunca pode divergir do histórico, mesmo com
+  concorrência ou acesso direto com o papel de aplicação.
+- **Decisão**: saldo materializado em `stock_balances`, alterado apenas pelo `Inventory::Ledger` junto com uma
+  movimentação append-only que registra o saldo resultante. Um trigger valida que cada alteração corresponde
+  a uma movimentação nova, do mesmo depósito e item, com quantidade compatível com o tipo. Locks sempre na
+  ordem ordem de serviço → reserva/consumo → saldos ordenados.
+- **Alternativas**: recalcular o saldo somando movimentações (consulta cara e sujeita a corrida sem lock de
+  agregação); confiar apenas na aplicação (não protege contra acessos diretos ou bugs).
+- **Consequências**: histórico auditável por construção, disputa pela última unidade resolvida pelo lock da
+  linha de saldo, ausência de deadlocks entre transferências cruzadas.
+
+## DEC-026 — Aba ativa lembrada por página
+
+- **Contexto**: redirecionamentos seguidos pelo Turbo descartam o fragmento da URL, e a página voltava para a
+  primeira aba após cada envio de formulário.
+- **Decisão**: o controller de abas guarda apenas a chave da última aba escolhida por caminho em
+  `sessionStorage` (prefixo `servora:`), usada quando a URL não tem fragmento; o expurgo de dados locais na
+  troca de contexto também limpa essas chaves.
+
+## DEC-027 — Posição da conta como valor puro com constraints espelhadas
+
+- **Decisão**: contas guardam valor, descontos, pago e estornado; a situação deriva desses valores em
+  `Receivables::Position` e as mesmas regras existem como constraints. Todo uso de caso trava a conta e grava
+  um evento financeiro append-only.
+- **Consequências**: nenhuma combinação inválida (pagamento acima do saldo, cancelamento com dinheiro retido)
+  persiste, mesmo por acesso direto; o histórico explica cada centavo.
+
+## DEC-028 — Integração de pagamentos fora de transações, guiada por referência externa
+
+- **Contexto**: o provedor pode processar uma requisição cuja resposta se perde; repetir cegamente gera
+  cobrança duplicada, e chamadas de rede dentro de transações seguram locks.
+- **Decisão**: a cobrança nasce `pending` com uma referência externa estável, gravada junto com o evento da
+  outbox. O job envia fora de transação; após qualquer tentativa anterior consulta o provedor pela referência
+  antes de criar. Falhas são classificadas em não enviada, ambígua e recusada. Confirmações registram o
+  pagamento com chave de idempotência derivada da cobrança. Conciliação periódica cobre confirmações perdidas.
+- **Consequências**: uma cobrança por referência, sem locks durante I/O; o simulador reproduz os cenários de
+  forma determinística para testes e demonstração.
+
+## DEC-029 — Ocorrências preventivas calculadas a partir da âncora, com identidade (plano, sequência)
+
+- **Contexto**: calcular cada data a partir da anterior acumula o ajuste de fim de mês (31 → 28 → 28…);
+  agendadores repetidos ou concorrentes podem duplicar ordens.
+- **Decisão**: datas sempre derivadas da âncora; mudanças de calendário reancoram na próxima sequência; cada
+  ocorrência tem identidade única `(plano, sequência)` no banco e a geração trava o plano. A recuperação após
+  indisponibilidade é limitada por execução.
+- **Consequências**: datas previsíveis e testáveis no domínio puro; repetir a geração é inofensivo; alterar o
+  plano não reescreve o passado.
+
+## DEC-030 — Plano preventivo sempre pertence a um contrato
+
+- **Decisão**: o plano exige contrato (e herda o cliente dele). A cobertura, os limites e a suspensão do
+  contrato governam a geração das ocorrências.
+- **Consequências**: uma única fonte para vigência e suspensão; manutenção preventiva avulsa é modelada como
+  um contrato sem mensalidade.
+
+## DEC-031 — Relógios de SLA com consumo acumulado e deduplicação por reivindicação
+
+- **Contexto**: prazos precisam pausar e retomar sem recalcular a história, e alertas não podem se repetir
+  quando varreduras se sobrepõem.
+- **Decisão**: cada relógio guarda o tempo útil consumido até a última pausa e, enquanto corre, o instante de
+  início do trecho, o vencimento e o instante do alerta. Pausar soma o trecho; retomar recalcula vencimento a
+  partir do restante. Alertas são reivindicados com atualização condicional na própria linha antes de publicar.
+- **Alternativas**: recalcular a partir do histórico a cada consulta (custo e complexidade); travar uma linha
+  global de agendamento (serializa organizações sem necessidade).
+- **Consequências**: consultas de risco e estouro são simples (`due_at`, `warn_at`); qualquer número de
+  varreduras concorrentes notifica uma vez.
+
+## DEC-032 — Active Storage com organização atribuída pelo banco
+
+- **Contexto**: as tabelas padrão do Active Storage não têm organização e ficariam fora do RLS.
+- **Decisão**: criar as tabelas com `organization_id NOT NULL DEFAULT servora_current_organization_id()`, política
+  de isolamento e chaves compostas entre anexos e blobs; desligar rotas, análises e variantes; servir arquivos
+  só por controllers autorizados.
+- **Consequências**: nenhum código precisa lembrar de preencher a organização; criar blob fora de um contexto
+  de tenant falha. Uploads para o armazenamento ocorrem dentro da transação da requisição (sem locks de linha
+  mantidos nesse momento).
+
+## DEC-033 — PDFs gerados sob demanda a partir de dados congelados
+
+- **Decisão**: não armazenar PDFs; gerar a partir do snapshot da versão do orçamento e dos dados da versão do
+  relatório, ambos imutáveis.
+- **Consequências**: sem arquivos órfãos nem divergência entre registro e documento; o custo é gerar a cada
+  download (documentos pequenos).
+
+## DEC-034 — Offline por fila de operações idempotentes, não por cópia dos dados
+
+- **Contexto**: o técnico perde conexão em subsolos e áreas rurais, mas os dados da ordem pertencem ao cliente
+  e o aparelho pode ser compartilhado ou perdido.
+- **Decisão**: o aparelho guarda somente rascunhos e operações pendentes (o que o técnico digitou), nunca uma
+  réplica dos dados; cada operação tem id do aparelho e versão de origem; o servidor guarda o resultado por id,
+  revalida permissão e recusa sobrescrever versões mais novas. O service worker não guarda páginas nem dados.
+- **Alternativas**: sincronização completa de dados (exposição maior e conflitos complexos); cache genérico de
+  páginas no service worker (vazamento entre usuários e dados desatualizados).
+- **Consequências**: a tela precisa ter sido aberta com conexão; o que se registra offline é enviado com
+  segurança e sem duplicidade.
+
+## DEC-035 — Webhooks de saída com IP fixado e sem redirecionamentos
+
+- **Contexto**: URLs informadas por clientes podem apontar (diretamente ou por DNS) para redes internas.
+- **Decisão**: validar esquema, porta e todos os endereços resolvidos na gravação e em cada envio; conectar ao IP
+  validado; não seguir redirecionamentos; payload mínimo e assinado.
+- **Consequências**: receptores atrás de portas não padrão ou HTTP simples não são suportados; ataques de
+  revinculação de DNS não alcançam a rede interna.
+
+## DEC-036 — Idempotência da API por chave e digest do corpo
+
+- **Decisão**: gravar status e corpo da resposta sob `(credencial, Idempotency-Key)` na mesma transação da
+  operação, com o digest do corpo da requisição.
+- **Consequências**: reenvios de integrações instáveis não duplicam ordens; reutilizar a chave com outro
+  conteúdo é erro explícito.
+
+## DEC-037 — Dados de referência fora das migrations
+
+- **Contexto**: o `structure.sql` contém apenas esquema; dados inseridos por migrations não chegam a bancos
+  criados a partir do dump (CI, novos ambientes).
+- **Decisão**: planos e módulos são carregados por `Servora::ReferenceData` (upsert por código) com o papel owner
+  junto com a aplicação de privilégios, em todos os fluxos de preparação do banco.
+- **Consequências**: preços e nomes podem ser atualizados sem nova migration; o papel de aplicação não altera o
+  catálogo.
+
+## DEC-038 — Avaliação completa e modo somente leitura
+
+- **Decisão**: avaliação de 14 dias com todos os módulos; ao terminar sem ativação, leitura liberada e escrita
+  bloqueada, em vez de bloquear o acesso.
+- **Consequências**: nenhum dado fica inacessível ao cliente; a decisão comercial não interrompe consultas
+  operacionais.
+

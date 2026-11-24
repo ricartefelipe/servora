@@ -6,16 +6,6 @@ RSpec.describe "Customer portal" do
   let(:scenario) { build_quote_scenario }
   let(:organization) { scenario[:organization] }
 
-  def portal_token_for(contact)
-    grant = in_tenant(organization) { Portal::IssueGrant.new(contact:, purpose: "portal").call }
-    Portal::DeliverGrant.new(organization_id: organization.id, grant_id: grant.id).call
-    ActionMailer::Base.deliveries.last.text_part.body.to_s[%r{/portal/acesso/([\w-]+)}, 1]
-  end
-
-  def enter_portal(contact)
-    post portal_access_path(portal_token_for(contact))
-  end
-
   it "does not consume the link on GET" do
     token = portal_token_for(scenario[:approver])
 

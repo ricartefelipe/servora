@@ -1,0 +1,22 @@
+<% content_for :title, "Abrir chamado" %>
+<% values = @request_values || {} %>
+<h1 class="text-2xl font-bold tracking-tight text-ink-950">Abrir chamado</h1>
+<p class="mb-6 text-sm text-ink-600">Conte o que está acontecendo. Nossa equipe analisa e agenda o atendimento.</p>
+
+<%= form_with url: portal_work_orders_path, scope: :request, class: "sv-card max-w-2xl space-y-5 p-6" do |f| %>
+  <div><%= f.label :title, "Resumo", class: "sv-label" %><%= f.text_field :title, value: values[:title], maxlength: 160, required: true, class: "sv-input", placeholder: "Ex.: ar-condicionado da recepção não gela" %></div>
+  <div><%= f.label :description, "Detalhes", class: "sv-label" %><%= f.text_area :description, value: values[:description], rows: 5, maxlength: 5000, required: true, class: "sv-input", placeholder: "Desde quando, ruídos, mensagens no painel, horários de acesso…" %></div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div><%= f.label :service_location_id, "Local", class: "sv-label" %><%= f.select :service_location_id, @locations.map { |l| [l.name, l.id] }, { include_blank: "Selecione", selected: values[:service_location_id] || (@locations.first.id if @locations.one?) }, class: "sv-input", required: true %></div>
+    <div><%= f.label :equipment_id, "Equipamento (opcional)", class: "sv-label" %><%= f.select :equipment_id, @equipment.map { |e| [e.title, e.id] }, { include_blank: "Não sei / outro", selected: values[:equipment_id] }, class: "sv-input" %></div>
+  </div>
+  <fieldset>
+    <legend class="sv-label">Urgência</legend>
+    <div class="flex flex-wrap gap-4 text-sm text-ink-700">
+      <% Portal::OpenRequest::URGENCIES.each do |value, label| %>
+        <label class="flex items-center gap-2"><%= f.radio_button :urgency, value, checked: (values[:urgency] || "normal") == value, class: "text-brand-600" %> <%= label %></label>
+      <% end %>
+    </div>
+  </fieldset>
+  <div class="flex justify-end"><%= f.button "Enviar chamado", type: "submit", class: "sv-btn-primary", data: { turbo_submits_with: "Enviando…" } %></div>
+<% end %>

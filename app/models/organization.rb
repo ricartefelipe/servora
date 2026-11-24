@@ -38,6 +38,10 @@ class Organization < ApplicationRecord
   has_many :skills, dependent: :restrict_with_exception
   has_many :teams, dependent: :restrict_with_exception
   has_many :technician_allocations, dependent: :restrict_with_exception
+  has_many :warehouses, dependent: :restrict_with_exception
+  has_many :receivables, dependent: :restrict_with_exception
+  has_many :contracts, dependent: :restrict_with_exception
+  has_one :subscription, dependent: :restrict_with_exception
 
   enum :status, { active: "active", suspended: "suspended" }, validate: true
 
@@ -49,6 +53,12 @@ class Organization < ApplicationRecord
   validates :time_zone, inclusion: { in: TIME_ZONES.keys }
   validates :travel_buffer_minutes, numericality: { only_integer: true, in: 0..480 }
   validate :document_is_valid
+
+  # Modules are always available without a subscription record (legacy data).
+  def module_enabled?(code)
+    record = Subscription.includes(:plan).find_by(organization_id: id)
+    record.nil? || record.module_enabled?(code)
+  end
 
   def zone
     ActiveSupport::TimeZone[time_zone]

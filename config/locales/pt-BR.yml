@@ -7,6 +7,44 @@ pt-BR:
     formats:
       default: "%d/%m/%Y"
       long: "%d de %B de %Y"
+  activemodel:
+    attributes:
+      receivable:
+        work_order_id: "Ordem de serviço"
+        amount: "Valor"
+        due_on: "Vencimento"
+        description: "Descrição"
+      payment:
+        amount: "Valor"
+        payment_method: "Forma de pagamento"
+        paid_on: "Data do recebimento"
+        notes: "Observação"
+        operation_key: "Identificador da operação"
+      discount:
+        amount: "Valor"
+        reason: "Motivo"
+      stock_receipt:
+        warehouse_id: "Depósito"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Observação"
+        operation_key: "Identificador da operação"
+        unit_cost: "Custo unitário"
+      stock_transfer:
+        warehouse_id: "Origem"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Observação"
+        operation_key: "Identificador da operação"
+        destination_id: "Destino"
+      stock_adjustment:
+        warehouse_id: "Depósito"
+        catalog_item_id: "Peça"
+        quantity: "Quantidade"
+        reason: "Motivo"
+        operation_key: "Identificador da operação"
+        direction: "Direção"
+        unit_cost: "Custo unitário"
   activerecord:
     models:
       user: { one: "Usuário", other: "Usuários" }
@@ -17,7 +55,50 @@ pt-BR:
       service_location: { one: "Local de atendimento", other: "Locais de atendimento" }
       customer_contact: { one: "Contato", other: "Contatos" }
       equipment: { one: "Equipamento", other: "Equipamentos" }
+      warehouse: { one: "Depósito", other: "Depósitos" }
+      expense: { one: "Despesa", other: "Despesas" }
+      payment_integration: { one: "Integração de pagamentos", other: "Integrações de pagamentos" }
     attributes:
+      holiday:
+        date: "Data"
+        name: "Nome"
+      sla_policy:
+        priority: "Prioridade"
+        first_response_minutes: "Prazo de primeira resposta"
+        resolution_minutes: "Prazo de resolução"
+        warning_percent: "Alerta de risco"
+      business_hour:
+        weekday: "Dia da semana"
+        start_minute: "Início"
+        end_minute: "Fim"
+      contract:
+        customer: "Cliente"
+        title: "Título"
+        starts_on: "Início"
+        ends_on: "Término"
+        monthly_fee: "Mensalidade"
+        monthly_visit_limit: "Limite mensal de atendimentos"
+      maintenance_plan:
+        title: "Título"
+        frequency_interval: "Intervalo"
+        lead_days: "Antecedência"
+        anchor_date: "Data base"
+        service_location: "Local"
+      expense:
+        category: "Categoria"
+        description: "Descrição"
+        amount: "Valor"
+        incurred_on: "Data"
+      payment_integration:
+        provider: "Provedor"
+        default_billing_type: "Forma de cobrança padrão"
+        api_key: "Chave de API"
+      warehouse:
+        name: "Nome"
+        kind: "Tipo"
+        custodian: "Responsável"
+        custodian_membership_id: "Responsável"
+        active: "Ativo"
       user:
         name: "Nome"
         email: "E-mail"

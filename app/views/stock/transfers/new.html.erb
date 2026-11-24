@@ -1,0 +1,4 @@
+<% content_for :title, "Transferência de estoque" %>
+<%= render layout: "shared/modal", locals: { title: "Transferência entre depósitos", subtitle: "As duas movimentações são registradas juntas ou nenhuma é" } do %>
+  <%= render "stock/transfers/form", form: @form, warehouses: @warehouses, items: @items %>
+<% end %>

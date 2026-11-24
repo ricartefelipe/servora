@@ -1,0 +1,11 @@
+<%= form_with model: form, url: stock_transfers_path, class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <%= render "stock/operation_fields", f:, warehouses:, items:, warehouse_label: "Origem" %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= f.select_field :destination_id, warehouses.map { |w| [w.name, w.id] }, label: "Destino", include_blank: "Selecione", required: true %>
+    <%= f.field :quantity, label: "Quantidade", as: :number_field, step: "0.001", min: "0.001", required: true,
+          hint: "Sai do disponível da origem ao custo médio atual" %>
+  </div>
+  <%= f.field :reason, label: "Observação" %>
+  <div class="flex justify-end"><%= f.submit_button("Transferir") %></div>
+<% end %>

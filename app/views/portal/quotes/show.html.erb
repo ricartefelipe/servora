@@ -6,7 +6,10 @@
     <h1 class="mt-1 text-2xl font-bold tracking-tight text-ink-950"><%= snapshot.dig("quote", "title") %></h1>
     <p class="mt-1 text-sm text-ink-600"><%= snapshot.dig("location", "name") %> · <%= snapshot.dig("location", "address") %></p>
   </div>
-  <%= badge(@version.status_label, tone: { "sent" => :warning, "approved" => :success, "rejected" => :danger }.fetch(@version.status, :neutral)) if @version %>
+  <div class="flex items-center gap-2">
+    <%= badge(@version.status_label, tone: { "sent" => :warning, "approved" => :success, "rejected" => :danger }.fetch(@version.status, :neutral)) if @version %>
+    <% if @version %><%= link_to pdf_portal_quote_path(@quote, version: @version.version_number), class: "sv-btn-secondary sv-btn-sm", data: { turbo: false } do %><%= icon(:download, size: 16) %> PDF<% end %><% end %>
+  </div>
 </div>
 
 <% if @version %>

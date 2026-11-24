@@ -22,6 +22,7 @@ module WorkOrders
       end
 
       @work_order.update!(timestamp_attributes.merge(status: @to))
+      Sla::Track.new(@work_order).on_transition(from:, to: @to, at: @at)
       @work_order.transitions.create!(organization_id: @work_order.organization_id, from_status: from, to_status: @to,
         reason: @reason, actor_membership_id: @actor&.id, actor_label: @actor&.user&.name || Current.actor_label)
       @work_order

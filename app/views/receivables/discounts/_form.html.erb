@@ -1,0 +1,7 @@
+<%= form_with model: form, url: receivable_discounts_path(receivable), class: "space-y-5", data: { turbo_frame: "_top" } do |f| %>
+  <%= f.error_summary %>
+  <p class="rounded-xl bg-ink-50 p-3 text-sm text-ink-700">Saldo em aberto: <strong class="sv-num"><%= money(receivable.balance) %></strong>. O desconto fica registrado no histórico e na auditoria.</p>
+  <%= f.field :amount, label: "Valor do desconto (R$)", as: :number_field, step: "0.01", min: "0.01", max: receivable.balance.to_s("F"), required: true, autofocus: true %>
+  <%= f.text_area_field :reason, label: "Motivo", rows: 2, required: true %>
+  <div class="flex justify-end"><%= f.submit_button("Conceder desconto") %></div>
+<% end %>

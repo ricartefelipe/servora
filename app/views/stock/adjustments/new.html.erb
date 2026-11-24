@@ -1,0 +1,4 @@
+<% content_for :title, "Ajuste de estoque" %>
+<%= render layout: "shared/modal", locals: { title: "Ajuste de estoque", subtitle: "Diferenças de inventário, perdas e avarias" } do %>
+  <%= render "stock/adjustments/form", form: @form, warehouses: @warehouses, items: @items %>
+<% end %>

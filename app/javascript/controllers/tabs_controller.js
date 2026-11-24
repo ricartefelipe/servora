@@ -2,12 +2,19 @@ import { Controller } from "@hotwired/stimulus"
 
 // Accessible tabs (WAI-ARIA Authoring Practices): arrow keys move between
 // tabs, Home/End jump, the selected tab is reflected in the URL hash.
+//
+// Redirects followed by Turbo drop the URL fragment, so the last tab chosen
+// on a page is also kept in sessionStorage (only the tab key, per path) and
+// restored when the page comes back after a form submission.
+const STORAGE_PREFIX = "servora:tab:"
+
 export default class extends Controller {
   static targets = ["tab", "panel"]
 
   connect() {
-    const fromHash = this.tabTargets.find((tab) => tab.dataset.key === window.location.hash.slice(1))
-    this.select(fromHash || this.tabTargets[0], false)
+    const key = window.location.hash.slice(1) || this.remembered()
+    const tab = this.tabTargets.find((candidate) => candidate.dataset.key === key)
+    this.select(tab || this.tabTargets[0], false)
   }
 
   activate(event) {
@@ -34,6 +41,20 @@ export default class extends Controller {
       candidate.tabIndex = selected ? 0 : -1
     })
     this.panelTargets.forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute("aria-controls") })
-    if (updateHash) history.replaceState(null, "", `#${tab.dataset.key}`)
+    if (!updateHash) return
+    history.replaceState(null, "", `#${tab.dataset.key}`)
+    this.remember(tab.dataset.key)
+  }
+
+  get storageKey() {
+    return `${STORAGE_PREFIX}${window.location.pathname}`
+  }
+
+  remembered() {
+    try { return sessionStorage.getItem(this.storageKey) } catch { return null }
+  }
+
+  remember(key) {
+    try { sessionStorage.setItem(this.storageKey, key) } catch { /* storage unavailable: hash still works */ }
   }
 }

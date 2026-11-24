@@ -8,16 +8,23 @@ module Outbox
       "invitation.issued" => ["Invitations::Handlers::DeliverInvitation"],
       "invitation.accepted" => ["Notifications::Handlers::InvitationAccepted"],
       "quote.sent" => ["Quotes::Handlers::NotifyApprovers"],
-      "quote.approved" => ["Notifications::Handlers::QuoteDecided"],
-      "quote.rejected" => ["Notifications::Handlers::QuoteDecided"],
-      "work_order.created" => [],
-      "work_order.completed" => [],
-      "work_order.canceled" => ["Scheduling::Handlers::ReleaseCanceledWorkOrder"],
+      "quote.approved" => ["Notifications::Handlers::QuoteDecided", "Webhooks::Handlers::Fanout"],
+      "quote.rejected" => ["Notifications::Handlers::QuoteDecided", "Webhooks::Handlers::Fanout"],
+      "work_order.created" => ["Webhooks::Handlers::Fanout"],
+      "work_order.requested" => ["Notifications::Handlers::PortalRequest"],
+      "work_order.completed" => ["Inventory::Handlers::ReleaseWorkOrderReservations", "Webhooks::Handlers::Fanout"],
+      "work_order.canceled" => ["Scheduling::Handlers::ReleaseCanceledWorkOrder", "Inventory::Handlers::ReleaseWorkOrderReservations",
+                                "Webhooks::Handlers::Fanout"],
       "work_order.reopened" => [],
       "work_order.status_changed" => [],
       "visit.scheduled" => ["Notifications::Handlers::VisitScheduled"],
       "visit.started" => [],
-      "visit.finished" => []
+      "visit.finished" => [],
+      "payment_charge.requested" => ["Payments::Handlers::SubmitCharge"],
+      "payment_charge.canceled" => ["Payments::Handlers::CancelRemoteCharge"],
+      "sla.warning" => ["Notifications::Handlers::SlaAlert"],
+      "sla.breached" => ["Notifications::Handlers::SlaAlert"],
+      "inbound_webhook.received" => ["Webhooks::Handlers::ProcessInbound"]
     }.freeze
 
     class UnknownEvent < Servora::PermanentError; end

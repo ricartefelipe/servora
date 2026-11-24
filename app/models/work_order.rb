@@ -11,7 +11,10 @@ class WorkOrder < TenantRecord
   belongs_to :service_location
   belongs_to :quote_version, optional: true
   belongs_to :service_type, optional: true
-  belongs_to :created_by, class_name: "Membership", foreign_key: :created_by_membership_id, inverse_of: false
+  belongs_to :contract, optional: true, inverse_of: :work_orders
+  has_one :maintenance_occurrence, dependent: nil, inverse_of: :work_order
+  belongs_to :created_by, class_name: "Membership", foreign_key: :created_by_membership_id, optional: true, inverse_of: false
+  belongs_to :requested_by_contact, class_name: "CustomerContact", optional: true
 
   has_many :work_order_equipment, class_name: "WorkOrderEquipment", dependent: nil, inverse_of: :work_order
   has_many :equipment, through: :work_order_equipment
@@ -24,6 +27,12 @@ class WorkOrder < TenantRecord
     inverse_of: :work_order
   has_many :visits, -> { order(:scheduled_start) }, dependent: nil, inverse_of: :work_order
   has_many :time_entries, -> { order(:started_at) }, dependent: nil, inverse_of: :work_order
+  has_many :stock_reservations, -> { order(:created_at) }, dependent: nil, inverse_of: :work_order
+  has_many :material_consumptions, -> { order(:created_at) }, dependent: nil, inverse_of: :work_order
+  has_many :receivables, -> { order(:due_on, :number) }, dependent: nil, inverse_of: :work_order
+  has_many :expenses, -> { order(:incurred_on, :created_at) }, dependent: nil, inverse_of: :work_order
+  has_many :evidences, -> { order(created_at: :desc) }, class_name: "WorkOrderEvidence", dependent: nil,
+    inverse_of: :work_order
   has_many :reports, -> { order(version_number: :desc) }, class_name: "WorkOrderReport", dependent: nil, inverse_of: :work_order
 
   enum :status, WorkOrders::States.states.index_by(&:itself), validate: true

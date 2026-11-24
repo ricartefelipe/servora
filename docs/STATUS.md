@@ -29,13 +29,38 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Agenda | Visão diária (linha do tempo) e semanal, técnicos e equipes, horários, ausências, deslocamento, competências | `spec/requests/scheduling_spec.rb`, `spec/system/scheduling_flow_spec.rb` |
 | Despacho | Reserva protegida por exclusion constraint, equipe atômica, reagendamento seguro, cancelamento e ausência do cliente, sugestão determinística | `spec/services/scheduling/**`, `spec/services/visits_spec.rb` |
 | Apontamentos | Minutos e custo de mão de obra com custo/hora vigente; idempotência por operação | `spec/services/time_entries/record_spec.rb` |
+| Estoque | Depósitos, entradas, transferências, ajustes, mínimo, custo médio móvel, histórico; trigger de saldo, append-only, idempotência | `spec/services/inventory_operations_spec.rb`, `spec/database/inventory_integrity_spec.rb`, `spec/requests/inventory_spec.rb` |
+| Concorrência de estoque | Última unidade disputada por duas ordens, transferências cruzadas sem deadlock, consumo duplicado concorrente | `spec/services/inventory_concurrency_spec.rb` |
+| Contas a receber | Parcelas limitadas ao autorizado, pagamentos parciais idempotentes, desconto, estorno, cancelamento, constraints e histórico append-only | `spec/services/receivables_spec.rb`, `spec/database/finance_integrity_spec.rb`, `spec/requests/receivables_spec.rb` |
+| Concorrência financeira | Dois pagamentos simultâneos do saldo total: um aceito, outro recusado | `spec/services/receivables_concurrency_spec.rb` |
+| Cobranças | Simulador determinístico, envio pela outbox, resposta ambígua sem duplicação, recusa, confirmação idempotente, conciliação, cancelamento remoto | `spec/services/payments_spec.rb`, `spec/system/billing_flow_spec.rb` |
+| Asaas (sandbox) | Adapter com timeouts, clientes por referência, consulta por referência externa, classificação de falhas — **somente contra stubs (WebMock)** | `spec/services/payments/gateways/asaas_spec.rb` |
+| Margem | Prevista × realizada com material, mão de obra e despesas | `spec/services/receivables_spec.rb` |
+| Contratos | Condições versionadas append-only, ciclo de vida com motivos, cobertura por tipo e limite mensal, vínculo automático das ordens | `spec/services/contracts_spec.rb`, `spec/requests/contracts_spec.rb`, `spec/database/contract_integrity_spec.rb` |
+| Preventiva | Âncora de fim de mês e bissexto, catch-up limitado, reancoragem, modo após conclusão, suspensão e término, job diário | `spec/unit/preventive/schedule_spec.rb`, `spec/services/preventive_spec.rb`, `spec/system/preventive_flow_spec.rb` |
+| Concorrência preventiva | Três geradores simultâneos produzem cada ocorrência uma única vez | `spec/services/preventive_concurrency_spec.rb` |
+| SLA | Calendário com expediente, feriados e fuso; relógios com pausa, retomada e reabertura; alertas sem duplicidade (inclusive concorrentes); configuração e painel | `spec/unit/sla/business_calendar_spec.rb`, `spec/services/sla_spec.rb`, `spec/services/sla_concurrency_spec.rb`, `spec/requests/sla_settings_spec.rb` |
+| Anexos | Upload validado por assinatura, limites, download autorizado com cabeçalhos privados, blobs isolados por RLS | `spec/unit/files/signature_spec.rb`, `spec/requests/evidences_spec.rb` |
+| PDFs | Proposta comercial da versão enviada e relatório de execução por versão | `spec/requests/documents_spec.rb` |
+| Área do técnico | Agenda e execução móvel, fila offline idempotente, conflitos por versão, revalidação de acesso, rascunho recuperado, service worker restrito | `spec/services/field/sync_spec.rb`, `spec/requests/field_spec.rb`, `spec/system/field_offline_spec.rb` (rede desligada no navegador) |
+| Portal ampliado | Chamados com triagem e notificação, ordens, visitas, equipamentos e histórico, PDFs, cobranças; isolamento por cliente; uso no celular | `spec/requests/portal_service_spec.rb`, `spec/system/portal_requests_spec.rb` |
+| API v1 | Credenciais com escopo, validade e revogação; isolamento; paginação limitada; filtros; idempotência; OpenAPI conferida contra as rotas | `spec/requests/api_spec.rb` |
+| Webhooks | Saída assinada com id estável, retentativas, SSRF (rede interna, DNS alterado, redirecionamento); entrada do Asaas autenticada e deduplicada | `spec/services/webhooks_spec.rb`, `spec/requests/integrations_spec.rb` |
+| Observabilidade | Log JSON por requisição sem parâmetros, correlação, consultas lentas, `/metrics` com token e gauges de outbox e filas | `spec/requests/observability_spec.rb`, `spec/lib/servora/json_log_formatter_spec.rb` |
+| Assinaturas | Avaliação do plano completo, módulos por plano e adicionais (telas, navegação, API), vagas de técnico, preço, somente leitura após avaliação | `spec/unit/subscriptions/pricing_spec.rb`, `spec/services/subscriptions_spec.rb`, `spec/requests/subscriptions_spec.rb` |
+| Materiais da ordem | Reserva, consumo (técnico só do próprio estoque), devolução ao custo original, liberação automática | `spec/requests/work_order_materials_spec.rb`, `spec/system/inventory_flow_spec.rb` |
+
+## Documentação
+
+C4, modelo de dados, fluxos, políticas, runbooks (backup e restauração exercitados localmente) e roteiro de
+demonstração em `docs/`.
 
 ## Verificações executadas localmente
 
 | Verificação | Resultado |
 |---|---|
-| `ruby bin/test-all` | 53 exemplos (regras puras) + 267 exemplos (Rails e system) — 0 falhas |
-| Cobertura do núcleo | linhas 99,11%, branches 84,79% |
+| `bash bin/test-all` | 84 exemplos (regras puras) + 463 exemplos (Rails e system) — 0 falhas |
+| Cobertura do núcleo | linhas 98,51%, branches 84,17% |
 | `ruby bin/db-structure --check` | migrations, rollback e recarga consistentes |
 | `bundle exec rubocop` | sem ofensas |
 | `bundle exec brakeman --exit-on-warn` | sem avisos |
@@ -45,11 +70,20 @@ Atualizado a cada pull request. Itens só aparecem como concluídos quando há i
 | Versão | Conteúdo |
 |---|---|
 | 0.1.0 | Primeira fatia vertical: organização, autenticação, permissões, clientes, equipamentos, orçamento e aprovação, ordem de serviço, agendamento |
+| 1.0.0 | Estoque, financeiro e cobranças, contratos e preventiva, SLA, anexos e PDFs, área do técnico offline, portal ampliado, API e webhooks, observabilidade, assinaturas da plataforma e documentação de operação |
+
+## Integrações não exercitadas
+
+| Integração | Situação |
+|---|---|
+| Asaas sandbox | Adapter e webhook de entrada implementados e cobertos com WebMock e payloads gravados. Não foram executados contra o sandbox real (sem credencial). Para exercitar: criar conta no sandbox do Asaas, gerar a chave de API e informá-la em Configurações → Pagamentos; gerar o token em Configurações → Integrações e cadastrá-lo no Asaas com a URL `/webhooks/asaas`; emitir uma conta, gerar a cobrança e pagar no sandbox. |
 
 ## Em andamento
 
-- Estoque (depósitos, reservas, consumo com custo histórico, devoluções, transferências e ajustes).
+- Nenhum item. Evoluções futuras entram como `feature/*` a partir de `develop`.
 
 ## Ponto de continuidade
 
-Próxima branch: `feature/estoque` a partir de `develop`.
+Versão 1.0.0 publicada. Próximas evoluções candidatas: confirmação de pagamento exercitada no Asaas sandbox com
+credencial real, cobrança automatizada da assinatura da plataforma, execução de estornos no provedor e emissão de
+nota fiscal por integração dedicada.
