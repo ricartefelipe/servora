@@ -3,12 +3,14 @@
 module WorkOrders
   # Opens a work order from a customer request (phone, e-mail, portal...).
   class Create
-    def initialize(organization:, actor:, attributes:, equipment_ids: [], requires_approval: false)
+    # triage: true keeps the order "open" for the office to review (portal requests).
+    def initialize(organization:, actor:, attributes:, equipment_ids: [], requires_approval: false, triage: false)
       @organization = organization
       @actor = actor
       @attributes = attributes.to_h.symbolize_keys
       @equipment_ids = Array(equipment_ids).compact_blank
       @requires_approval = requires_approval
+      @triage = triage
     end
 
     def call
@@ -19,7 +21,7 @@ module WorkOrders
         ))
         Setup.new(work_order:, equipment_ids: @equipment_ids).call
         Sla::Track.new(work_order).start
-        Transition.new(work_order:, to: @requires_approval ? "awaiting_approval" : "approved", actor: @actor).call
+        Transition.new(work_order:, to: @requires_approval ? "awaiting_approval" : "approved", actor: @actor).call unless @triage
         AuditEvent.record!(action: "work_order.created", auditable: work_order, changes: { number: work_order.number })
         Outbox::Publisher.publish!(event_type: "work_order.created", aggregate: work_order)
         work_order

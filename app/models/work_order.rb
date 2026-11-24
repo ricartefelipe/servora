@@ -13,7 +13,8 @@ class WorkOrder < TenantRecord
   belongs_to :service_type, optional: true
   belongs_to :contract, optional: true, inverse_of: :work_orders
   has_one :maintenance_occurrence, dependent: nil, inverse_of: :work_order
-  belongs_to :created_by, class_name: "Membership", foreign_key: :created_by_membership_id, inverse_of: false
+  belongs_to :created_by, class_name: "Membership", foreign_key: :created_by_membership_id, optional: true, inverse_of: false
+  belongs_to :requested_by_contact, class_name: "CustomerContact", optional: true
 
   has_many :work_order_equipment, class_name: "WorkOrderEquipment", dependent: nil, inverse_of: :work_order
   has_many :equipment, through: :work_order_equipment

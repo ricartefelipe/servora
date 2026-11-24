@@ -11,6 +11,7 @@ module Outbox
       "quote.approved" => ["Notifications::Handlers::QuoteDecided"],
       "quote.rejected" => ["Notifications::Handlers::QuoteDecided"],
       "work_order.created" => [],
+      "work_order.requested" => ["Notifications::Handlers::PortalRequest"],
       "work_order.completed" => ["Inventory::Handlers::ReleaseWorkOrderReservations"],
       "work_order.canceled" => ["Scheduling::Handlers::ReleaseCanceledWorkOrder", "Inventory::Handlers::ReleaseWorkOrderReservations"],
       "work_order.reopened" => [],

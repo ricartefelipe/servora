@@ -14,7 +14,7 @@
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 sv-btn-primary">Ir para o conteúdo</a>
     <div id="flash"><%= render "shared/flash" %></div>
     <header class="border-b border-ink-200 bg-white">
-      <div class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-4">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4">
         <div class="flex items-center gap-3">
           <%= render "shared/logo", mark_only: true, size: 30 %>
           <div>
@@ -23,9 +23,13 @@
           </div>
         </div>
         <% if current_contact %>
-          <nav aria-label="Portal" class="flex items-center gap-1 text-sm">
+          <nav aria-label="Portal" class="relative -mx-2 flex max-w-full items-center gap-1 overflow-x-auto text-sm">
             <%= link_to "Início", portal_root_path, class: "sv-btn-ghost sv-btn-sm" %>
+            <%= link_to "Chamados", portal_work_orders_path, class: "sv-btn-ghost sv-btn-sm" %>
             <%= link_to "Orçamentos", portal_quotes_path, class: "sv-btn-ghost sv-btn-sm" %>
+            <%= link_to "Equipamentos", portal_equipment_index_path, class: "sv-btn-ghost sv-btn-sm" %>
+            <%= link_to "Visitas", portal_visits_path, class: "sv-btn-ghost sv-btn-sm" %>
+            <%= link_to "Cobranças", portal_receivables_path, class: "sv-btn-ghost sv-btn-sm" %>
             <%= button_to "Sair", portal_sign_out_path, method: :delete, class: "sv-btn-ghost sv-btn-sm text-rose-700" %>
           </nav>
         <% end %>

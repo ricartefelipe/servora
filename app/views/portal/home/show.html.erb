@@ -2,6 +2,13 @@
 <h1 class="text-2xl font-bold tracking-tight text-ink-950">Olá, <%= current_contact.name.split.first %></h1>
 <p class="mt-1 text-sm text-ink-600"><%= current_contact.customer.display_name %></p>
 
+<div class="mt-6 grid gap-4 sm:grid-cols-3">
+  <%= link_to portal_work_orders_path, class: "block" do %><%= stat_tile("Atendimentos em andamento", @open_orders) %><% end %>
+  <%= link_to portal_visits_path, class: "block" do %><%= stat_tile("Próxima visita", @next_visit ? l(@next_visit.scheduled_start, format: "%d/%m %H:%M") : "—") %><% end %>
+  <%= link_to portal_receivables_path, class: "block" do %><%= stat_tile("Saldo em aberto", money(@open_balance)) %><% end %>
+</div>
+<p class="mt-4"><%= link_to new_portal_work_order_path, class: "sv-btn-primary" do %><%= icon(:plus, size: 18) %> Abrir chamado<% end %></p>
+
 <section class="mt-8" aria-labelledby="pendentes-title">
   <h2 id="pendentes-title" class="mb-3 font-semibold text-ink-900">Propostas aguardando sua análise</h2>
   <% if @pending_quotes.empty? %>
