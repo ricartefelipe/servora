@@ -1,0 +1,29 @@
+<%# SLA deadlines of the work order. %>
+<section class="sv-card p-5 text-sm" aria-labelledby="sla-title">
+  <h2 id="sla-title" class="mb-3 font-semibold text-ink-900">Prazos (SLA)</h2>
+  <ul class="space-y-3" role="list">
+    <% @sla_clocks.each do |clock| %>
+      <li>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-ink-700"><%= clock.metric_label %></span>
+          <% if clock.overdue? %>
+            <%= badge("Estourado", tone: :danger) %>
+          <% elsif clock.at_risk? %>
+            <%= badge("Em risco", tone: :warning) %>
+          <% else %>
+            <%= badge(clock.status_label, tone: { "running" => :info, "paused" => :neutral, "met" => :success, "breached" => :danger, "canceled" => :neutral }.fetch(clock.status)) %>
+          <% end %>
+        </div>
+        <p class="text-xs text-ink-500">
+          <% if clock.running? %>
+            Vence <%= l(clock.due_at.in_time_zone(current_organization.time_zone), format: :short) %>
+          <% elsif clock.paused? %>
+            Pausado · restam <%= distance_of_time_in_words(clock.remaining_seconds) %> úteis
+          <% elsif clock.stopped_at %>
+            Encerrado <%= l(clock.stopped_at.in_time_zone(current_organization.time_zone), format: :short) %>
+          <% end %>
+        </p>
+      </li>
+    <% end %>
+  </ul>
+</section>

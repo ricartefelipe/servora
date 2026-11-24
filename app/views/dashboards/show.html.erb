@@ -36,6 +36,10 @@
     <%= stat_tile("Equipamentos parados", alerts["inoperative"] || 0, tone: (alerts["inoperative"].to_i.positive? ? :danger : :brand),
           hint: "#{alerts['attention'] || 0} requerem atenção") %>
   <% end %>
+  <% if (sla = @overview.sla_alerts) %>
+    <%= stat_tile("Prazos estourados", sla[:breached], tone: sla[:breached].positive? ? :danger : :brand,
+          hint: "#{sla[:at_risk]} em risco (SLA)") %>
+  <% end %>
   <%= stat_tile("Membros ativos", @overview.active_members_count) %>
   <% if (pending = @overview.pending_invitations_count) %>
     <%= stat_tile("Convites pendentes", pending) %>
