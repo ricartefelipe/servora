@@ -9,7 +9,7 @@ const DEBOUNCE_MS = 150
 // focus never leaves the input; the active option is exposed through
 // aria-activedescendant and aria-selected. Escape is handled by the dialog
 // itself and focus returns to the element that opened the palette.
-export default class extends Controller {
+export default class CommandPaletteController extends Controller {
   static targets = ["dialog", "input", "frame", "option", "status", "hint", "shortcut"]
   static values = { url: String }
 
@@ -192,8 +192,11 @@ export default class extends Controller {
   move(step) {
     const count = this.optionTargets.length
     if (count === 0) return
-    const next = this.index < 0 ? (step > 0 ? 0 : count - 1) : (this.index + step + count) % count
-    this.activate(next)
+    if (this.index < 0) {
+      this.activate(step > 0 ? 0 : count - 1)
+      return
+    }
+    this.activate((this.index + step + count) % count)
   }
 
   activate(position, { scroll = true } = {}) {
@@ -212,9 +215,12 @@ export default class extends Controller {
   announce() {
     const count = this.optionTargets.length
     const message = this.frameTarget.querySelector("[data-search-message]")
-    this.statusTarget.textContent = count > 0
-      ? `${count} ${count === 1 ? "resultado" : "resultados"}. Use as setas para navegar e Enter para abrir.`
-      : (message?.textContent.trim().replace(/\s+/g, " ") || "")
+    if (count === 0) {
+      this.statusTarget.textContent = message?.textContent.trim().replace(/\s+/g, " ") || ""
+      return
+    }
+    const noun = count === 1 ? "resultado" : "resultados"
+    this.statusTarget.textContent = `${count} ${noun}. Use as setas para navegar e Enter para abrir.`
   }
 
   reset() {

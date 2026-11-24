@@ -20,7 +20,7 @@
     <kbd class="hidden rounded-md bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px] text-white/60 ring-1 ring-inset ring-white/10 sm:inline" aria-hidden="true">Esc</kbd>
   </div>
 
-  <p class="sr-only" role="status" aria-live="polite" data-command-palette-target="status"></p>
+  <output class="sr-only" aria-live="polite" data-command-palette-target="status"></output>
 
   <template data-command-palette-target="hint">
     <%= render "searches/results", term: "", groups: [], listbox: true %>

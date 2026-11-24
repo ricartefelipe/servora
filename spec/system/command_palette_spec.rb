@@ -63,6 +63,6 @@ RSpec.describe "Busca rápida", :js do
     fill_in input_label, with: "inexistente"
 
     expect(page).to have_text("Nenhum resultado para “inexistente”.")
-    expect(page).to have_css('[role="status"]', text: "Nenhum resultado", visible: :all)
+    expect(page).to have_css("output", text: "Nenhum resultado", visible: :all)
   end
 end
