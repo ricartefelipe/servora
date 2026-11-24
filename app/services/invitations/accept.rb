@@ -31,6 +31,8 @@ module Invitations
         Current.set(user: @user, membership:, organization: invitation.organization) do
           AuditEvent.record!(action: "invitation.accepted", auditable: invitation, changes: { role: invitation.role })
         end
+        Outbox::Publisher.publish!(event_type: "invitation.accepted", aggregate: invitation,
+          dedup_key: "invitation.accepted:#{invitation.id}")
         membership
       end
     end

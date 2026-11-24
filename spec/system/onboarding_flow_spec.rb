@@ -39,6 +39,9 @@ RSpec.describe "Cadastro, confirmação e primeira organização", :js do
 
     expect(page).to have_css("[role=status]", text: "Convite enviado para tecnico@servora.test")
     expect(page).to have_text("tecnico@servora.test")
+
+    # The recurring outbox dispatcher (bin/jobs) delivers the e-mail.
+    run_dispatcher
     expect(ActionMailer::Base.deliveries.last.to).to eq(["tecnico@servora.test"])
   end
 end

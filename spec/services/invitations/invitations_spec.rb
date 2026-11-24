@@ -9,11 +9,12 @@ RSpec.describe Invitations do
   let(:owner) { create(:membership, :owner, organization:) }
 
   describe Invitations::Issue do
-    it "creates a pending invitation and schedules delivery" do
+    it "creates a pending invitation and records the delivery event in the same transaction" do
       invitation = as_member(owner) { described_class.new(inviter: owner, email: "Nova@Servora.test", role: "technician").call }
 
       expect(invitation).to have_attributes(email: "nova@servora.test", role: "technician", invited_by_membership_id: owner.id)
-      expect(Invitations::DeliveryJob).to have_been_enqueued.with(organization.id, invitation.id)
+      expect(outbox_events(organization).map { |e| [e.event_type, e.aggregate_id] }).to eq([["invitation.issued", invitation.id]])
+      expect(Invitations::DeliveryJob).not_to have_been_enqueued
     end
 
     it "refuses duplicates and existing members" do
