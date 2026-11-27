@@ -35,7 +35,22 @@ RSpec.describe "Inventory screens" do
 
     get stock_balances_path
 
-    expect(response.body).to include("Custo médio", "R$ 10,0000", "Valor em estoque", new_stock_adjustment_path)
+    expect(response.body).to include("Custo médio", "Valor em estoque", new_stock_adjustment_path)
+  end
+
+  it "shows the average cost with two decimals, the full precision in the tooltip" do
+    receive_stock(central, item, "3", "10")
+    receive_stock(central, item, "1", "12.5")
+    sign_in_as(owner)
+
+    get stock_balances_path
+
+    row = response.parsed_body.at_css("section[aria-label='Saldos de estoque'] table tbody tr")
+    cost = row.at_css("td[title]")
+    expect(cost.text.squish).to eq("R$ 10,63")
+    expect(cost["title"]).to eq("R$ 10,6250")
+    expect(cost["class"]).to include("whitespace-nowrap")
+    expect(row.css("td")[1]["class"]).to include("whitespace-nowrap")
   end
 
   it "registers a receipt once even if the form is submitted twice" do

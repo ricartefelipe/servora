@@ -5,6 +5,9 @@
   <%= render "work_orders/status_badge", work_order: @work_order %>
   <%= render "work_orders/priority_badge", work_order: @work_order %>
 <% end %>
+<%# A finished order has nothing to move or cancel: reopening (completed orders only) joins the header actions
+    instead of leaving an empty action card. %>
+<% targets = wo_policy.change_status? ? WorkOrders::States.targets(@work_order.status) & WorkOrders::ChangeStatus::ALLOWED_TARGETS : [] %>
 <%= page_header(@work_order.title, eyebrow: "#{@work_order.number} · #{@work_order.origin_label}", size: :md, meta: header_badges,
       subtitle: "#{@work_order.customer.display_name} · #{@work_order.service_location.name} · #{@work_order.service_location.address_line}") do %>
   <% if wo_policy.complete? && WorkOrders::States.allowed?(@work_order.status, "completed") %>
@@ -13,20 +16,29 @@
       <%= icon(:check, size: 18) %> Concluir
     <% end %>
   <% end %>
+  <% if wo_policy.reopen? %>
+    <details class="relative">
+      <summary class="sv-btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">Reabrir</summary>
+      <%= form_with url: reopen_work_order_path(@work_order), method: :patch, scope: :reopening, class: "absolute left-0 z-10 mt-2 w-[min(20rem,calc(100vw-2rem))] space-y-2 rounded-2xl bg-white p-4 shadow-[var(--shadow-float)] ring-1 ring-ink-200 sm:left-auto sm:right-0" do |f| %>
+        <%= f.label :reason, "Motivo da reabertura", class: "sv-label" %>
+        <%= f.text_area :reason, rows: 2, required: true, class: "sv-input" %>
+        <%= f.button "Reabrir ordem", type: "submit", class: "sv-btn-primary w-full" %>
+      <% end %>
+    </details>
+  <% end %>
 <% end %>
 
-<% if wo_policy.change_status? || wo_policy.cancel? || wo_policy.reopen? %>
+<% if targets.any? || wo_policy.cancel? %>
   <section class="sv-card mb-6 flex flex-wrap items-center gap-3 p-4" aria-label="Ações da ordem">
-    <% targets = WorkOrders::States.targets(@work_order.status) & WorkOrders::ChangeStatus::ALLOWED_TARGETS %>
-    <% if wo_policy.change_status? && targets.any? %>
+    <% if targets.any? %>
       <%= form_with url: change_status_work_order_path(@work_order), method: :patch, scope: :status_change, class: "flex flex-wrap items-end gap-2" do |f| %>
-        <div><%= f.label :to, "Mover para", class: "sv-label" %><%= f.select :to, targets.map { |s| [WorkOrders::LABELS[s], s] }, {}, class: "sv-input" %></div>
+        <div class="w-full sm:w-56"><%= f.label :to, "Mover para", class: "sv-label" %><%= f.select :to, targets.map { |s| [WorkOrders::LABELS[s], s] }, { prompt: "Selecione a situação" }, required: true, class: "sv-input" %></div>
         <div><%= f.label :reason, "Motivo", class: "sv-label" %><%= f.text_field :reason, class: "sv-input", placeholder: "Obrigatório para esperas" %></div>
         <%= f.button "Atualizar", type: "submit", class: "sv-btn-secondary" %>
       <% end %>
     <% end %>
-    <div class="ml-auto flex flex-wrap gap-2">
-      <% if wo_policy.cancel? %>
+    <% if wo_policy.cancel? %>
+      <div class="ml-auto flex flex-wrap gap-2">
         <details class="relative">
           <summary class="sv-btn-danger cursor-pointer list-none"><%= icon(:close, size: 16) %> Cancelar ordem</summary>
           <%= form_with url: cancel_work_order_path(@work_order), method: :patch, scope: :cancellation, class: "absolute right-0 z-10 mt-2 w-80 space-y-2 rounded-2xl bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
@@ -35,18 +47,8 @@
             <%= f.button type: "submit", class: "sv-btn-danger w-full" do %><%= icon(:close, size: 16) %> Confirmar cancelamento<% end %>
           <% end %>
         </details>
-      <% end %>
-      <% if wo_policy.reopen? %>
-        <details class="relative">
-          <summary class="sv-btn-secondary cursor-pointer list-none">Reabrir</summary>
-          <%= form_with url: reopen_work_order_path(@work_order), method: :patch, scope: :reopening, class: "absolute right-0 z-10 mt-2 w-80 space-y-2 rounded-2xl bg-white p-4 shadow-[var(--shadow-float)]" do |f| %>
-            <%= f.label :reason, "Motivo da reabertura", class: "sv-label" %>
-            <%= f.text_area :reason, rows: 2, required: true, class: "sv-input" %>
-            <%= f.button "Reabrir ordem", type: "submit", class: "sv-btn-primary w-full" %>
-          <% end %>
-        </details>
-      <% end %>
-    </div>
+      </div>
+    <% end %>
   </section>
 <% end %>
 

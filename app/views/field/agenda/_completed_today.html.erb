@@ -1,0 +1,20 @@
+<%# Visits the technician already finished today: a compact list under "Hoje", each row opening the work order. %>
+<div class="mt-4" role="group" aria-labelledby="concluidas-hoje-titulo">
+  <h3 id="concluidas-hoje-titulo" class="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-ink-600">
+    Concluídas hoje <span class="sv-num font-mono font-medium normal-case tracking-normal text-ink-500">(<%= visits.size %>)</span>
+  </h3>
+  <ul class="divide-y divide-ink-150 overflow-hidden rounded-2xl bg-white ring-1 ring-ink-200" role="list">
+    <% visits.each do |visit| %>
+      <% order = visit.work_order %>
+      <li>
+        <%= link_to field_work_order_path(order), class: "flex min-h-12 items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-ink-25 focus-visible:-outline-offset-2" do %>
+          <%= icon(:check, size: 16, css: "shrink-0 text-emerald-600") %>
+          <span class="sv-num shrink-0 font-mono text-sm font-medium text-ink-700"><%= l(visit.finished_at.in_time_zone(zone), format: "%H:%M") %></span>
+          <span class="min-w-0 flex-1 truncate text-[15px] text-ink-900"><%= order.customer.display_name %></span>
+          <span class="shrink-0 font-mono text-xs text-ink-500"><%= order.number %></span>
+          <span class="sr-only">· <%= visit.status_label %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>

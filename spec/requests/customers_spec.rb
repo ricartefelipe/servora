@@ -21,6 +21,35 @@ RSpec.describe "Customers, locations and contacts" do
     expect(response.body).not_to include("Oficina Rápida")
   end
 
+  it "sorts the list by the name it shows (trade name, else legal name) across pages" do
+    create(:customer, organization:, name: "Zeta Comércio Ltda.", trade_name: "Aaa Mercado")
+    create(:customer, organization:, name: "Bbb Distribuidora Ltda.")
+    create(:customer, organization:, name: "Aaa Holding S.A.", trade_name: "Zzz Café")
+    23.times { |index| create(:customer, organization:, name: format("Mmm Cliente %02d", index)) }
+    sign_in_as(attendant)
+
+    get customers_path
+    first_page = response.parsed_body.css("ul[role=list] > li p.font-semibold").map(&:text)
+    get customers_path, params: { pagina: 2 }
+    second_page = response.parsed_body.css("ul[role=list] > li p.font-semibold").map(&:text)
+
+    expect(first_page.size).to eq(25)
+    expect(first_page.first(2)).to eq(["Aaa Mercado", "Bbb Distribuidora Ltda."])
+    expect(second_page).to eq(["Padaria Pão Quente", "Zzz Café"])
+    expect(first_page + second_page).to eq((first_page + second_page).sort)
+  end
+
+  it "shows the customer's and contacts' phones with the Brazilian mask, keeping the stored values" do
+    in_tenant(organization) { customer.update!(phone: "1133334444") }
+    create(:customer_contact, customer:, name: "Rita Souza", phone: "+55 11 98741-2035")
+    sign_in_as(attendant)
+
+    get customer_path(customer)
+
+    expect(response.body).to include("(11) 3333-4444", "(11) 98741-2035")
+    expect(in_tenant(organization) { customer.reload.phone }).to eq("1133334444")
+  end
+
   it "creates a customer with its first location" do
     sign_in_as(attendant)
 

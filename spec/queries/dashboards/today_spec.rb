@@ -214,7 +214,19 @@ RSpec.describe Dashboards::Today do
           params: { situacao: "overdue" })
         expect(items[:equipment_inoperative]).to have_attributes(route: :equipment_index_path, params: { estado: "inoperative" })
         expect(items[:stock_below_minimum]).to have_attributes(route: :stock_balances_path, params: { abaixo: "1" })
-        expect(items[:sla_breached]).to have_attributes(label: "OS com prazo estourado", route: :work_orders_path)
+        expect(items[:sla_breached]).to have_attributes(label: "OS com prazo estourado", route: :work_orders_path,
+          params: { prazo: "estourado" })
+        expect(items[:sla_at_risk]).to have_attributes(route: :work_orders_path, params: { prazo: "em_risco" })
+      end
+
+      it "offers to resolve only what the member may change, and to look at the rest" do
+        expect(attention(owner).map(&:actionable)).to all(be(true))
+
+        finance = attention(create(:membership, :finance, organization:)).to_h { |item| [item.key, item.actionable] }
+        expect(finance).to eq(sla_breached: false, receivables_overdue: true, sla_at_risk: false, stock_below_minimum: false)
+
+        auditor = attention(create(:membership, :auditor, organization:))
+        expect(auditor.map(&:actionable)).to all(be(false))
       end
 
       it "follows the member's permissions" do
@@ -251,6 +263,18 @@ RSpec.describe Dashboards::Today do
 
         expect(on_time.map(&:key)).to eq(%i[equipment_inoperative equipment_attention stock_below_minimum])
       end
+    end
+
+    it "counts work orders, not deadlines" do
+      configure_sla(organization)
+      # Opened the day before: first response and resolution are both past.
+      work_order = travel_to(at("2026-11-23 09:00")) { open_work_order(scenario) }
+      expect(clocks_of(work_order).values.map(&:due_at)).to all(be < now)
+
+      items = attention(owner).index_by(&:key)
+
+      expect(items[:sla_breached].count).to eq(1)
+      expect(items).not_to have_key(:sla_at_risk)
     end
 
     it "omits areas with nothing pending while still counting them as checked" do

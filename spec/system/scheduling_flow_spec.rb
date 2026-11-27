@@ -21,6 +21,7 @@ RSpec.describe "Agendamento e despacho", :js do
     fill_in "Data", with: Date.new(2026, 12, 1)
     fill_in "Início", with: "09:00"
     select "Equipe Norte", from: "Ou uma equipe inteira"
+    # The form proposes the next business day, so the first suggestions already list working technicians.
     within("#visit-suggestions") { expect(page).to have_text("Diego Alves") }
     click_on "Agendar"
     expect(page).to have_text("Visita agendada para 01/12/2026 09:00")

@@ -80,6 +80,32 @@ RSpec.describe Scheduling do
     end
   end
 
+  describe Scheduling::DefaultStart do
+    def proposal(now, **calendar) = described_class.new(now: zone.parse(now), **calendar).call
+
+    it "proposes 09:00 on the next weekday when no opening hours are configured" do
+      expect(proposal("2026-11-24 16:00")).to eq(zone.parse("2026-11-25 09:00")) # Tuesday → Wednesday
+      expect(proposal("2026-11-27 10:00")).to eq(zone.parse("2026-11-30 09:00")) # Friday → Monday
+      expect(proposal("2026-11-28 10:00")).to eq(zone.parse("2026-11-30 09:00")) # Saturday → Monday
+    end
+
+    it "skips holidays and the days the office is closed" do
+      saturday_morning = { 1 => [[480, 1080]], 2 => [[480, 1080]], 6 => [[480, 720]] }
+
+      expect(proposal("2026-11-27 10:00", opening_hours: saturday_morning)).to eq(zone.parse("2026-11-28 09:00"))
+      expect(proposal("2026-11-27 10:00", opening_hours: saturday_morning, holidays: [Date.new(2026, 11, 28)]))
+        .to eq(zone.parse("2026-11-30 09:00"))
+      expect(proposal("2026-11-27 10:00", holidays: [Date.new(2026, 11, 30)])).to eq(zone.parse("2026-12-01 09:00"))
+    end
+
+    it "moves to the opening when the office is not open at 09:00" do
+      expect(proposal("2026-11-24 10:00", opening_hours: { 3 => [[600, 1080]] })).to eq(zone.parse("2026-11-25 10:00"))
+      expect(proposal("2026-11-24 10:00", opening_hours: { 3 => [[420, 510], [780, 1080]] }))
+        .to eq(zone.parse("2026-11-25 13:00"))
+      expect(proposal("2026-11-24 10:00", opening_hours: { 3 => [[360, 480]] })).to eq(zone.parse("2026-11-25 06:00"))
+    end
+  end
+
   describe Visits::States do
     it "never completes a visit without starting it" do
       expect(described_class.allowed?(:scheduled, :completed)).to be(false)

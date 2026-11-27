@@ -85,7 +85,7 @@
               </dd>
             </div>
             <% if show_costs %>
-              <div><dt class="text-ink-500">Custo médio</dt><dd class="text-ink-600"><%= unit_cost(balance.average_cost) %></dd></div>
+              <div><dt class="text-ink-500">Custo médio</dt><dd class="whitespace-nowrap text-ink-600" title="<%= unit_cost(balance.average_cost) %>"><%= money(balance.average_cost) %></dd></div>
               <div class="col-span-2"><dt class="text-ink-500">Valor</dt><dd class="text-ink-950"><%= money(balance.stock_value) %></dd></div>
             <% end %>
           </dl>
@@ -97,7 +97,7 @@
       <table class="sv-table">
         <thead>
           <tr>
-            <th scope="col">Item</th><th scope="col">Depósito</th>
+            <th scope="col">Item</th><th scope="col" class="whitespace-nowrap">Depósito</th>
             <th scope="col" class="text-right">Físico</th><th scope="col" class="text-right">Reservado</th>
             <th scope="col" class="text-right">Disponível</th><th scope="col" class="text-right">Mínimo</th>
             <% if show_costs %><th scope="col" class="text-right">Custo médio</th><th scope="col" class="text-right">Valor</th><% end %>
@@ -112,7 +112,7 @@
                 <span class="block font-medium text-ink-950"><%= item.name %></span>
                 <span class="text-xs text-ink-500"><%= [item.sku, item.unit_label].compact.join(" · ") %></span>
               </td>
-              <td><%= balance.warehouse.name %><span class="block text-xs text-ink-500"><%= balance.warehouse.kind_label %></span></td>
+              <td class="whitespace-nowrap"><%= balance.warehouse.name %><span class="block text-xs text-ink-500"><%= balance.warehouse.kind_label %></span></td>
               <td class="sv-num text-right"><%= quantity(balance.on_hand) %></td>
               <td class="sv-num text-right text-ink-600"><%= quantity(balance.reserved) %></td>
               <td class="sv-num text-right font-semibold text-ink-950">
@@ -135,7 +135,8 @@
                 <% end %>
               </td>
               <% if show_costs %>
-                <td class="sv-num text-right text-ink-600"><%= unit_cost(balance.average_cost) %></td>
+                <%# Two decimals on screen; the moving-average precision (4 decimals) stays in the tooltip. %>
+                <td class="sv-num whitespace-nowrap text-right text-ink-600" title="<%= unit_cost(balance.average_cost) %>"><%= money(balance.average_cost) %></td>
                 <td class="sv-num whitespace-nowrap text-right text-ink-950"><%= money(balance.stock_value) %></td>
               <% end %>
               <td class="text-right">

@@ -75,7 +75,7 @@
         <% if policy(@quote).view_costs? %>
           <div class="mt-2 flex justify-between border-t border-ink-200 pt-2 text-ink-600">
             <dt>Custo estimado · margem</dt>
-            <dd class="sv-num"><%= totals.estimated_cost ? "#{money(totals.estimated_cost)} · #{money(totals.margin)} (#{number_with_precision(totals.margin_percent, precision: 1, separator: ',')}%)" : "custo incompleto" %></dd>
+            <dd class="sv-num"><%= totals.estimated_cost ? "#{money(totals.estimated_cost)} · #{money(totals.margin)} (#{percentage(totals.margin_percent)})" : "custo incompleto" %></dd>
           </div>
         <% end %>
       </dl>

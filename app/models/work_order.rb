@@ -44,6 +44,9 @@ class WorkOrder < TenantRecord
 
   scope :recent_first, -> { order(requested_at: :desc) }
   scope :open_work, -> { where.not(status: WorkOrders::TERMINAL_STATES) }
+  # Work orders with at least one running deadline past or at risk (SlaClock).
+  scope :deadline_overdue, ->(now = Time.current) { where(id: SlaClock.overdue(now).select(:work_order_id)) }
+  scope :deadline_at_risk, ->(now = Time.current) { where(id: SlaClock.at_risk(now).select(:work_order_id)) }
 
   def status_label = WorkOrders::LABELS.fetch(status)
   def priority_label = PRIORITIES.fetch(priority)

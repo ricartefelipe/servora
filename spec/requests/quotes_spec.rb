@@ -25,6 +25,27 @@ RSpec.describe "Quotes" do
     expect(response.body).to include("Conteúdo congelado", "Carga de gás R410A")
   end
 
+  it "lists quotes as cards on phones and keeps the table from md up" do
+    quote = create_quote(scenario)
+    send_quote(scenario, quote)
+    sign_in_as(scenario[:author])
+
+    get quotes_path
+
+    page = response.parsed_body
+    cards = page.at_css("ul[aria-label='Orçamentos']")
+    expect([cards, page.at_css("table").parent].map { |node| node["class"].split })
+      .to match([include("md:hidden"), include("max-md:hidden")])
+    card = cards.at_css("li > a[href='#{quote_path(quote)}']")
+    lines = card.css("> p")
+    expect(lines[0].at_css("span.font-mono")["class"].split).to include("whitespace-nowrap")
+    expect(lines[0].text.squish).to eq("#{quote.number} Aguardando cliente")
+    expect(lines[1].text.squish).to eq("Manutenção do sistema de climatização")
+    customer = in_tenant(organization) { scenario[:customer].reload.display_name }
+    expect(lines[2].css("span").map { |part| part.text.squish }).to eq(["#{customer} · Versão 1", "R$ 450,00"])
+    expect(lines[2].css("span").last["class"].split).to include("text-right")
+  end
+
   it "shows costs and margin only to roles allowed to see costs" do
     quote = create_quote(scenario)
     sign_in_as(scenario[:author])

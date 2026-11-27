@@ -12,8 +12,9 @@ module Dashboards
     end
 
     # severity: :high (danger) or :medium (warning). route/params build the link
-    # to the pre-filtered list where the item is resolved.
-    Attention = Data.define(:key, :count, :label, :severity, :route, :params)
+    # to the pre-filtered list where the item is resolved; actionable tells
+    # whether the member may resolve it there ("Resolver") or only look ("Ver").
+    Attention = Data.define(:key, :count, :label, :severity, :route, :params, :actionable)
 
     # One slice of the open work orders, in lifecycle order.
     StatusSlice = Data.define(:status, :label, :count)
@@ -64,6 +65,15 @@ module Dashboards
       upcoming_scope.includes(work_order: %i[customer service_location]).limit(UPCOMING_LIMIT).to_a
     end
 
+    # Open receivables by due date (overdue ones come first), for members who
+    # follow the money (nil when finance is not visible or not in the plan).
+    def upcoming_receivables
+      return nil unless can?(:finance_view) && module?(:finance)
+
+      @upcoming_receivables ||= @organization.receivables.outstanding.includes(:customer)
+        .order(:due_on, :number).limit(UPCOMING_LIMIT).to_a
+    end
+
     # Open work orders grouped by status, lifecycle order, empty statuses left
     # out (nil without permission to see every work order).
     def open_orders_by_status
@@ -109,27 +119,30 @@ module Dashboards
       ].compact
     end
 
+    # Work orders (not deadlines) with a running deadline past or at risk; an
+    # order with both appears in each item, like in the filtered lists.
     def sla_item(kind, label, severity)
-      running = SlaClock.running
-      count = kind == :breached ? running.where(due_at: ..@now).count : running.where(due_at: @now..).where(warn_at: ..@now).count
-      Attention.new(key: :"sla_#{kind}", count:, label:, severity:, route: :work_orders_path, params: {})
+      orders = kind == :breached ? WorkOrder.deadline_overdue(@now) : WorkOrder.deadline_at_risk(@now)
+      Attention.new(key: :"sla_#{kind}", count: orders.count, label:, severity:, route: :work_orders_path,
+        params: { prazo: kind == :breached ? "estourado" : "em_risco" }, actionable: can?(:work_orders_manage))
     end
 
     def equipment_item(status, label, severity)
       count = @organization.equipment.active.where(operational_status: status).count
       Attention.new(key: :"equipment_#{status}", count:, label:, severity:, route: :equipment_index_path,
-        params: { estado: status })
+        params: { estado: status }, actionable: can?(:equipment_manage))
     end
 
     def overdue_receivables
       Attention.new(key: :receivables_overdue, count: @organization.receivables.overdue(@today).count,
-        label: "Contas vencidas", severity: :high, route: :receivables_path, params: { situacao: "overdue" })
+        label: "Contas vencidas", severity: :high, route: :receivables_path, params: { situacao: "overdue" },
+        actionable: can?(:finance_manage))
     end
 
     def stock_below_minimum
       count = @stock_balances.where(StockBalance::BELOW_MINIMUM_SQL).count
       Attention.new(key: :stock_below_minimum, count:, label: "Itens abaixo do estoque mínimo", severity: :medium,
-        route: :stock_balances_path, params: { abaixo: "1" })
+        route: :stock_balances_path, params: { abaixo: "1" }, actionable: can?(:inventory_manage))
     end
 
     # Sum of net payments keyed by the local date they were received on.

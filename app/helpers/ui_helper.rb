@@ -17,26 +17,26 @@ module UiHelper
     danger: "bg-rose-500", info: "bg-sky-500", indigo: "bg-indigo-500", ember: "bg-ember-500"
   }.freeze
 
-  # One map for work order states, shared by the office, field and portal views.
-  WORK_ORDER_STATUS_TONES = {
-    "open" => :neutral, "awaiting_approval" => :warning, "approved" => :indigo, "scheduled" => :indigo,
-    "in_progress" => :ember, "waiting_parts" => :warning, "waiting_customer" => :warning, "completed" => :success,
-    "reopened" => :warning, "canceled" => :neutral
+  # Colour of a glyph that replaces the dot (badge marker:, chart legends).
+  MARKER_TONES = {
+    neutral: "text-ink-500", success: "text-emerald-600", warning: "text-amber-600",
+    danger: "text-rose-600", info: "text-sky-600", indigo: "text-indigo-600", ember: "text-ember-600"
   }.freeze
 
   AVATAR_CLASSES = "shrink-0 place-items-center rounded-full bg-white font-semibold text-ink-800 ring-1 ring-inset ring-ink-200"
 
   # Danger badges swap the dot for an alert icon, so the state never depends on
   # colour alone.
-  def work_order_status_tone(status) = WORK_ORDER_STATUS_TONES.fetch(status, :neutral)
-
-  def badge(text, tone: :neutral, dot: true)
-    marker = if tone == :danger
-               icon(:alert, size: 12, css: "text-rose-600")
-             elsif dot
-               tag.span(class: "size-1.5 rounded-full #{DOT_TONES.fetch(tone)}", aria: { hidden: true })
-             end
-    tag.span(class: "sv-badge #{BADGE_TONES.fetch(tone)}") { safe_join([marker, text].compact) }
+  # marker: an icon name drawn instead of the dot, in the tone colour.
+  def badge(text, tone: :neutral, dot: true, marker: nil)
+    glyph = if tone == :danger
+              icon(:alert, size: 12, css: "text-rose-600")
+            elsif marker
+              icon(marker, size: 12, css: MARKER_TONES.fetch(tone))
+            elsif dot
+              tag.span(class: "size-1.5 rounded-full #{DOT_TONES.fetch(tone)}", aria: { hidden: true })
+            end
+    tag.span(class: "sv-badge #{BADGE_TONES.fetch(tone)}") { safe_join([glyph, text].compact) }
   end
 
   PAGE_TITLE_SIZES = { lg: "text-display-lg", md: "text-display-md" }.freeze

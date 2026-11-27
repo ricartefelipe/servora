@@ -1,0 +1,58 @@
+<%# Below md the timeline and the week table need more width than a phone has: the same allocations become a
+    list by day, then technician, with one card per visit (time, customer, order number, state). Technicians with
+    nothing on a day are left out of it. %>
+<% clock = ->(time, day) { l(time, format: time.to_date == day ? "%H:%M" : "%d/%m %H:%M") } %>
+<div class="space-y-6 md:hidden" role="region" aria-label="Agenda em lista">
+  <% agenda.days.each do |day| %>
+    <% groups = agenda.rows.map { |row| [row, agenda.allocations_on(row, day)] }.reject { |_row, allocations| allocations.empty? } %>
+    <% heading_id = "agenda-lista-#{day.iso8601}" %>
+    <section aria-labelledby="<%= heading_id %>">
+      <h2 id="<%= heading_id %>" class="mb-2 flex items-center gap-2 text-[13px] font-semibold text-ink-950">
+        <% if day == Time.zone.today %><span class="size-1.5 rounded-full bg-brand-600" aria-hidden="true"></span><% end %>
+        <span><%= l(day, format: "%A, %d/%m").upcase_first %></span>
+        <% if day == Time.zone.today %><span class="text-xs font-medium text-ink-500">hoje</span><% end %>
+      </h2>
+      <% if groups.empty? %>
+        <p class="sv-card px-4 py-3 text-[13px] text-ink-600">Nenhuma visita.</p>
+      <% else %>
+        <div class="sv-card divide-y divide-ink-150 overflow-hidden">
+          <% groups.each do |row, allocations| %>
+            <div class="px-4 py-3">
+              <h3 class="flex items-baseline justify-between gap-3 text-[13px] font-semibold text-ink-950">
+                <span class="min-w-0 truncate"><%= row.membership.user.name %></span>
+                <span class="shrink-0 text-xs font-normal text-ink-500"><%= pluralize(allocations.count { |a| a.kind == "visit" }, "visita") %></span>
+              </h3>
+              <ul class="mt-2 space-y-2" role="list">
+                <% allocations.each do |allocation| %>
+                  <li>
+                    <% if allocation.kind == "absence" %>
+                      <p class="flex flex-wrap items-baseline gap-x-2 rounded-md border-l-[3px] border-ink-300 bg-ink-100 px-3 py-2 text-xs text-ink-700">
+                        <span class="sv-num whitespace-nowrap font-mono text-[11px]"><%= clock.call(allocation.starts_at, day) %>–<%= clock.call(allocation.ends_at, day) %></span>
+                        <span>Ausência<%= " · #{allocation.reason}" if allocation.reason.present? %></span>
+                      </p>
+                    <% else %>
+                      <% visit = allocation.visit %>
+                      <% customer_name = visit.work_order.customer.display_name %>
+                      <%= link_to work_order_path(visit.work_order),
+                            class: "flex items-start gap-3 rounded-lg px-3 py-2 ring-1 ring-inset ring-ink-150 transition-colors hover:bg-ink-25",
+                            aria: { label: "#{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{customer_name}, #{visit.work_order.number}, #{visit.status_label}" } do %>
+                        <span class="sv-num w-11 shrink-0 font-mono text-xs text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %><span class="sr-only"> às</span> <span class="block text-ink-500"><%= l(visit.scheduled_end, format: "%H:%M") %></span></span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate text-[13px] font-medium text-ink-950"><%= customer_name %></span>
+                          <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="whitespace-nowrap font-mono text-[11px] text-ink-700"><%= visit.work_order.number %></span>
+                            <%= badge(visit.status_label, tone: visit.status_tone) %>
+                          </span>
+                        </span>
+                      <% end %>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+</div>

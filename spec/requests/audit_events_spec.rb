@@ -46,6 +46,24 @@ RSpec.describe "Audit trail" do
     expect(table).not_to include("organization_id", "updated_at", "visit_id")
   end
 
+  it "shows one card per event on phones, with action, time, actor and changes" do
+    sign_in_as(auditor)
+
+    get audit_events_path
+
+    page = response.parsed_body
+    cards = page.at_css("ol[aria-label='Eventos']")
+    expect([cards, page.at_css("table").parent].map { |node| node["class"].split })
+      .to match([include("md:hidden"), include("max-md:hidden")])
+    card = cards.css("> li").find { |item| item.text.include?("Organização · configurações alteradas") }
+    heading = card.at_css("p")
+    expect(heading.css("> span").first.text.squish).to eq("Organização · configurações alteradas")
+    expect(heading.at_css("time")["datetime"]).to be_present
+    expect(card.css("> p")[1].text.squish).to eq("Por #{auditor.user.name}")
+    expect(card.at_css("dl").text.squish).to include("Deslocamento padrão:", "45 min")
+    expect(cards.text).not_to include("organization.updated")
+  end
+
   it "keeps the action filter, offering labelled options grouped by area" do
     sign_in_as(auditor)
 
