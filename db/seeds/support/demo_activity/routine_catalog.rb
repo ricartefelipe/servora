@@ -1,0 +1,237 @@
+# frozen_string_literal: true
+
+module Seeds
+  module DemoActivity
+    # What the routine work of the story is made of (RoutineJobs): the
+    # repairs each type of unit can need, what the preventive visits find and
+    # the visits without a unit. Data only.
+    class RoutineCatalog
+      SHORT = { "Split hi-wall" => "Split", "Split piso-teto" => "Split piso-teto", "Cassete" => "Cassete",
+                "Câmara fria" => "Câmara fria" }.freeze
+      SPLITS = ["Split hi-wall", "Split piso-teto", "Cassete"].freeze
+      LARGE = ["Split piso-teto", "Cassete"].freeze
+      COLD = ["Câmara fria"].freeze
+      # Refrigerant charged by a repair of each type (kg).
+      CHARGE = { "Split hi-wall" => "0.8", "Split piso-teto" => "1.5", "Cassete" => "1.5", "Câmara fria" => "2" }.freeze
+      INTERVAL_LABELS = { month: "mensal", quarter: "trimestral", semester: "semestral" }.freeze
+
+      # :gas stands for the unit's refrigerant (ClimaNortePool::UNITS) and
+      # :charge for the CHARGE of its type. problem, diagnosis and solution
+      # list two or three wordings: each unit takes one problem and one
+      # diagnosis with its matching solution (RoutineJobs#corrective_job).
+      CORRECTIVES = [
+        { key: :capacitor, types: SPLITS, crew: :electrical, minutes: 75, title: "%<unit>s demorando para partir",
+          problem: ["O compressor demora a ligar e o equipamento só ventila nos primeiros minutos.",
+                    "O equipamento liga, a unidade externa dá um estalo e fica só ventilando.",
+                    "Demora para gelar depois de ligado; a unidade externa tenta partir e desliga."],
+          diagnosis: ["Capacitor de partida com capacitância abaixo da nominal.",
+                      "Capacitor do compressor estufado, medindo 22 µF no lado de 35 µF.",
+                      "Capacitor duplo com o terminal do ventilador oxidado e capacitância baixa."],
+          solution: ["Troca do capacitor 35+5 µF e teste de partida.",
+                     "Capacitor 35+5 µF substituído; corrente de partida medida dentro da faixa.",
+                     "Troca do capacitor 35+5 µF, limpeza dos terminais e teste de partida com o cliente."],
+          items: [%w[SRV-DIAG 1], %w[PEC-CAP-355 1], %w[SRV-HORA 1]], materials: [%w[PEC-CAP-355 1]] },
+        { key: :drain, types: ["Split hi-wall", "Split piso-teto"], crew: :refrigeration, minutes: 75,
+          title: "%<unit>s pingando água",
+          problem: ["Água escorrendo pela parede abaixo da evaporadora.",
+                    "Gotejamento pela frente da evaporadora quando o equipamento fica ligado por mais tempo.",
+                    "Mancha de umidade na parede e água pingando no piso abaixo do aparelho."],
+          diagnosis: ["Mangueira de dreno obstruída por lodo e bandeja de condensado com resíduos.",
+                      "Dreno sem caimento depois de uma reforma na parede; água acumulada na bandeja.",
+                      "Saída externa do dreno entupida por resíduos."],
+          solution: ["Desobstrução do dreno, limpeza da bandeja e teste de escoamento com 1 litro de água.",
+                     "Dreno refeito com o caimento correto, bandeja limpa e escoamento testado.",
+                     "Limpeza da saída do dreno com sopro de nitrogênio e teste de escoamento com 1 litro de água."],
+          items: [%w[SRV-DIAG 1], %w[SRV-HORA 1]] },
+        { key: :leak, types: SPLITS, crew: :refrigeration, minutes: 120, title: "%<unit>s sem refrigerar",
+          problem: ["O equipamento liga, mas o ar sai praticamente em temperatura ambiente.",
+                    "Refrigera cada vez menos nas últimas semanas; à tarde o ambiente não baixa de 27 °C.",
+                    "A unidade externa funciona, mas o ar da evaporadora sai morno."],
+          diagnosis: ["Carga de gás baixa por microvazamento na porca flange da unidade externa.",
+                      "Vazamento na solda da linha de sucção, perto da válvula de serviço.",
+                      "Microvazamento na conexão da evaporadora, localizado com detector eletrônico."],
+          solution: ["Flange refeito, teste de estanqueidade com nitrogênio e recarga de gás.",
+                     "Solda refeita, teste de estanqueidade com nitrogênio, vácuo e recarga de gás.",
+                     "Conexão refeita com flange novo, vácuo e recarga de gás; pressões conferidas."],
+          items: [%w[SRV-DIAG 1], %i[gas charge], %w[SRV-HORA 1]], materials: [%i[gas charge]] },
+        { key: :hygiene, types: SPLITS, crew: :refrigeration, minutes: 90, title: "%<unit>s com cheiro de mofo",
+          problem: ["Cheiro de mofo ao ligar o equipamento, mais forte pela manhã.",
+                    "Cheiro forte ao ligar o aparelho e pontos pretos na saída de ar.",
+                    "Cheiro desagradável no ambiente sempre que o equipamento é ligado."],
+          diagnosis: ["Serpentina e turbina da evaporadora com acúmulo de sujeira e biofilme.",
+                      "Bandeja de condensado com lodo e turbina com fungos.",
+                      "Filtros saturados e serpentina da evaporadora com biofilme."],
+          solution: ["Higienização completa da evaporadora com bactericida e limpeza da bandeja.",
+                     "Higienização completa com desmontagem da turbina, bactericida e limpeza da bandeja.",
+                     "Higienização completa da evaporadora, lavagem dos filtros e aplicação de bactericida."],
+          items: [%w[SRV-HIG-EVAP 1], %w[SRV-HORA 1]] },
+        { key: :sensor, types: ["Split hi-wall"], crew: :electrical, minutes: 60, title: "%<unit>s desligando sozinho",
+          problem: ["O equipamento desliga sozinho várias vezes ao dia.",
+                    "Liga e desliga em ciclos curtos, mesmo com o ambiente ainda quente.",
+                    "O aparelho para de gelar sem motivo e volta a funcionar só depois de religado."],
+          diagnosis: ["Sensor de temperatura ambiente fora da faixa de resistência.",
+                      "Sensor de temperatura da serpentina com leitura instável e o cabo ressecado.",
+                      "Sensor de temperatura ambiente medindo 4 kΩ a 25 °C (o nominal é 10 kΩ)."],
+          solution: ["Substituição do sensor de temperatura NTC 10 kΩ e teste de funcionamento por 30 minutos.",
+                     "Troca do sensor NTC 10 kΩ, fixação do cabo e teste de ciclos por 30 minutos.",
+                     "Sensor NTC 10 kΩ substituído; leitura conferida com termômetro e teste de 30 minutos."],
+          items: [%w[SRV-DIAG 1], %w[PEC-SENSOR-NTC 1], %w[SRV-HORA 1]], materials: [%w[PEC-SENSOR-NTC 1]] },
+        { key: :breaker, types: SPLITS, crew: :electrical, minutes: 75, title: "%<unit>s não liga",
+          problem: ["O equipamento não responde ao controle remoto desde a manhã.",
+                    "O aparelho não liga e o disjuntor desarma assim que é religado.",
+                    "Display apagado; o disjuntor do circuito está quente ao toque."],
+          diagnosis: ["Disjuntor do circuito danificado após oscilação na rede; borne de alimentação oxidado.",
+                      "Disjuntor com o mecanismo desgastado, desarmando abaixo da corrente nominal.",
+                      "Disjuntor aquecendo por mau contato no barramento do quadro."],
+          solution: ["Troca do disjuntor por um bipolar de 20 A, limpeza e reaperto do borne; equipamento testado.",
+                     "Disjuntor bipolar de 20 A, curva C, instalado e corrente do circuito medida.",
+                     "Troca do disjuntor por um bipolar de 20 A, reaperto do barramento e teste com o equipamento ligado."],
+          items: [%w[SRV-DIAG 1], %w[PEC-DISJ-20 1], %w[SRV-HORA 1]], materials: [%w[PEC-DISJ-20 1]] },
+        { key: :noise, types: ["Split hi-wall", "Split piso-teto"], crew: :refrigeration, minutes: 75,
+          title: "%<unit>s com ruído na evaporadora",
+          problem: ["Estalos e ruído de vibração na unidade interna.",
+                    "Barulho de chacoalho na evaporadora, mais forte na velocidade máxima.",
+                    "Ruído contínuo na unidade interna, que atrapalha o uso do ambiente."],
+          diagnosis: ["Turbina da evaporadora desbalanceada pelo acúmulo de sujeira e suporte frouxo.",
+                      "Parafusos do gabinete soltos e a tampa frontal vibrando.",
+                      "Mancal da turbina sem lubrificação e a turbina raspando na carcaça."],
+          solution: ["Limpeza e balanceamento da turbina, reaperto do suporte e dos parafusos do gabinete.",
+                     "Reaperto do gabinete, calços de borracha na tampa frontal e teste nas três velocidades.",
+                     "Lubrificação do mancal, alinhamento da turbina e teste nas três velocidades."],
+          items: [%w[SRV-DIAG 1], %w[SRV-HORA 1]] },
+        { key: :frost, types: SPLITS, crew: :refrigeration, minutes: 90, title: "%<unit>s congelando a tubulação",
+          problem: ["Gelo na tubulação da unidade externa; o ambiente não refrigera.",
+                    "A tubulação congela e pinga água quando o gelo derrete.",
+                    "Gelo na evaporadora depois de algumas horas ligado."],
+          diagnosis: ["Filtros da evaporadora obstruídos e carga de gás ligeiramente abaixo da especificada.",
+                      "Serpentina obstruída e pressão de sucção baixa.",
+                      "Carga de gás abaixo da especificada e a turbina com a vazão reduzida pela sujeira."],
+          solution: ["Limpeza dos filtros e da serpentina, complemento de 0,5 kg de gás e medição das pressões.",
+                     "Limpeza da serpentina, complemento de 0,5 kg de gás e pressões conferidas com o equipamento em carga.",
+                     "Limpeza da turbina, complemento de 0,5 kg de gás e teste de funcionamento por 30 minutos."],
+          items: [%w[SRV-DIAG 1], [:gas, "0.5"], %w[SRV-HORA 1]], materials: [[:gas, "0.5"]] },
+        { key: :contactor, types: LARGE + COLD, crew: :electrical, minutes: 105, business: true,
+          title: "Condensadora %<of_unit>s sem partir",
+          problem: ["A condensadora não liga; a evaporadora só ventila.",
+                    "A unidade externa faz um zumbido e não parte.",
+                    "A condensadora liga e desliga em segundos; o ambiente não refrigera."],
+          diagnosis: ["Contator da condensadora com a bobina queimada e contatos carbonizados.",
+                      "Contatos do contator colados, com marcas de faiscamento.",
+                      "Bobina do contator aberta após uma sobretensão na rede."],
+          solution: ["Troca do contator tripolar de 32 A, reaperto dos bornes e medição da corrente.",
+                     "Contator tripolar de 32 A substituído; bornes reapertados e partida medida.",
+                     "Troca do contator tripolar de 32 A e conferência da tensão de comando."],
+          items: [%w[SRV-DIAG 1], %w[PEC-CONTATOR-32 1], %w[SRV-HORA 2]], materials: [%w[PEC-CONTATOR-32 1]] },
+        { key: :pump, types: ["Cassete"], crew: :refrigeration, minutes: 120, business: true, title: "%<unit>s gotejando",
+          problem: ["Gotejamento sobre a área de circulação no fim da tarde.",
+                    "Água pingando pela grelha do cassete e alarme de dreno no display.",
+                    "O cassete desliga com o código de nível de água e volta a pingar."],
+          diagnosis: ["Bomba de dreno travada e filtro obstruído por resíduos.",
+                      "Bomba de dreno com o motor queimado; boia de nível acionada.",
+                      "Rotor da bomba de dreno travado por lodo."],
+          solution: ["Troca da bomba de dreno, limpeza da bandeja de condensado e teste com 2 litros de água.",
+                     "Bomba de dreno substituída, boia testada e escoamento conferido com 2 litros de água.",
+                     "Troca da bomba de dreno, limpeza da bandeja e da boia de nível e teste com 2 litros de água."],
+          items: [%w[SRV-DIAG 1], %w[PEC-BOMBA-DRENO 1], %w[SRV-HORA 2]], materials: [%w[PEC-BOMBA-DRENO 1]] },
+        { key: :insulation, types: LARGE + COLD, crew: :refrigeration, minutes: 105, business: true,
+          title: "Isolamento da linha %<of_unit>s com condensação",
+          problem: ["Gotejamento no forro, sobre a tubulação do equipamento.",
+                    "Mancha de umidade no forro ao longo da linha do aparelho.",
+                    "Água pingando da tubulação aparente perto da unidade externa."],
+          diagnosis: ["Isolamento térmico da linha de sucção ressecado e aberto em vários pontos.",
+                      "Isolamento da linha de sucção rasgado e encharcado no trecho do forro.",
+                      "Emendas do isolamento abertas e condensação na linha de sucção."],
+          solution: ["Troca de 6 m de isolamento elastomérico e vedação das emendas.",
+                     "Substituição de 6 m de isolamento elastomérico e fixação da linha com abraçadeiras.",
+                     "Troca de 6 m de isolamento, emendas vedadas e linha conferida depois de 30 minutos."],
+          items: [%w[PEC-ISOL-38 6], %w[SRV-HORA 2]], materials: [%w[PEC-ISOL-38 6]] },
+        { key: :fan, types: ["Split piso-teto"] + COLD, crew: :electrical, minutes: 150, business: true,
+          title: "Ventilador da condensadora %<of_unit>s parado",
+          problem: ["A condensadora aquece e o equipamento desarma por alta pressão.",
+                    "O ventilador da unidade externa não gira e o compressor desarma.",
+                    "A condensadora fica muito quente e o ambiente para de refrigerar à tarde."],
+          diagnosis: ["Motor do ventilador da condensadora com o rolamento travado e o enrolamento aberto.",
+                      "Motor do ventilador da condensadora queimado.",
+                      "Rolamento do motor do ventilador com folga e o enrolamento superaquecendo."],
+          solution: ["Troca do motor ventilador de 1/6 cv, limpeza da condensadora e teste de pressões por 1 hora.",
+                     "Motor ventilador de 1/6 cv substituído, hélice conferida e pressões medidas por 1 hora.",
+                     "Troca do motor ventilador de 1/6 cv, limpeza da serpentina e teste de funcionamento por 1 hora."],
+          items: [%w[SRV-DIAG 1], %w[PEC-MOTOR-VENT 1], %w[SRV-HORA 2]], materials: [%w[PEC-MOTOR-VENT 1]] },
+        { key: :ice, types: COLD, crew: :refrigeration, minutes: 180, title: "%<unit>s com formação de gelo",
+          problem: ["Gelo acumulado no evaporador e temperatura subindo durante a noite.",
+                    "Bloco de gelo no evaporador e a porta da câmara suando.",
+                    "A temperatura sobe de madrugada e há gelo nas aletas do evaporador."],
+          diagnosis: ["Carga de gás abaixo da especificada e degelo irregular.",
+                      "Resistência de degelo com mau contato e carga de gás baixa.",
+                      "Timer de degelo desajustado e carga de gás abaixo da especificada."],
+          solution: ["Recarga de 2 kg de gás e ajuste do ciclo de degelo; temperatura acompanhada por 1 hora.",
+                     "Reaperto da resistência de degelo, recarga de 2 kg de gás e temperatura acompanhada por 1 hora.",
+                     "Ajuste do timer de degelo, recarga de 2 kg de gás e temperatura acompanhada por 1 hora."],
+          items: [%w[SRV-DIAG 1], %i[gas charge], %w[SRV-HORA 3]], materials: [%i[gas charge]] },
+        { key: :drier, types: COLD, crew: :refrigeration, minutes: 180, title: "%<unit>s sem atingir a temperatura",
+          problem: ["A temperatura não baixa do ponto de ajuste desde a última reposição de mercadorias.",
+                    "A câmara não chega à temperatura programada e o compressor não desliga.",
+                    "Temperatura interna acima do ajuste o dia todo."],
+          diagnosis: ["Filtro secador saturado e umidade no circuito.",
+                      "Filtro secador obstruído, com diferença de temperatura entre a entrada e a saída.",
+                      "Umidade no circuito, indicada pelo visor de líquido."],
+          solution: ["Troca do filtro secador, vácuo e recarga de 1,5 kg de gás.",
+                     "Filtro secador substituído, vácuo de 500 mícrons e recarga de 1,5 kg de gás.",
+                     "Troca do filtro secador, vácuo e recarga de 1,5 kg de gás; visor de líquido conferido."],
+          items: [["PEC-FILTRO-14", "1"], [:gas, "1.5"], %w[SRV-HORA 3]], materials: [["PEC-FILTRO-14", "1"], [:gas, "1.5"]] }
+      ].freeze
+
+      PREVENTIVE_FINDINGS = [
+        ["Filtros com poeira fina; drenos e pressões normais.", "Equipamentos em bom estado."],
+        ["Filtros saturados e serpentinas com poeira; pressões e correntes dentro da faixa.",
+         "Recomendada a troca dos filtros na próxima visita."],
+        ["Dreno com lodo em uma das unidades; demais itens dentro da faixa.", "Dreno desobstruído durante a visita."],
+        ["Isolamento da linha ressecado em um trecho; pressões e correntes normais.",
+         "Sugerida a troca do isolamento na próxima visita."]
+      ].freeze
+
+      # What a preventive visit did (one wording per site and interval).
+      PREVENTIVE_SOLUTIONS = [
+        "Limpeza de filtros e serpentinas, desobstrução dos drenos e medições elétricas.",
+        "Lavagem dos filtros, limpeza das serpentinas e bandejas, teste dos drenos e medição de pressões e correntes.",
+        "Limpeza de filtros, serpentinas e drenos; pressões, correntes e temperatura de insuflamento medidas."
+      ].freeze
+
+      PREVENTIVE_REASONS = {
+        month: "Manutenção preventiva mensal do plano de manutenção (PMOC) combinado com o cliente.",
+        quarter: "Manutenção preventiva trimestral combinada com o cliente.",
+        semester: "Revisão semestral combinada com o cliente."
+      }.freeze
+
+      # Visits without a unit, at most one of each per customer. The
+      # assessments (:survey, :relocation) record the measurements only: the
+      # routine history sends no quote after them.
+      MISC = [
+        { key: :panel, kinds: ["company"], crew: :electrical, minutes: 90, service_type: :corrective,
+          title: "Revisão do quadro elétrico da climatização",
+          problem: "Avaliação dos disjuntores e do aterramento dos equipamentos depois de quedas de energia.",
+          diagnosis: "Bornes com aperto insuficiente e um disjuntor aquecendo acima do normal.",
+          solution: "Reaperto dos bornes, troca do disjuntor e medição do aterramento.",
+          items: [%w[SRV-DIAG 1], %w[PEC-DISJ-20 1], %w[SRV-HORA 1]], materials: [%w[PEC-DISJ-20 1]] },
+        { key: :survey, kinds: %w[company individual], crew: :all, minutes: 60, service_type: :installation,
+          title: "Avaliação para instalação de um novo split",
+          problem: "Visita técnica para dimensionar um equipamento e avaliar o ponto elétrico e o dreno.",
+          diagnosis: "Carga térmica calculada; ponto elétrico exige circuito dedicado.",
+          solution: "Medições entregues ao cliente, que vai escolher o equipamento antes de pedir o orçamento.",
+          items: [%w[SRV-DIAG 1]] },
+        { key: :air, kinds: ["company"], crew: :all, minutes: 90, service_type: nil,
+          title: "Medição da qualidade do ar interior",
+          problem: "Medições de temperatura, umidade e CO₂ dos ambientes climatizados para o relatório do PMOC.",
+          diagnosis: "CO₂ e umidade relativa dentro dos limites de referência; um ambiente com renovação de ar baixa.",
+          solution: "Medições registradas no relatório; recomendado ajuste da renovação de ar no ambiente apontado.",
+          items: [%w[SRV-DIAG 1], %w[SRV-HORA 1]] },
+        { key: :relocation, kinds: ["individual"], crew: :all, minutes: 60, service_type: :installation,
+          title: "Avaliação para remanejamento do split",
+          problem: "O cliente quer mudar a evaporadora de parede e avaliar o novo trajeto da tubulação.",
+          diagnosis: "Trajeto de 4 m viável pelo forro; dreno pode seguir pela mesma prumada.",
+          solution: "Medições registradas; o cliente vai definir a data da obra antes de pedir o orçamento.",
+          items: [%w[SRV-DIAG 1]] }
+      ].freeze
+    end
+  end
+end

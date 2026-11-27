@@ -2,20 +2,16 @@
 
 # Demonstration organizations and people. Idempotent: organizations use fixed
 # identifiers and people are looked up by e-mail. All addresses use the
-# reserved ".test" domain; the shared password is for local demonstration only.
-module Seeds
-  PASSWORD = ENV.fetch("SEED_PASSWORD", "servora-demo-2026")
+# reserved ".test" domain; the shared password is for demonstration only.
+#
+# The password and the profiles offered on the sign-in page in demo mode come
+# from Servora::Demo (config/initializers/servora_demo.rb): every listed account
+# must be a person below with the same role, checked before anything is written.
+require_relative "support/story_clock"
+require_relative "support/organizations"
 
-  ORGANIZATIONS = {
-    "a" => {
-      id: "0193a000-0000-7000-8000-00000000000a", name: "Clima Norte Manutenção", legal_name: "Clima Norte Manutenção Ltda.",
-      document: "11222333000181", segment: "hvac", travel_buffer_minutes: 30
-    },
-    "b" => {
-      id: "0193b000-0000-7000-8000-00000000000b", name: "Predial Sul Serviços", legal_name: "Predial Sul Serviços Técnicos Ltda.",
-      document: "45723174000110", segment: "building", travel_buffer_minutes: 20
-    }
-  }.freeze
+module Seeds
+  PASSWORD = Servora::Demo.password
 
   PEOPLE = {
     "a" => [
@@ -33,6 +29,14 @@ module Seeds
       ["Júlia Freitas", "julia@predial-sul.test", "technician", "48.00"]
     ]
   }.freeze
+
+  def self.check_demo_accounts!
+    seeded = PEOPLE.fetch("a").to_h { |_name, email, role, _cost| [email, role] }
+    mismatched = Servora::Demo.accounts.reject { |account| seeded[account.email] == account.role }
+    return if mismatched.empty?
+
+    raise ArgumentError, "Servora::Demo accounts without a matching seeded person: #{mismatched.map(&:email).join(", ")}"
+  end
 
   def self.user(name, email)
     User.find_or_initialize_by(email:).tap do |user|
@@ -64,6 +68,9 @@ module Seeds
   end
 end
 
-Seeds.organization("a")
-Seeds.organization("b")
-puts "Organizações de demonstração prontas (senha local: #{Seeds::PASSWORD})."
+Seeds.check_demo_accounts!
+Seeds::StoryClock.at_origin do
+  Seeds.organization("a")
+  Seeds.organization("b")
+end
+puts "Organizações de demonstração prontas (senha das contas: #{Seeds::PASSWORD})."
