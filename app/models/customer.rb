@@ -23,7 +23,9 @@ class Customer < TenantRecord
 
   scope :active, -> { where(archived_at: nil) }
   scope :archived, -> { where.not(archived_at: nil) }
-  scope :alphabetical, -> { order(:name) }
+  # Sorted by what lists show (display_name: trade name, else legal name); the
+  # legal name and the id break ties so pages never overlap.
+  scope :alphabetical, -> { order(Arel.sql("COALESCE(NULLIF(customers.trade_name, ''), customers.name)"), :name, :id) }
 
   def archived? = archived_at.present?
   def display_name = trade_name.presence || name

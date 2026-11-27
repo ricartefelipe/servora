@@ -19,45 +19,56 @@
 <% if @agenda.rows.empty? %>
   <section class="sv-card"><%= empty_state("Nenhum técnico cadastrado", description: "Convide técnicos e defina seus horários de trabalho.", icon_name: :calendar) %></section>
 <% elsif @agenda.week? %>
-  <section class="sv-card relative overflow-x-auto">
-    <table class="sv-table">
-      <thead>
-        <tr>
-          <th scope="col" class="sticky left-0 z-10 bg-ink-50">Técnico</th>
-          <% @agenda.days.each do |day| %>
-            <% if day == Time.zone.today %>
-              <th scope="col" class="text-ink-950">
-                <span class="inline-flex items-center gap-1.5"><span class="size-1 rounded-full bg-brand-600" aria-hidden="true"></span><%= l(day, format: "%a %d/%m") %><span class="sr-only">(hoje)</span></span>
-              </th>
-            <% else %>
-              <th scope="col"><%= l(day, format: "%a %d/%m") %></th>
-            <% end %>
-          <% end %>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-ink-150">
-        <% @agenda.rows.each do |row| %>
+  <%= render "agenda/phone_list", agenda: @agenda %>
+  <%# Fixed layout: the names column keeps its width and the seven days share the rest equally; below the
+      minimum width the table scrolls inside the card instead of squeezing (or clipping) the last days. %>
+  <section class="sv-card overflow-hidden max-md:hidden" aria-label="Agenda da semana">
+    <div class="relative overflow-x-auto">
+      <table class="sv-table w-full min-w-[66rem] table-fixed">
+        <colgroup>
+          <col class="w-40">
+          <% @agenda.days.each do %><col><% end %>
+        </colgroup>
+        <thead>
           <tr>
-            <th scope="row" class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left align-top text-[13px] font-medium normal-case tracking-normal text-ink-950"><%= row.membership.user.name %></th>
+            <th scope="col" class="sticky left-0 z-10 bg-ink-50">Técnico</th>
             <% @agenda.days.each do |day| %>
-              <td class="min-w-36 align-top">
-                <% @agenda.allocations_on(row, day).each do |allocation| %>
-                  <%= render "agenda/allocation_chip", allocation: %>
-                <% end %>
-              </td>
+              <% if day == Time.zone.today %>
+                <th scope="col" class="text-ink-950">
+                  <span class="inline-flex items-center gap-1.5"><span class="size-1 rounded-full bg-brand-600" aria-hidden="true"></span><%= l(day, format: "%a %d/%m") %><span class="sr-only">(hoje)</span></span>
+                </th>
+              <% else %>
+                <th scope="col"><%= l(day, format: "%a %d/%m") %></th>
+              <% end %>
             <% end %>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody class="divide-y divide-ink-150">
+          <% @agenda.rows.each do |row| %>
+            <tr>
+              <th scope="row" class="sticky left-0 z-10 truncate bg-white px-4 py-3 text-left align-top text-[13px] font-medium normal-case tracking-normal text-ink-950" title="<%= row.membership.user.name %>"><%= row.membership.user.name %></th>
+              <% @agenda.days.each do |day| %>
+                <td class="min-w-0 px-2 align-top">
+                  <% @agenda.allocations_on(row, day).each do |allocation| %>
+                    <%= render "agenda/allocation_chip", allocation: %>
+                  <% end %>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </section>
 <% else %>
+  <%= render "agenda/phone_list", agenda: @agenda %>
   <%# "Agora" marker, rendered at the current minute when the day shown is today (works without JavaScript);
-      now_line_controller.js keeps it current and hides it outside the 06:00–22:00 window. %>
+      now_line_controller.js keeps it current and hides it outside the hours shown. %>
+  <% hours = @agenda.hours %>
   <% if @date == Time.zone.today %>
     <% now = Time.zone.now %>
-    <% window_start = @date.in_time_zone.change(hour: Scheduling::AgendaQuery::DAY_START_HOUR) %>
-    <% window_end = @date.in_time_zone.change(hour: Scheduling::AgendaQuery::DAY_END_HOUR) %>
+    <% window_start = @agenda.window_start %>
+    <% window_end = @agenda.window_end %>
     <% fraction = (now - window_start) / (window_end - window_start) %>
     <% position = fraction.clamp(0.0, 1.0) %>
     <% now_line = { visible: fraction >= 0 && fraction < 1, time: l(now, format: "%H:%M"),
@@ -68,7 +79,8 @@
                          now_line_server_now_value: (now.to_f * 1000).round, now_line_time_zone_value: Time.zone.tzinfo.identifier,
                          now_line_utc_offset_value: now.utc_offset } %>
   <% end %>
-  <%= tag.section class: "sv-card relative overflow-x-auto p-4", aria: { label: "Linha do tempo do dia" }, data: now_line_data || {} do %>
+  <%# The timeline needs width: below md the phone list above shows the same day. %>
+  <%= tag.section class: "sv-card relative overflow-x-auto p-4 max-md:hidden", aria: { label: "Linha do tempo do dia" }, data: now_line_data || {} do %>
     <% if now_line %>
       <%= tag.p "Agora, #{now_line[:time]}", class: "sr-only", hidden: !now_line[:visible], aria: { live: "off" }, data: { now_line_target: "marker label" } %>
     <% end %>
@@ -90,8 +102,9 @@
       <% end %>
       <div class="flex gap-3" aria-hidden="true">
         <div class="sticky left-0 z-20 w-28 shrink-0 bg-white sm:w-41"></div>
-        <div class="grid min-w-0 flex-1 grid-cols-16 border-b border-ink-150 pb-1 font-mono text-[11px] text-ink-500">
-          <% (Scheduling::AgendaQuery::DAY_START_HOUR...Scheduling::AgendaQuery::DAY_END_HOUR).each do |hour| %>
+        <%# Column counts and hour rules follow the fitted hours (classes listed in application.css). %>
+        <div class="grid min-w-0 flex-1 grid-cols-<%= hours.size %> border-b border-ink-150 pb-1 font-mono text-[11px] text-ink-500">
+          <% hours.each do |hour| %>
             <span><%= format("%02d:00", hour) %></span>
           <% end %>
         </div>
@@ -104,7 +117,7 @@
                 <p class="truncate text-[13px] font-semibold text-ink-950"><%= row.membership.user.name %></p>
                 <p class="text-xs text-ink-500"><%= pluralize(@agenda.allocations_on(row, @date).count { |a| a.kind == "visit" }, "visita") %></p>
               </div>
-              <div class="relative grid min-h-14 flex-1 grid-cols-[repeat(64,minmax(0,1fr))] rounded-lg bg-[linear-gradient(to_right,var(--color-ink-150)_1px,transparent_1px)] bg-[length:6.25%_100%]">
+              <div class="relative grid min-h-14 flex-1 grid-cols-[repeat(<%= @agenda.slots %>,minmax(0,1fr))] rounded-lg bg-[linear-gradient(to_right,var(--color-ink-150)_1px,transparent_1px)] bg-[length:calc(100%/<%= hours.size %>)_100%]">
                 <% @agenda.blocks_for(row, @date).each do |block| %>
                   <% if block.absence? %>
                     <div class="col-start-<%= block.column_start %> col-span-<%= block.column_span %> row-start-1 m-0.5 flex items-center overflow-hidden rounded-md border-l-[3px] border-ink-400 bg-[repeating-linear-gradient(45deg,var(--color-ink-100),var(--color-ink-100)_6px,var(--color-ink-150)_6px,var(--color-ink-150)_12px)] px-2 text-xs font-medium text-ink-700"
@@ -121,11 +134,25 @@
                                 "border-indigo-500 bg-indigo-50 hover:bg-indigo-100"
                               end %>
                     <% state_icon = { "traveling" => :pin, "in_progress" => :clock, "completed" => :check }.fetch(visit.status, :calendar) %>
+                    <% customer_name = visit.work_order.customer.display_name %>
+                    <% period = "#{l(visit.scheduled_start, format: '%H:%M')}–#{l(visit.scheduled_end, format: '%H:%M')}" %>
+                    <%# Customer first (it is what the coordinator looks for) and truncated; the order number and the time
+                        are never cut. Blocks of 2.5 hours or more show the whole period, shorter ones only the start; the
+                        full period is always in the tooltip and in the accessible name. Container queries on the block:
+                        too narrow for "number · time", the time moves, whole, to its own line; too narrow for the
+                        number itself, only the number is shown, wrapping after its hyphens (the block's place on the
+                        timeline still tells the time). %>
+                    <% roomy = block.column_span * 2 >= 5 * Scheduling::AgendaQuery::SLOTS_PER_HOUR %>
+                    <% time_label = roomy ? period : l(visit.scheduled_start, format: "%H:%M") %>
+                    <% inline_time = roomy ? "@min-[11.25rem]:inline" : "@min-[8.75rem]:inline" %>
+                    <% own_line_time = roomy ? "@min-[11.25rem]:hidden" : "@min-[8.75rem]:hidden" %>
                     <%= link_to work_order_path(visit.work_order),
-                          class: "col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors focus-visible:outline-2 #{tone}",
-                          aria: { label: "#{visit.work_order.number}, #{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{visit.work_order.customer.display_name}, #{visit.status_label}" } do %>
-                      <span class="flex min-w-0 items-center gap-1 font-medium"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700") %><span class="truncate"><%= visit.work_order.number %></span></span>
-                      <span class="truncate text-ink-600"><span class="sv-num font-mono text-[11px] text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %>–<%= l(visit.scheduled_end, format: "%H:%M") %></span> · <%= visit.work_order.customer.display_name %></span>
+                          class: "@container col-start-#{block.column_start} col-span-#{block.column_span} row-start-1 m-0.5 flex min-w-0 flex-col justify-center overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors focus-visible:outline-2 #{tone}",
+                          title: "#{customer_name} · #{visit.work_order.number} · #{period} · #{visit.status_label}",
+                          aria: { label: "#{customer_name}, #{visit.work_order.number}, #{l(visit.scheduled_start, format: '%H:%M')} às #{l(visit.scheduled_end, format: '%H:%M')}, #{visit.status_label}" } do %>
+                      <span class="flex min-w-0 items-center gap-1 font-medium"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700") %><span class="truncate"><%= customer_name %></span></span>
+                      <span class="flex min-w-0 items-center gap-1 text-ink-600"><span class="shrink-0 whitespace-nowrap font-mono text-[11px] text-ink-700 @max-[5.5rem]:shrink @max-[5.5rem]:whitespace-normal"><%= breakable_code(visit.work_order.number) %></span> <span class="hidden shrink-0 whitespace-nowrap <%= inline_time %>">· <span class="sv-num font-mono text-[11px] text-ink-700"><%= time_label %></span></span></span>
+                      <span class="sv-num block whitespace-nowrap font-mono text-[11px] text-ink-700 @max-[5.5rem]:hidden <%= own_line_time %>" aria-hidden="true"><%= time_label %></span>
                     <% end %>
                   <% end %>
                 <% end %>
@@ -144,5 +171,5 @@
       </div>
     </div>
   <% end %>
-  <p class="mt-3 text-xs text-ink-500">Blocos incluem o intervalo de deslocamento após a visita. Para reagendar, abra a ordem de serviço.</p>
+  <p class="mt-3 text-xs text-ink-500 max-md:hidden">Blocos incluem o intervalo de deslocamento após a visita. Para reagendar, abra a ordem de serviço.</p>
 <% end %>

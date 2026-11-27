@@ -41,8 +41,8 @@ FactoryBot.define do
     customer { service_location.customer }
     organization { customer.organization }
     equipment_type { "Split hi-wall" }
-    manufacturer { "Climatec" }
-    model { "CT-24" }
+    manufacturer { "Daikin" }
+    model { "FTKP24Q5VL" }
     sequence(:serial_number) { |n| "SN#{n.to_s.rjust(6, "0")}" }
   end
 end

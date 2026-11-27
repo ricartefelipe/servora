@@ -4,7 +4,15 @@
 <% upcoming = @visits_by_day.values.flatten %>
 <% next_visit = upcoming.find(&:in_progress?) || upcoming.find(&:traveling?) || upcoming.first %>
 <% today_total = @visits_by_day.fetch(@today, []).size %>
-<% content_for :field_title, today_total.zero? ? "Hoje · sem visitas" : "Hoje · #{pluralize(today_total, 'visita', plural: 'visitas')}" %>
+<% completed_total = @completed_today.size %>
+<% field_title = if today_total.positive?
+     "Hoje · #{pluralize(today_total, 'visita', plural: 'visitas')}"
+   elsif completed_total.positive?
+     "Hoje · #{pluralize(completed_total, 'concluída', plural: 'concluídas')}"
+   else
+     "Hoje · sem visitas"
+   end %>
+<% content_for :field_title, field_title %>
 <div data-controller="service-worker"></div>
 
 <div>
@@ -24,6 +32,8 @@
         </h2>
         <% if visits.empty? && today_total.positive? %>
           <p class="rounded-2xl bg-white px-4 py-5 text-[15px] text-ink-600 ring-1 ring-ink-200">Nenhuma outra visita hoje.</p>
+        <% elsif visits.empty? && day == @today && completed_total.positive? %>
+          <p class="rounded-2xl bg-white px-4 py-5 text-[15px] text-ink-600 ring-1 ring-ink-200">Nenhuma visita pendente hoje.</p>
         <% elsif visits.empty? %>
           <div class="sv-card">
             <%= empty_state("Nenhuma visita hoje", icon_name: :calendar,
@@ -36,6 +46,7 @@
             <% end %>
           </ul>
         <% end %>
+        <%= render "field/agenda/completed_today", visits: @completed_today, zone: zone if day == @today && completed_total.positive? %>
       </section>
     <% end %>
 

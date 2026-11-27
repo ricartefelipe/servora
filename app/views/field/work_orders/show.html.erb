@@ -21,7 +21,7 @@
   <header>
     <p class="flex flex-wrap items-center gap-2">
       <span class="font-mono text-[13px] font-medium text-ink-600"><%= @work_order.number %></span>
-      <%= badge(@work_order.status_label, tone: work_order_status_tone(@work_order.status)) %>
+      <%= work_order_status_badge(@work_order.status) %>
     </p>
     <h1 class="sv-display mt-2 text-display-md text-ink-950"><%= @work_order.title %></h1>
     <p class="mt-1 text-base text-ink-700"><%= customer.display_name %></p>
@@ -183,7 +183,7 @@
 
   <% if current_visit %>
     <%# One ruby primary that follows the visit state: start the trip, start the visit on site, then finish it.
-        Secondary actions live in the "⋯" sheet. The bar docks right above the fixed tab bar of the field layout
+        Secondary actions live in the "more actions" sheet. The bar docks right above the fixed tab bar of the field layout
         (4rem + safe area), which already absorbs the safe-area inset. Trip and no-show go through the offline
         queue (field-sync); while queued their buttons stay disabled and a hint says so. %>
     <% travel_draft = "visit-travel-#{current_visit.id}" %>
@@ -209,8 +209,8 @@
         </div>
         <% unless current_visit.in_progress? %>
           <details class="relative shrink-0" data-controller="disclosure">
-            <summary class="sv-btn-secondary size-12 cursor-pointer list-none p-0 text-xl [&::-webkit-details-marker]:hidden"
-                     aria-label="Mais ações da visita"><span aria-hidden="true">⋯</span></summary>
+            <summary class="sv-btn-secondary size-12 cursor-pointer list-none p-0 [&::-webkit-details-marker]:hidden"
+                     aria-label="Mais ações da visita"><%= icon(:dots_horizontal, size: 22) %></summary>
             <div class="absolute bottom-full right-0 mb-2 w-[min(22rem,calc(100vw-2rem))] space-y-3 rounded-2xl bg-white p-4 shadow-[var(--shadow-float)] ring-1 ring-ink-200">
               <% if current_visit.scheduled? %>
                 <div>

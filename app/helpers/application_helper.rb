@@ -24,6 +24,13 @@ module ApplicationHelper
     [formatted, unit].compact_blank.join(" ")
   end
 
+  # Percentage in pt-BR with one decimal ("92,3%"); "—" when there is none.
+  def percentage(value)
+    return "—" if value.nil?
+
+    number_to_percentage(value, precision: 1, separator: ",", delimiter: ".")
+  end
+
   def date_time(value)
     value ? l(value, format: :short) : "—"
   end

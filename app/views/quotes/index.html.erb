@@ -13,7 +13,25 @@
   <% if @pagination.records.empty? %>
     <%= empty_state("Nenhum orçamento", description: "Crie um orçamento a partir de um cliente e um local de atendimento.", icon_name: :quote) %>
   <% else %>
-    <div class="relative overflow-x-auto">
+    <%# Below md each quote is a card with the same data; the table needs the width of a tablet. %>
+    <ul class="divide-y divide-ink-150 md:hidden" role="list" aria-label="Orçamentos">
+      <% @pagination.records.each do |quote| %>
+        <li>
+          <%= link_to quote_path(quote), class: "block px-4 py-3.5 transition-colors hover:bg-ink-25" do %>
+            <p class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span class="whitespace-nowrap font-mono text-xs text-ink-700"><%= quote.number %></span>
+              <%= render "quotes/status_badge", quote: %>
+            </p>
+            <p class="mt-1 text-sm font-medium text-ink-950"><%= quote.title %></p>
+            <p class="mt-0.5 flex items-baseline gap-3 text-xs text-ink-500">
+              <span class="min-w-0 flex-1 truncate"><%= [quote.customer.display_name, quote.current_version&.label].compact.join(" · ") %></span>
+              <span class="sv-num shrink-0 whitespace-nowrap text-right text-sm font-medium text-ink-950"><%= money(quote.current_version&.total) %></span>
+            </p>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <div class="relative overflow-x-auto max-md:hidden">
       <table class="sv-table">
         <thead><tr><th scope="col">Número</th><th scope="col">Cliente</th><th scope="col">Versão</th><th scope="col" class="text-right">Total</th><th scope="col">Situação</th></tr></thead>
         <tbody class="divide-y divide-ink-150">

@@ -16,10 +16,11 @@ class WorkOrdersController < TenantController
 
   def index
     authorize WorkOrder
-    @filters = { status: params[:situacao].presence_in(STATUS_FILTERS), term: params[:q] } # rubocop:disable Rails/StrongParametersExpect
+    @filters = list_filters
     scope = policy_scope(current_organization.work_orders).includes(:customer, :service_location)
     @pagination = Pagination.new(WorkOrders::SearchQuery.new(scope, **@filters).call, page: params[:pagina])
     @counts = policy_scope(current_organization.work_orders).open_work.group(:status).count
+    @deadlines = SlaClock.attention_by_work_order(@pagination.records.map(&:id))
   end
 
   def show
@@ -90,6 +91,12 @@ class WorkOrdersController < TenantController
   end
 
   private
+
+  # Unknown values are ignored (the list falls back to open work, any deadline).
+  def list_filters
+    { status: params[:situacao].presence_in(STATUS_FILTERS), term: params[:q], # rubocop:disable Rails/StrongParametersExpect
+      deadline: params[:prazo].presence_in(WorkOrders::SearchQuery::DEADLINES.keys) } # rubocop:disable Rails/StrongParametersExpect
+  end
 
   def load_panels(wo_policy)
     load_module_panels(wo_policy)

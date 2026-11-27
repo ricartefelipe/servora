@@ -10,8 +10,11 @@
               "border-indigo-500 bg-indigo-50 hover:bg-indigo-100"
             end %>
   <% state_icon = { "traveling" => :pin, "in_progress" => :clock, "completed" => :check }.fetch(visit.status, :calendar) %>
-  <%= link_to work_order_path(visit.work_order), class: "mb-1 block rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors #{tone}" do %>
-    <span class="flex items-center gap-1"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700", label: visit.status_label) %><span class="sv-num font-mono text-[11px] text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %></span> <span class="font-medium"><%= visit.work_order.number %></span></span>
-    <span class="block truncate text-ink-600"><%= visit.work_order.customer.display_name %></span>
+  <% customer_name = visit.work_order.customer.display_name %>
+  <%# Order numbers are never cut or truncated: the number moves to its own line as a whole when the day is narrow. %>
+  <%= link_to work_order_path(visit.work_order), class: "mb-1 block min-w-0 overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-xs text-ink-900 transition-colors #{tone}",
+        title: "#{l(visit.scheduled_start, format: '%H:%M')} · #{visit.work_order.number} · #{customer_name} · #{visit.status_label}" do %>
+    <span class="flex min-w-0 flex-wrap items-center gap-x-1"><%= icon(state_icon, size: 12, css: "shrink-0 text-ink-700", label: visit.status_label) %><span class="sv-num font-mono text-[11px] text-ink-700"><%= l(visit.scheduled_start, format: "%H:%M") %></span> <span class="shrink-0 whitespace-nowrap font-medium"><%= visit.work_order.number %></span></span>
+    <span class="block truncate text-ink-600"><%= customer_name %></span>
   <% end %>
 <% end %>

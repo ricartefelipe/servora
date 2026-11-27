@@ -32,6 +32,16 @@ class ApplicationController < ActionController::Base
     stored_location_for(user) || organizations_path
   end
 
+  # First page inside an organization: the field area for members who only
+  # execute work orders, the audit trail for members who only audit, the
+  # dashboard for everyone else.
+  def landing_path_for(membership)
+    if membership.field_only? then field_root_path
+    elsif membership.audit_only? then audit_events_path
+    else dashboard_path
+    end
+  end
+
   def after_sign_out_path_for(_scope)
     new_user_session_path
   end

@@ -5,19 +5,29 @@
   <% end %>
 <% end %>
 
-<%# One KPI strip: three cells per row with a hairline between rows on small screens, six across on lg.
-    divide-x draws the vertical rules; the per-cell classes drop the rule at the row end and add the row hairline. %>
-<% kpi_edges = ["", "", "max-lg:border-r-0", "max-lg:border-t", "max-lg:border-t", "max-lg:border-t"] %>
-<nav class="sv-card mb-5 grid grid-cols-3 divide-x divide-ink-150 overflow-hidden lg:grid-cols-6" aria-label="Ordens em aberto por situação">
-  <% %w[approved scheduled in_progress waiting_parts waiting_customer reopened].each_with_index do |status, index| %>
-    <% current = @filters[:status] == status %>
-    <%= link_to work_orders_path(situacao: status),
-          class: "block min-w-0 border-ink-150 p-4 transition-colors lg:p-5 #{kpi_edges[index]} #{current ? 'bg-select shadow-[inset_2px_0_0_var(--color-brand-600)]' : 'hover:bg-ink-25'}",
-          aria: { current: (current ? "true" : nil) } do %>
-      <span class="block min-h-8 text-xs font-medium leading-4 lg:min-h-0 <%= current ? "text-ink-950" : "text-ink-600" %>"><%= WorkOrders::LABELS[status] %></span>
-      <span class="sv-num mt-1 block text-[22px] font-semibold leading-tight text-ink-950 lg:text-[28px]"><%= @counts[status] || 0 %></span>
+<%# One KPI strip, a tile per open state in lifecycle order. Below lg the strip scrolls sideways inside the card;
+    tiles take a fraction of the width that never divides it evenly (2.6 on phones, 4.5 on tablets), so a partly
+    visible tile at the edge shows there is more to scroll. divide-x draws the vertical rules. Each tile leads with
+    the state marker, so states never rely on colour alone. %>
+<nav class="sv-card mb-5 overflow-hidden" aria-label="Ordens em aberto por situação">
+  <div class="flex divide-x divide-ink-150 overflow-x-auto lg:grid lg:grid-cols-7 lg:overflow-visible">
+    <% %w[open approved scheduled in_progress waiting_parts waiting_customer reopened].each do |status| %>
+      <% current = @filters[:status] == status %>
+      <%= link_to work_orders_path(situacao: status),
+            class: "block w-[38%] min-w-28 shrink-0 p-4 transition-colors sm:w-[22%] lg:w-auto lg:p-5 #{current ? 'bg-select shadow-[inset_2px_0_0_var(--color-brand-600)]' : 'hover:bg-ink-25'}",
+            aria: { current: (current ? "true" : nil) } do %>
+        <span class="flex min-h-8 items-start gap-1.5 text-xs font-medium leading-4 <%= current ? "text-ink-950" : "text-ink-600" %>">
+          <% if (marker = work_order_status_marker(status)) %>
+            <%= icon(marker, size: 12, css: "mt-0.5 #{UiHelper::MARKER_TONES.fetch(work_order_status_tone(status))}") %>
+          <% else %>
+            <span class="mt-[5px] size-1.5 shrink-0 rounded-full <%= UiHelper::DOT_TONES.fetch(work_order_status_tone(status)) %>" aria-hidden="true"></span>
+          <% end %>
+          <%= WorkOrders::LABELS[status] %>
+        </span>
+        <span class="sv-num mt-1 block text-[22px] font-semibold leading-tight text-ink-950 lg:text-[28px]"><%= @counts[status] || 0 %></span>
+      <% end %>
     <% end %>
-  <% end %>
+  </div>
 </nav>
 
 <% bulk = policy(WorkOrder).bulk_change_status? %>
@@ -27,9 +37,15 @@
       <%= f.label :q, "Buscar", class: "sv-label" %>
       <%= f.search_field :q, value: params[:q], placeholder: "Número, título ou cliente", class: "sv-input" %>
     </div>
-    <div>
+    <%# Selects get explicit widths: a percentage-wide select adds nothing to the width of a shrink-to-fit
+        flex item, which would otherwise collapse to its label. %>
+    <div class="w-full sm:w-56">
       <%= f.label :situacao, "Situação", class: "sv-label" %>
       <%= f.select :situacao, WorkOrders::LABELS.map { |value, label| [label, value] }, { include_blank: "Em aberto", selected: @filters[:status] }, class: "sv-input" %>
+    </div>
+    <div class="w-full sm:w-40">
+      <%= f.label :prazo, "Prazo", class: "sv-label" %>
+      <%= f.select :prazo, WorkOrders::SearchQuery::DEADLINE_OPTIONS.map { |value, label| [label, value] }, { include_blank: "Todos", selected: @filters[:deadline] }, class: "sv-input" %>
     </div>
     <%= f.button "Filtrar", type: "submit", class: "sv-btn-secondary" %>
   <% end %>
@@ -50,30 +66,37 @@
 
 <div <%= tag.attributes(class: ("sm:pb-20" if bulk), data: (bulk ? { controller: "table-select", table_select_reason_required_value: WorkOrders::ChangeStatus::REASON_REQUIRED.to_json } : {})) %>>
   <section class="sv-card overflow-hidden">
-    <% if @pagination.records.empty? %>
+    <% applied_filters = work_order_filter_summary(@filters) %>
+    <% if @pagination.records.empty? && applied_filters.any? %>
+      <%= empty_state("Nenhuma ordem neste filtro", description: "Filtro aplicado: #{applied_filters.join(' · ')}.", icon_name: :orders) do %>
+        <%= link_to "Limpar filtro", work_orders_path, class: "sv-btn-secondary" %>
+      <% end %>
+    <% elsif @pagination.records.empty? %>
       <%= empty_state("Nenhuma ordem encontrada", description: "Ordens nascem de solicitações, orçamentos aprovados ou planos preventivos.", icon_name: :orders) %>
     <% else %>
       <%# Below sm the table becomes a stacked list with the same data (bulk selection is a desktop task). %>
       <ul class="divide-y divide-ink-150 sm:hidden" role="list" aria-label="Ordens de serviço">
         <% @pagination.records.each do |work_order| %>
           <li>
-            <%= link_to work_order_path(work_order), class: "flex flex-wrap items-center gap-4 px-4 py-3.5 transition-colors hover:bg-ink-25" do %>
-              <div class="min-w-0 flex-1">
-                <p class="flex flex-wrap items-center gap-2">
-                  <span class="font-mono text-xs text-ink-700"><%= work_order.number %></span>
-                  <span class="text-sm font-medium text-ink-950"><%= work_order.title %></span>
-                </p>
-                <p class="truncate text-xs text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %> · solicitado <%= l(work_order.requested_at, format: :short) %></p>
-              </div>
-              <%= render "work_orders/priority_badge", work_order: %>
-              <%= render "work_orders/status_badge", work_order: %>
+            <%# Number on its own line, then title and "customer · location"; badges get their own row with the
+                request date at the end, so a long title never squeezes them. %>
+            <%= link_to work_order_path(work_order), class: "block px-4 py-3.5 transition-colors hover:bg-ink-25" do %>
+              <p class="whitespace-nowrap font-mono text-xs text-ink-700"><%= work_order.number %></p>
+              <p class="mt-0.5 text-sm font-medium text-ink-950"><%= work_order.title %></p>
+              <p class="truncate text-xs text-ink-500"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %></p>
+              <p class="mt-2 flex flex-wrap items-center gap-1.5">
+                <%= render "work_orders/priority_badge", work_order: %>
+                <%= render "work_orders/status_badge", work_order: %>
+                <%= work_order_deadline_badge(@deadlines[work_order.id]) %>
+                <span class="ml-auto whitespace-nowrap font-mono text-[11px] text-ink-500"><span class="sr-only">Solicitada em </span><%= l(work_order.requested_at, format: :short) %></span>
+              </p>
             <% end %>
           </li>
         <% end %>
       </ul>
       <div class="hidden overflow-x-auto sm:block">
         <table class="sv-table">
-          <caption class="sr-only">Ordens de serviço<%= " — #{WorkOrders::LABELS[@filters[:status]]}" if @filters[:status] %></caption>
+          <caption class="sr-only">Ordens de serviço<%= " — #{WorkOrders::LABELS[@filters[:status]]}" if @filters[:status] %><%= " — #{WorkOrders::SearchQuery::DEADLINE_LABELS[@filters[:deadline]]}" if @filters[:deadline] %></caption>
           <thead>
             <tr>
               <% if bulk %>
@@ -108,7 +131,12 @@
                   <span class="block text-xs text-ink-500 in-data-[density=compact]:hidden"><%= work_order.customer.display_name %> · <%= work_order.service_location.name %></span>
                 </td>
                 <td><%= render "work_orders/priority_badge", work_order: %></td>
-                <td><%= render "work_orders/status_badge", work_order: %></td>
+                <td>
+                  <span class="flex flex-wrap items-center gap-1.5">
+                    <%= render "work_orders/status_badge", work_order: %>
+                    <%= work_order_deadline_badge(@deadlines[work_order.id]) %>
+                  </span>
+                </td>
                 <td class="whitespace-nowrap font-mono text-xs text-ink-600"><%= l(work_order.requested_at, format: :short) %></td>
               </tr>
             <% end %>

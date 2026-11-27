@@ -31,6 +31,20 @@ class Membership < TenantRecord
     active? && Authorization::Permissions.granted?(role, permission)
   end
 
+  # Members who execute work orders without managing the schedule (technicians)
+  # work from the field area: it is where they land and where "agenda" points.
+  def field_only?
+    can?(:work_orders_execute) && !can?(:schedule_manage)
+  end
+
+  # Members who follow the audit trail without operating anything (auditors):
+  # they land on it, like technicians land on the field area.
+  def audit_only?
+    can?(:audit_view) && Authorization::Permissions.for(role).none? do |permission|
+      permission == :work_orders_execute || permission.end_with?("_manage")
+    end
+  end
+
   def privileged?
     Authorization::Permissions.privileged?(role)
   end

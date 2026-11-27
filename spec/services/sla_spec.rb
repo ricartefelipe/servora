@@ -77,13 +77,14 @@ RSpec.describe Sla do
     expect(clocks_of(work_order)["first_response"].due_at).to eq(at("2026-11-29 00:00"))
   end
 
-  it "summarizes breached and at-risk deadlines on the dashboard" do
+  it "summarizes the work orders with breached and at-risk deadlines on the dashboard" do
     travel_to(at("2026-11-24 09:00")) { open_work_order(scenario) }
 
     overview = ->(membership, now) { in_tenant(organization) { Dashboards::Overview.new(membership:).sla_alerts(now:) } }
 
     expect(overview.call(scenario[:coordinator], at("2026-11-24 10:40"))).to eq(breached: 0, at_risk: 1)
-    expect(overview.call(scenario[:coordinator], at("2026-11-25 09:00"))).to eq(breached: 2, at_risk: 0)
+    # Both deadlines of the same order are past: one work order.
+    expect(overview.call(scenario[:coordinator], at("2026-11-25 09:00"))).to eq(breached: 1, at_risk: 0)
     expect(overview.call(scenario[:technician], at("2026-11-25 09:00"))).to be_nil
   end
 

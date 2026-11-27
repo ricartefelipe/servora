@@ -1,20 +1,13 @@
 # frozen_string_literal: true
 
 # Business hours, SLA targets and national holidays for both demonstration
-# organizations. Idempotent: existing configuration is kept.
+# organizations. Idempotent: existing configuration is kept. The hours and
+# holidays are Seeds::SHIFTS_SLA and Seeds::HOLIDAYS (support/story_clock.rb).
+require_relative "support/story_clock"
+
 module Seeds
   SLA_TARGETS = {
     "urgent" => [60, 240, false], "high" => [120, 480, true], "normal" => [240, 960, true], "low" => [480, 2400, true]
-  }.freeze
-  SHIFTS_SLA = [[480, 720], [780, 1080]].freeze
-  HOLIDAYS = {
-    "2026-01-01" => "Confraternização Universal", "2026-04-03" => "Sexta-feira Santa", "2026-04-21" => "Tiradentes",
-    "2026-05-01" => "Dia do Trabalho", "2026-09-07" => "Independência do Brasil", "2026-10-12" => "Nossa Senhora Aparecida",
-    "2026-11-02" => "Finados", "2026-11-15" => "Proclamação da República", "2026-11-20" => "Dia da Consciência Negra",
-    "2026-12-25" => "Natal", "2027-01-01" => "Confraternização Universal", "2027-03-26" => "Sexta-feira Santa",
-    "2027-04-21" => "Tiradentes", "2027-05-01" => "Dia do Trabalho", "2027-09-07" => "Independência do Brasil",
-    "2027-10-12" => "Nossa Senhora Aparecida", "2027-11-02" => "Finados", "2027-11-15" => "Proclamação da República",
-    "2027-11-20" => "Dia da Consciência Negra", "2027-12-25" => "Natal"
   }.freeze
 
   def self.sla(key)
@@ -42,6 +35,8 @@ module Seeds
   end
 end
 
-Seeds.sla("a")
-Seeds.sla("b")
+Seeds::StoryClock.at_origin do
+  Seeds.sla("a")
+  Seeds.sla("b")
+end
 puts "Expediente, prazos de SLA e feriados prontos."

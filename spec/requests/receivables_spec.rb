@@ -128,6 +128,36 @@ RSpec.describe "Receivables" do
     expect(response.body).not_to include("Faturar", "Margem")
   end
 
+  describe "margins on the work order" do
+    def margin_cells
+      sign_in_as(create(:membership, :owner, organization:))
+      get work_order_path(work_order)
+      table = response.parsed_body.at_css("#financeiro table")
+      rows = table.css("tbody tr").to_h { |row| [row.at_css("th").text.squish, row.css("td").map { |cell| cell.text.squish }] }
+      [rows, table]
+    end
+
+    it "shows a single predicted cost and no realized margin before billing" do
+      rows, table = margin_cells
+
+      expect(rows.keys).to eq(%w[Receita Custos Margem])
+      expect(rows["Custos"]).to eq(["R$ 500,00", "R$ 0,00"])
+      expect(rows["Margem"]).to eq(["R$ 700,00 58,3%", "— sem faturamento"])
+      expect(table.css("[rowspan]")).to be_empty
+      expect(table.css("td")).to all(satisfy { |cell| cell["class"].include?("whitespace-nowrap") })
+      expect(response.parsed_body.css("#financeiro dl[aria-labelledby='custos-realizados'] dt").map(&:text))
+        .to eq(["Material", "Mão de obra", "Despesas"])
+    end
+
+    it "labels the realized margin as partial until everything authorized is billed" do
+      issue_receivable(scenario, work_order, "400")
+      expect(margin_cells.first["Margem"].last).to eq("R$ 400,00 100,0% · parcial")
+
+      issue_receivable(scenario, work_order, "800")
+      expect(margin_cells.first["Margem"].last).to eq("R$ 1.200,00 100,0%")
+    end
+  end
+
   it "stores the provider key encrypted and never renders it back" do
     owner = create(:membership, :owner, organization:)
     sign_in_as(owner)

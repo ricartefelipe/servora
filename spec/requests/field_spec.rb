@@ -65,7 +65,9 @@ RSpec.describe "Field area" do
 
       page = response.parsed_body
       expect(page.at_css("form[data-kind='visit_travel'] button").text).to eq("Iniciar deslocamento")
-      expect(page.at_css("details summary[aria-label='Mais ações da visita']")).to be_present
+      more = page.at_css("details summary[aria-label='Mais ações da visita']")
+      expect(more.at_css("svg[aria-hidden=true]")).to be_present
+      expect(more.text.strip).to be_empty
       expect(page.at_css("form[data-kind='visit_no_show'] textarea[required]")).to be_present
       expect(response.body).to include("Não foi possível atender", "Já está no local?")
     end
@@ -93,6 +95,58 @@ RSpec.describe "Field area" do
       get field_root_path
 
       expect(response.parsed_body.at_css("#proxima-visita-titulo").text).to include("Em deslocamento")
+    end
+
+    def finish_visit_on_tuesday
+      in_tenant(organization) do
+        Visits::Start.new(visit: visit.reload, actor: diego, at: tuesday_at(9)).call
+        Visits::Finish.new(visit: visit.reload, actor: diego, at: tuesday_at(10, 15)).call
+      end
+    end
+
+    it "lists the visits finished today and counts them in the header when nothing else is left" do
+      finish_visit_on_tuesday
+
+      travel_to(tuesday_at(14)) do
+        sign_in_as(diego)
+        get field_root_path
+      end
+
+      page = response.parsed_body
+      expect(page.at_css("header").text).to include("Hoje · 1 concluída")
+      expect(page.at_css("#concluidas-hoje-titulo").text.squish).to eq("Concluídas hoje (1)")
+      expect(page.at_css("[aria-labelledby='concluidas-hoje-titulo']").text).to include("10:15", work_order.number)
+      expect(response.body).to include("Nenhuma visita pendente hoje.")
+      expect(response.body).not_to include("Nenhuma visita hoje")
+      expect(page.at_css("#proxima-visita-titulo")).to be_nil
+    end
+
+    it "keeps the upcoming count in the header while visits are left and still lists the finished ones" do
+      finish_visit_on_tuesday
+      later = open_work_order(scenario, title: "Segunda visita do dia")
+      schedule(scenario, later, [diego], from: tuesday_at(15), to: tuesday_at(16))
+
+      travel_to(tuesday_at(14)) do
+        sign_in_as(diego)
+        get field_root_path
+      end
+
+      page = response.parsed_body
+      expect(page.at_css("header").text).to include("Hoje · 1 visita")
+      expect(page.at_css("#proxima-visita-titulo")).to be_present
+      expect(page.at_css("#concluidas-hoje-titulo").text.squish).to eq("Concluídas hoje (1)")
+    end
+
+    it "does not list visits finished on another day" do
+      finish_visit_on_tuesday
+
+      travel_to(tuesday_at(14) + 1.day) do
+        sign_in_as(diego)
+        get field_root_path
+      end
+
+      expect(response.body).not_to include("Concluídas hoje")
+      expect(response.parsed_body.at_css("header").text).to include("Hoje · sem visitas")
     end
 
     it "applies the trip and the no-show sent by the allocated technician, once per operation id" do

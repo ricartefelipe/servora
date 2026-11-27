@@ -8,4 +8,8 @@ RSpec.describe Reports::CsvCell do
       .to eq(["10.5", "3", "", "2026-11-24"])
     expect(described_class.safe(Reports::Money.of("1234.5"))).to eq("1234.5")
   end
+
+  it "exports percentages as plain decimal numbers" do
+    expect(described_class.safe(Reports::Percent.of(2, 3))).to eq("66.7")
+  end
 end

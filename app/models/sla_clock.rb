@@ -11,6 +11,17 @@ class SlaClock < TenantRecord
   has_many :events, -> { order(:occurred_at, :id) }, class_name: "SlaClockEvent", dependent: nil, inverse_of: :sla_clock
 
   scope :running, -> { where(status: "running") }
+  # Running deadlines already past (estourados) and those inside the warning
+  # window but not yet past (em risco). A work order may have one of each.
+  scope :overdue, ->(now = Time.current) { running.where(due_at: ..now) }
+  scope :at_risk, ->(now = Time.current) { running.where.not(due_at: ..now).where(warn_at: ..now) }
+
+  # Most severe running deadline state of each given work order that has one:
+  # { work_order_id => :overdue | :at_risk }.
+  def self.attention_by_work_order(work_order_ids, now: Time.current)
+    overdue(now).or(at_risk(now)).where(work_order_id: work_order_ids).pluck(:work_order_id, :due_at)
+      .group_by(&:first).transform_values { |rows| rows.any? { |_id, due_at| due_at <= now } ? :overdue : :at_risk }
+  end
 
   def metric_label = METRICS.fetch(metric)
   def status_label = STATUSES.fetch(status)

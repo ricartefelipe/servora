@@ -44,17 +44,19 @@ RSpec.describe "Marcador de agora na agenda", :js do
 
       # The controller stores the clock difference to the server when it connects.
       expect(page).to have_css("[data-controller='now-line'][data-now-line-skew-value]")
-      expect(line_x).to be_within(1).of(240)
-      expect(rendered_fraction).to be_within(0.005).of(0.25)
+      # Diego works 08:00–18:00: 10:00 is a fifth of the timeline.
+      expect(line_x).to be_within(1).of(192)
+      expect(rendered_fraction).to be_within(0.005).of(0.2)
       expect(page).to have_css("[data-now-line-target='time']", text: "10:00")
       expect(page).to have_css(".sr-only[aria-live='off']", text: "Agora, 10:00", visible: :all)
 
       advance_browser_clock(150)
       expect(page).to have_css("[data-now-line-target='time']", text: "12:30")
       expect(page).to have_css(".sr-only", text: "Agora, 12:30", visible: :all)
-      expect(line_x).to be_within(1).of(390)
-      expect(pill_x).to match(/\A40\.6\d\d%\z/)
-      expect(rendered_fraction).to be_within(0.005).of(390.0 / 960)
+      expect(line_x).to be_within(1).of(432)
+      expect(pill_x).to match(/\A4[45]\.\d{3}%\z/)
+      expect(pill_x.to_f).to be_within(0.1).of(45)
+      expect(rendered_fraction).to be_within(0.005).of(0.45)
       expect(hidden_markers).to eq([false, false, false])
 
       advance_browser_clock((12 * 60) + 30)

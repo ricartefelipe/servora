@@ -14,12 +14,25 @@
     <%= empty_state("Nenhum evento encontrado", description: "As ações registradas aparecerão aqui.", icon_name: :audit) %>
   <% else %>
     <% references = audit_references(@pagination.records) %>
-    <div class="relative overflow-x-auto">
+    <% events = @pagination.records.map { |event| [event, audit_changeset(event, references)] } %>
+    <%# Below md each event is a card: action and time, who, then the changes; the table needs a tablet's width. %>
+    <ol class="divide-y divide-ink-150 md:hidden" role="list" aria-label="Eventos">
+      <% events.each do |event, details| %>
+        <li class="px-4 py-3.5">
+          <p class="flex items-baseline justify-between gap-3">
+            <span class="min-w-0 text-[13px] font-medium text-ink-950"><%= audit_action_label(event.action) %></span>
+            <time class="sv-num shrink-0 whitespace-nowrap font-mono text-[11px] text-ink-600" datetime="<%= event.created_at.iso8601 %>"><%= l(event.created_at, format: :short) %></time>
+          </p>
+          <p class="mt-0.5 text-xs text-ink-600"><span class="sr-only">Por </span><%= event.actor_label || "Sistema" %></p>
+          <div class="mt-2 text-xs"><%= details %></div>
+        </li>
+      <% end %>
+    </ol>
+    <div class="relative overflow-x-auto max-md:hidden">
       <table class="sv-table">
-        <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col" class="max-md:hidden">Detalhes</th></tr></thead>
+        <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Ação</th><th scope="col">Detalhes</th></tr></thead>
         <tbody class="divide-y divide-ink-150">
-          <% @pagination.records.each do |event| %>
-            <% details = audit_changeset(event, references) %>
+          <% events.each do |event, details| %>
             <tr class="align-top">
               <td class="sv-num whitespace-nowrap font-mono text-xs text-ink-600 align-top">
                 <time datetime="<%= event.created_at.iso8601 %>"><%= l(event.created_at, format: :short) %></time>
@@ -28,10 +41,8 @@
               <td class="align-top md:min-w-56">
                 <span class="block text-[13px] font-medium text-ink-950"><%= audit_action_label(event.action) %></span>
                 <span class="mt-0.5 block font-mono text-[11px] text-ink-500"><span class="sr-only">Código da ação: </span><%= event.action %></span>
-                <%# On phones the changes follow the action instead of a fourth column. %>
-                <div class="mt-2 text-xs md:hidden"><%= details %></div>
               </td>
-              <td class="min-w-72 max-w-xl text-xs align-top max-md:hidden"><%= details %></td>
+              <td class="min-w-72 max-w-xl text-xs align-top"><%= details %></td>
             </tr>
           <% end %>
         </tbody>

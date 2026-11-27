@@ -1,22 +1,31 @@
 <% content_for :title, "Entrar" %>
 <%= render "shared/auth_heading", title: "Entrar no Servora", subtitle: "Acesse a operação da sua empresa." %>
 
+<% demo = Servora::Demo.enabled? %>
+<% if demo %>
+  <%= render "shared/demo_access", email_field_id: field_id(resource_name, :email),
+        password_field_id: field_id(resource_name, :password) %>
+<% end %>
+
 <%= form_for resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-5" } do |f| %>
   <%= f.field :email, label: "E-mail", as: :email_field, autocomplete: "username", autofocus: true, required: true %>
   <div>
     <div class="flex items-center justify-between">
       <%= f.label :password, "Senha", class: "sv-label" %>
-      <%= link_to "Esqueceu a senha?", new_password_path(resource_name), class: "mb-1.5 text-xs sv-link" %>
+      <%# The demonstration accounts share a published password: no recovery, sign-up or unlock there. %>
+      <%= link_to "Esqueceu a senha?", new_password_path(resource_name), class: "mb-1.5 text-xs sv-link" unless demo %>
     </div>
     <%= f.password_field :password, autocomplete: "current-password", required: true, class: "sv-input" %>
   </div>
   <%= f.submit_button "Entrar", class: "w-full", data: { turbo_submits_with: "Entrando…" } %>
 <% end %>
 
-<div class="mt-8 space-y-3 border-t border-ink-150 pt-6 text-sm text-ink-600">
-  <p>Ainda não usa o Servora? <%= link_to "Criar conta", new_registration_path(resource_name), class: "sv-link" %></p>
-  <p class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-    <%= link_to "Reenviar confirmação de e-mail", new_confirmation_path(resource_name), class: "sv-link" %>
-    <%= link_to "Desbloquear conta", new_unlock_path(resource_name), class: "sv-link" %>
-  </p>
-</div>
+<% unless demo %>
+  <div class="mt-8 space-y-3 border-t border-ink-150 pt-6 text-sm text-ink-600">
+    <p>Ainda não usa o Servora? <%= link_to "Criar conta", new_registration_path(resource_name), class: "sv-link" %></p>
+    <p class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <%= link_to "Reenviar confirmação de e-mail", new_confirmation_path(resource_name), class: "sv-link" %>
+      <%= link_to "Desbloquear conta", new_unlock_path(resource_name), class: "sv-link" %>
+    </p>
+  </div>
+<% end %>

@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
-/* Agenda timeline: 64 columns of 15 minutes (06:00–22:00). Positions are
-   classes (not inline styles) to comply with the Content Security Policy. */
+/* Agenda timeline: 15-minute columns over 8 to 16 whole hours fitted inside
+   06:00–22:00 (Scheduling::AgendaQuery#hours). Positions, column counts and
+   hour rules are classes (not inline styles) to comply with the Content
+   Security Policy. */
 @source inline("col-start-{1..65}");
 @source inline("col-span-{1..64}");
+@source inline("grid-cols-{8..16}");
+@source inline("grid-cols-[repeat({32..64..4},minmax(0,1fr))]");
+@source inline("bg-[length:calc(100%/{8..16})_100%]");
 
 /*
  * Servora design tokens — "Precisão".

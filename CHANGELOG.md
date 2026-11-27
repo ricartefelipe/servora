@@ -5,6 +5,37 @@ Todas as mudanças relevantes são registradas aqui. Formato baseado em
 
 ## [Não lançado]
 
+## [1.7.0] - 2026-11-27
+
+Demonstração pública viva e ajustes de interface encontrados na revisão da demonstração.
+
+### Adicionado
+
+- Modo de demonstração (`SERVORA_DEMO=1`): perfis e senha pública no acesso, com preenchimento por clique,
+  link para a caixa de entrada e sem exigência de verificação em duas etapas.
+- Operação de demonstração realista (`SEED_DEMO_ACTIVITY=1`): seis semanas de histórico registradas pelos
+  casos de uso, com 26 clientes, equipamentos de marcas reais, ordens, orçamentos, recebimentos, estoque e prazos.
+- Tarefa recorrente do modo demonstração que aplica os acontecimentos do dia conforme a hora chega, em fila
+  própria, respeitando as ações do visitante.
+- Filtro de ordens por prazo estourado ou em risco; próximos vencimentos no painel do financeiro; visitas
+  concluídas do dia na área do técnico.
+
+### Alterado
+
+- Alertas de prazo do painel contam ordens; técnicos entram na agenda de campo e auditores na trilha.
+- Agenda em lista no celular e blocos legíveis; orçamentos, ordens e auditoria em cartões no celular.
+- Margem prevista e realizada mais legível; custo médio com duas casas; telefones com máscara; percentuais
+  de prazos no padrão brasileiro e por gravidade; clientes ordenados pelo nome exibido.
+- Primeira data sugerida para visitas no próximo dia útil.
+
+### Corrigido
+
+- Banco de teste criado pelo `db:prepare` permanece vazio.
+
+### Segurança
+
+- Atualizações de segurança dos pacotes da imagem base aplicadas na construção (CVE-2026-124851, libzstd).
+
 ## [1.6.0] - 2026-11-24
 
 Deslocamento e sincronização no campo, ações em lote, formulários em seções e resumo do portal.
@@ -221,7 +252,8 @@ pelo portal, ordem de serviço e agendamento.
   agendamento atômico de equipes protegido por exclusion constraint, reagendamento, cancelamento, ausência do
   cliente, sugestão determinística de técnicos e apontamentos com custo histórico de mão de obra.
 
-[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.6.0...develop
+[Não lançado]: https://github.com/ricartefelipe/servora/compare/v1.7.0...develop
+[1.7.0]: https://github.com/ricartefelipe/servora/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/ricartefelipe/servora/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/ricartefelipe/servora/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ricartefelipe/servora/compare/v1.3.0...v1.4.0
