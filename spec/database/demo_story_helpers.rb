@@ -35,7 +35,15 @@ module DemoStoryHelpers
     allow(ENV).to receive(:fetch).with("SEED_DEMO_ACTIVITY", anything).and_return("1")
   end
 
-  def load_seeds = silence_warnings { load Rails.root.join("db/seeds.rb").to_s }
+  # In the test environment db/seeds.rb runs only when asked to (see its header).
+  def load_seeds
+    previous = ENV.fetch("SERVORA_TEST_SEEDS", nil)
+    ENV["SERVORA_TEST_SEEDS"] = "1"
+    silence_warnings { load Rails.root.join("db/seeds.rb").to_s }
+  ensure
+    ENV["SERVORA_TEST_SEEDS"] = previous
+  end
+
   def organization_id(key) = Seeds::ORGANIZATIONS.fetch(key)[:id]
   def member(email) = Membership.joins(:user).includes(:user).find_by!(users: { email: })
 
