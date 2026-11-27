@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 # Service types with the checklists required to complete work orders.
+require_relative "support/story_clock"
+
 module Seeds
   SERVICE_TYPES = {
     "a" => {
@@ -10,6 +12,11 @@ module Seeds
       ],
       "Atendimento corretivo" => [
         ["Equipamento testado após o reparo", "check", true], ["Cliente orientado sobre o uso", "check", true]
+      ],
+      # Not covered by the maintenance contracts (07_contracts.rb): the one
+      # "não coberto" order of the story is an installation assessment.
+      "Instalação de equipamento" => [
+        ["Carga térmica do ambiente calculada", "check", true], ["Ponto elétrico e dreno avaliados", "check", true]
       ]
     },
     "b" => {
@@ -36,6 +43,8 @@ module Seeds
   end
 end
 
-Seeds.service_types("a")
-Seeds.service_types("b")
+Seeds::StoryClock.at_origin do
+  Seeds.service_types("a")
+  Seeds.service_types("b")
+end
 puts "Tipos de serviço de demonstração prontos."

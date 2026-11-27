@@ -10,12 +10,13 @@ module RequestHelpers
 end
 
 # System specs cannot issue POSTs directly: the organization is chosen through
-# the picker, which opens automatically when there is a single membership.
+# the picker, which opens automatically when there is a single membership and
+# then lands on the dashboard (or the field area for technicians).
 module SystemLoginHelpers
   def sign_in_as(membership)
     sign_in membership.user
     visit organizations_path
-    click_on membership.organization.name unless page.has_current_path?(dashboard_path, wait: 0.5)
+    click_on membership.organization.name if page.has_current_path?(organizations_path, wait: 0)
   end
 end
 

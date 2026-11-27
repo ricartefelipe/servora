@@ -21,7 +21,10 @@ WORKDIR /rails
 
 # Runtime packages. The PostgreSQL client comes from the PGDG repository so that
 # psql/pg_dump match the server major version used to load db/structure.sql.
+# Security updates of the base image packages are applied at build time, so a
+# fix published by Debian does not wait for a new upstream Ruby image.
 RUN apt-get update -qq && \
+    apt-get upgrade -y --no-install-recommends && \
     apt-get install --no-install-recommends -y ca-certificates curl libjemalloc2 && \
     install -d /usr/share/postgresql-common/pgdg && \
     curl --fail --silent --show-error --location \

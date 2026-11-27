@@ -24,7 +24,7 @@ class InvitationAcceptancesController < ApplicationController
   def create
     membership = Invitations::Accept.new(token: params[:token].to_s, user: current_user).call
     session[TenantController::ORGANIZATION_SESSION_KEY] = membership.organization_id
-    redirect_to dashboard_path, notice: "Bem-vindo à equipe!"
+    redirect_to landing_path_for(membership), notice: "Bem-vindo à equipe!"
   rescue Servora::RuleViolation => e
     redirect_to invitation_path(params[:token].to_s), alert: e.message
   end

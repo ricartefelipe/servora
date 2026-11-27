@@ -22,6 +22,54 @@ RSpec.describe "Authentication" do
     expect(user.user_sessions.active.count).to eq(1)
   end
 
+  describe "landing page after choosing the organization" do
+    it "opens the field area for technicians who only execute work orders" do
+      technician = create(:membership, :technician, organization:)
+
+      sign_in_with(email: technician.user.email, password:)
+      follow_redirect!
+
+      expect(response).to redirect_to(field_root_path)
+      follow_redirect!
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "opens the audit trail for auditors, who only follow it" do
+      auditor = create(:membership, :auditor, organization:)
+
+      sign_in_with(email: auditor.user.email, password:)
+      follow_redirect!
+
+      expect(response).to redirect_to(audit_events_path)
+      follow_redirect!
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Auditoria")
+    end
+
+    it "keeps every operational office role on the dashboard" do
+      %i[owner admin coordinator attendant finance].each do |role|
+        office = create(:membership, role, organization:)
+        sign_in office.user
+
+        post select_organization_path(organization.id)
+
+        expect(response).to redirect_to(dashboard_path), role.to_s
+      end
+    end
+
+    it "opens the field area when a technician picks one of several organizations" do
+      technician = create(:membership, :technician, organization:)
+      create(:membership, :coordinator, organization: create(:organization), user: technician.user)
+      sign_in technician.user
+
+      get organizations_path
+      expect(response).to have_http_status(:ok)
+      post select_organization_path(organization.id)
+
+      expect(response).to redirect_to(field_root_path)
+    end
+  end
+
   describe "front door" do
     it "renders the sign-in form at the root" do
       get "/"

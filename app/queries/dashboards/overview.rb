@@ -34,12 +34,11 @@ module Dashboards
       @organization.equipment.active.where(operational_status: %w[attention inoperative]).group(:operational_status).count
     end
 
-    # Running SLA clocks past their deadline and within the warning window.
+    # Work orders with a running deadline past or within the warning window.
     def sla_alerts(now: Time.current)
       return nil unless @membership.can?(:work_orders_view_all)
 
-      running = SlaClock.running
-      { breached: running.where(due_at: ..now).count, at_risk: running.where(due_at: now..).where(warn_at: ..now).count }
+      { breached: WorkOrder.deadline_overdue(now).count, at_risk: WorkOrder.deadline_at_risk(now).count }
     end
 
     def onboarding_steps

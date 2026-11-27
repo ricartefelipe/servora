@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
 # Warehouses and initial stock. Receipts use deterministic idempotency keys,
-# so running the seed again never duplicates stock.
+# so running the seed again never duplicates stock. With the demonstration
+# activity the opening receipts are dated at the origin of the story, before
+# every movement it records; the story then buys back each week what the
+# routine work consumed (DemoActivity::History), so the balances stay close to
+# these levels.
+require_relative "support/story_clock"
+
 module Seeds
   WAREHOUSES = {
     "a" => [["Almoxarifado central", "central", nil], ["Van 01 — Diego", "vehicle", "diego@clima-norte.test"]],
@@ -14,6 +20,14 @@ module Seeds
       ["Almoxarifado central", "PEC-CAP-355", "12", "38.4000", "5"],
       ["Almoxarifado central", "PEC-R410A", "25.5", "52.7500", "10"],
       ["Almoxarifado central", "PEC-FILTRO-14", "3", "17.9000", "4"],
+      ["Almoxarifado central", "PEC-RELE-220", "2", "64.2000", "2"],
+      ["Almoxarifado central", "PEC-CONTATOR-32", "5", "71.5000", "2"],
+      ["Almoxarifado central", "PEC-DISJ-20", "10", "26.8000", "4"],
+      ["Almoxarifado central", "PEC-MOTOR-VENT", "3", "182.0000", "1"],
+      ["Almoxarifado central", "PEC-BOMBA-DRENO", "3", "141.0000", "1"],
+      ["Almoxarifado central", "PEC-ISOL-38", "60", "5.9000", "20"],
+      ["Almoxarifado central", "PEC-R32", "9", "64.3000", "4"],
+      ["Almoxarifado central", "PEC-SENSOR-NTC", "6", "19.8000", "2"],
       ["Van 01 — Diego", "PEC-CAP-355", "2", "38.4000", "1"]
     ],
     "b" => [["Depósito Predial Sul", "PEC-CABO-8", "120", "21.0000", "30"]]
@@ -46,6 +60,8 @@ module Seeds
   end
 end
 
-Seeds.inventory("a")
-Seeds.inventory("b")
+Seeds::StoryClock.at_origin do
+  Seeds.inventory("a")
+  Seeds.inventory("b")
+end
 puts "Depósitos e saldos iniciais prontos."

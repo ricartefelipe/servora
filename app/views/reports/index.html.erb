@@ -62,7 +62,7 @@
         <thead><tr><% @report.headers.each do |header| %><th scope="col"><%= header %></th><% end %></tr></thead>
         <tbody class="divide-y divide-ink-150">
           <% @rows.each do |row| %>
-            <tr><% row.each do |cell| %><td class="<%= 'sv-num text-right text-ink-950' if cell.is_a?(Numeric) || cell.is_a?(Reports::Money) %>"><%= report_value(cell) %></td><% end %></tr>
+            <tr><% row.each do |cell| %><td class="<%= 'sv-num text-right text-ink-950' if cell.is_a?(Numeric) || cell.is_a?(Reports::Money) || cell.is_a?(Reports::Percent) %>"><%= report_value(cell) %></td><% end %></tr>
           <% end %>
         </tbody>
       </table>

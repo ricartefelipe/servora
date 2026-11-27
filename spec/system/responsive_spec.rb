@@ -9,7 +9,12 @@ RSpec.describe "Layout responsivo", :js do
 
   before do
     location = create(:service_location, customer:, name: "Unidade com nome de identificação bastante extenso")
-    create(:equipment, location:)
+    equipment = create(:equipment, location:)
+    create_technician(organization, name: "Diego Alves")
+    scenario = { organization:, coordinator: owner, author: owner, customer:, location:, equipment:,
+                 service_type: create(:service_type, organization:) }
+    open_work_order(scenario, title: "Ar-condicionado da sala de reuniões desarma o disjuntor ao ligar no modo turbo")
+    create_quote(scenario)
   end
 
   it "não gera rolagem horizontal nas telas principais em um celular" do
@@ -18,7 +23,8 @@ RSpec.describe "Layout responsivo", :js do
 
     [dashboard_path, customers_path, customer_path(customer), equipment_index_path, members_path, stock_balances_path,
      stock_movements_path, warehouses_path, receivables_path, contracts_path, sla_settings_path, field_root_path,
-     reports_path].each do |path|
+     reports_path, work_orders_path, quotes_path, audit_events_path, agenda_index_path,
+     agenda_index_path(visao: "semana")].each do |path|
       visit path
       overflow = page.evaluate_script("document.documentElement.scrollWidth - document.documentElement.clientWidth")
       expect(overflow).to be <= 0, "#{path} transborda #{overflow}px"

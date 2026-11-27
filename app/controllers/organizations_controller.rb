@@ -44,7 +44,7 @@ class OrganizationsController < AuthenticatedController
   def select_and_redirect(membership)
     reset_session_preserving_authentication
     session[TenantController::ORGANIZATION_SESSION_KEY] = membership.organization_id
-    redirect_to dashboard_path
+    redirect_to landing_path_for(membership)
   end
 
   # Switching organizations rotates the session id (fixation protection) and

@@ -6,6 +6,10 @@ module Authentication
   # Members get a grace period (MFA_ENROLLMENT_GRACE_DAYS, default 7) counted
   # from the moment they joined; afterwards the organization is blocked for
   # them until MFA is enabled.
+  #
+  # In demo mode (Servora::Demo) the policy does not apply: the public
+  # demonstration resets its data every day and its proxy blocks the MFA setup
+  # pages, so neither the reminder nor the deadline would make sense there.
   class MfaRequirement
     def self.grace_period
       Integer(ENV.fetch("MFA_ENROLLMENT_GRACE_DAYS", 7)).days
@@ -18,6 +22,8 @@ module Authentication
     end
 
     def required?
+      return false if Servora::Demo.enabled?
+
       @membership.privileged? && @membership.organization.mfa_required_for_privileged? && !@user.mfa_enabled?
     end
 

@@ -35,6 +35,16 @@ default: &default
     queue: default
     schedule: every day at 00:15
 
+<%# Demo mode only (SERVORA_DEMO=1, with SEED_DEMO_ACTIVITY on, as for the seeds): today's story advances as its
+    time comes (docs/RUNBOOKS.md, "Demonstração pública"), on the "demo" queue served by its own single-thread
+    worker (config/queue.yml). The job checks the same variables and does nothing without them. %>
+<% if ENV["SERVORA_DEMO"] == "1" && ENV.fetch("SEED_DEMO_ACTIVITY", Rails.env.development? ? "1" : "0") == "1" %>
+  demo_story_advance:
+    class: Demo::AdvanceStoryJob
+    queue: demo
+    schedule: every 5 minutes
+<% end %>
+
 development:
   <<: *default
 

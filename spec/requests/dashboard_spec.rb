@@ -41,6 +41,38 @@ RSpec.describe "Dashboard" do
     expect(response.body).not_to include("Contas vencidas")
   end
 
+  describe "deadline attention" do
+    before do
+      configure_sla(organization)
+      travel_to(at("2026-11-24 09:00")) { open_work_order(scenario) }
+    end
+
+    def attention_link(membership)
+      travel_to(at("2026-11-25 09:00")) do
+        sign_in_as(membership)
+        get dashboard_path
+      end
+      response.parsed_body.at_css("section[aria-labelledby='atencao-titulo'] li:contains('OS com prazo estourado')")
+    end
+
+    it "counts the work order once and opens the list filtered by the breached deadline" do
+      item = attention_link(member(:coordinator, name: "Bruno Coordenador"))
+
+      expect(item.at_css("span.sv-num").text).to eq("1")
+      link = item.at_css("a")
+      expect(link["href"]).to eq(work_orders_path(prazo: "estourado"))
+      expect(link.text.squish).to eq("Resolver")
+      expect(link["aria-label"]).to eq("Resolver: OS com prazo estourado")
+    end
+
+    it "offers to look, not to resolve, to members who cannot change work orders" do
+      link = attention_link(member(:finance, name: "Gabriela Financeiro")).at_css("a")
+
+      expect(link.text.squish).to eq("Ver")
+      expect(link["aria-label"]).to eq("Ver: OS com prazo estourado")
+    end
+  end
+
   it "says everything is in order when nothing is pending" do
     sign_in_as(scenario[:coordinator])
 
@@ -101,6 +133,86 @@ RSpec.describe "Dashboard" do
     expect(body).not_to include("OS em aberto", "OS com prazo")
   end
 
+  it "points the technician's agenda shortcuts to the field area" do
+    diego = create_technician(organization, name: "Diego Técnico")
+    schedule(scenario, order_for("Padaria do Diego"), [diego], from: tuesday_at(14), to: tuesday_at(15), travel: 0)
+
+    travel_to(tuesday_at(9)) do
+      sign_in_as(diego)
+      get dashboard_path
+    end
+
+    page = response.parsed_body
+    expect(page.at_css("a:contains('Abrir agenda')")["href"]).to eq(field_root_path)
+    expect(page.at_css("section[aria-labelledby='proximas-titulo'] a:contains('Ver agenda')")["href"]).to eq(field_root_path)
+
+    sign_in_as(scenario[:coordinator])
+    get dashboard_path
+    expect(response.parsed_body.at_css("a:contains('Abrir agenda')")["href"]).to eq(agenda_index_path)
+  end
+
+  describe "members who do not see the schedule" do
+    let(:finance) { member(:finance, name: "Gabriela Financeiro") }
+
+    def dashboard_for(membership)
+      travel_to(tuesday_at(10)) do
+        sign_in_as(membership)
+        get dashboard_path
+      end
+      response.parsed_body
+    end
+
+    def receivable_for(customer_name, amount, due_on:)
+      work_order = travel_to(tuesday_at(8) - 10.days) { order_for(customer_name) }
+      add_authorized_item(scenario, work_order, unit_price: amount)
+      travel_to(tuesday_at(9) - 10.days) { issue_receivable(scenario, work_order, amount, due_on:) }
+    end
+
+    before do
+      diego = create_technician(organization, name: "Diego Técnico")
+      schedule(scenario, order_for("Padaria do Diego"), [diego], from: tuesday_at(14), to: tuesday_at(15), travel: 0)
+    end
+
+    it "shows finance the next due dates, overdue first, instead of any visit figure", :aggregate_failures do
+      receivable_for("Hotel Atrasado", "800.00", due_on: Date.new(2026, 11, 28))
+      receivable_for("Clínica em Dia", "1250.00", due_on: Date.new(2026, 12, 10))
+
+      page = dashboard_for(finance)
+
+      expect(page.text).not_to include("Próximas visitas", "Visitas concluídas hoje", "Visitas hoje", "Padaria do Diego")
+      card = page.at_css("section[aria-labelledby='vencimentos-titulo']")
+      expect(card.at_css("h2").text).to eq("Próximos vencimentos")
+      overdue, upcoming = card.css("li").to_a
+      expect(overdue.text.squish).to include("Hotel Atrasado", "R$ 800,00", "Vencida")
+      expect(overdue.at_css(".sv-badge svg")).to be_present
+      expect(upcoming.text.squish).to include("Clínica em Dia", "R$ 1.250,00")
+      expect(upcoming.text).not_to include("Vencida")
+      expect(page.at_css("section[aria-labelledby='atencao-titulo']")["class"]).to include("lg:col-span-7")
+    end
+
+    it "lets what needs attention take the full width when finance is not in the plan" do
+      in_tenant(organization) do
+        plan = Plan.find_by!(code: "profissional")
+        Subscription.create!(organization:, plan:, status: "active", technician_seats: plan.included_technicians,
+          monthly_amount: plan.monthly_price, activated_at: Time.current)
+      end
+
+      page = dashboard_for(finance)
+
+      expect(page.at_css("section[aria-labelledby='vencimentos-titulo']")).to be_nil
+      expect(page.at_css("section[aria-labelledby='proximas-titulo']")).to be_nil
+      expect(page.at_css("section[aria-labelledby='atencao-titulo']")["class"]).to include("lg:col-span-12")
+    end
+
+    it "keeps the visits for members who see the schedule" do
+      page = dashboard_for(member(:owner, name: "Ana Proprietária"))
+
+      expect(page.at_css("section[aria-labelledby='proximas-titulo']").text).to include("Padaria do Diego")
+      expect(page.at_css("section[aria-labelledby='vencimentos-titulo']")).to be_nil
+      expect(page.text).to include("Visitas concluídas hoje")
+    end
+  end
+
   describe "charts" do
     let(:chart_titles) { ["OS por situação", "Recebido · últimos 7 dias"] }
 
@@ -135,6 +247,26 @@ RSpec.describe "Dashboard" do
         charts = chart_titles.select { |title| body.include?(title) }
         expect(charts).to eq(titles), role.to_s
       end
+    end
+
+    it "hatches the waiting states in the bar and in the legend, apart from work in progress" do
+      running = open_work_order(scenario, title: "Em campo")
+      waiting = open_work_order(scenario, title: "Sem peça")
+      in_tenant(organization) do
+        running.update_columns(status: "in_progress")
+        waiting.update_columns(status: "waiting_parts")
+      end
+
+      chart = Nokogiri::HTML(dashboard_for(member(:owner, name: "Ana Proprietária")))
+        .at_css("section[aria-labelledby='os-situacao-titulo']")
+
+      bar = chart.at_css("svg[role='img']")
+      expect(bar.css("rect.fill-ember-500").size).to eq(1)
+      expect(bar.css("rect.fill-amber-500").size).to eq(1)
+      expect(bar.css("rect[fill='url(#os-situacao-hachura)']").size).to eq(1)
+      legend = chart.at_css("ul[aria-label='Legenda']").css("li").index_by { |item| item.text.squish }
+      expect(legend.fetch("Aguardando peças 1").at_css("rect[fill='url(#os-situacao-hachura)']")).to be_present
+      expect(legend.fetch("Em execução 1").at_css("span.rounded-full.bg-ember-500")).to be_present
     end
 
     it "drops the receipts chart when the plan does not include finance" do

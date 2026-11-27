@@ -9,17 +9,17 @@
 
   <% if wo_policy.view_finance? %>
     <dl class="grid grid-cols-2 gap-3">
-      <div><dt class="text-xs text-ink-500">Autorizado</dt><dd class="sv-num font-semibold text-ink-950"><%= money(@financials.billable_total) %></dd></div>
-      <div><dt class="text-xs text-ink-500">A faturar</dt><dd class="sv-num font-semibold text-ink-950"><%= money(@financials.remaining_to_bill) %></dd></div>
-      <div><dt class="text-xs text-ink-500">Faturado</dt><dd class="sv-num font-semibold text-ink-950"><%= money(@financials.issued_total) %></dd></div>
-      <div><dt class="text-xs text-ink-500">Recebido</dt><dd class="sv-num font-semibold text-ink-950"><%= money(@financials.received_total) %></dd></div>
+      <div><dt class="text-xs text-ink-500">Autorizado</dt><dd class="sv-num whitespace-nowrap font-semibold text-ink-950"><%= money(@financials.billable_total) %></dd></div>
+      <div><dt class="text-xs text-ink-500">A faturar</dt><dd class="sv-num whitespace-nowrap font-semibold text-ink-950"><%= money(@financials.remaining_to_bill) %></dd></div>
+      <div><dt class="text-xs text-ink-500">Faturado</dt><dd class="sv-num whitespace-nowrap font-semibold text-ink-950"><%= money(@financials.issued_total) %></dd></div>
+      <div><dt class="text-xs text-ink-500">Recebido</dt><dd class="sv-num whitespace-nowrap font-semibold text-ink-950"><%= money(@financials.received_total) %></dd></div>
     </dl>
     <% if @receivables.any? %>
       <ul class="divide-y divide-ink-150 rounded-lg border border-ink-200" role="list">
         <% @receivables.each do |receivable| %>
           <li class="flex flex-wrap items-center gap-2 px-3 py-2">
             <%= link_to receivable.number, receivable_path(receivable), class: "sv-link font-mono text-xs" %>
-            <span class="sv-num flex-1 text-right text-ink-950"><%= money(receivable.amount - receivable.discount_amount) %></span>
+            <span class="sv-num flex-1 whitespace-nowrap text-right text-ink-950"><%= money(receivable.amount - receivable.discount_amount) %></span>
             <%= render "receivables/status_badge", receivable: %>
           </li>
         <% end %>
@@ -30,22 +30,50 @@
   <% if wo_policy.view_costs? %>
     <% predicted = @financials.predicted %>
     <% realized = @financials.realized %>
+    <%# The realized margin is only final once everything authorized is billed: before any billing it is "—",
+        while billing is partial it is labelled "parcial". %>
+    <% billing = if realized.revenue.zero? then :none elsif @financials.remaining_to_bill.positive? then :partial else :full end %>
     <div class="overflow-x-auto">
       <table class="w-full text-left">
         <caption class="sr-only">Margem prevista e realizada</caption>
         <thead class="text-[11px] uppercase tracking-[0.06em] text-ink-500"><tr><th scope="col" class="py-1 font-medium">Margem</th><th scope="col" class="py-1 text-right font-medium">Prevista</th><th scope="col" class="py-1 text-right font-medium">Realizada</th></tr></thead>
         <tbody class="divide-y divide-ink-150">
-          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Receita</th><td class="sv-num text-right"><%= money(predicted.total) %></td><td class="sv-num text-right"><%= money(realized.revenue) %></td></tr>
-          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Material</th><td class="text-right text-ink-500" rowspan="3"><%= predicted.estimated_cost ? money(predicted.estimated_cost) : "custo incompleto" %></td><td class="sv-num text-right"><%= money(realized.material_cost) %></td></tr>
-          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Mão de obra</th><td class="sv-num text-right"><%= money(realized.labor_cost) %></td></tr>
-          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Despesas</th><td class="sv-num text-right"><%= money(realized.expenses) %></td></tr>
+          <tr><th scope="row" class="py-1.5 font-normal text-ink-600">Receita</th><td class="sv-num whitespace-nowrap text-right"><%= money(predicted.total) %></td><td class="sv-num whitespace-nowrap text-right"><%= money(realized.revenue) %></td></tr>
+          <tr>
+            <th scope="row" class="py-1.5 font-normal text-ink-600">Custos</th>
+            <td class="sv-num whitespace-nowrap text-right"><% if predicted.estimated_cost %><%= money(predicted.estimated_cost) %><% else %><span class="text-ink-500">custo incompleto</span><% end %></td>
+            <td class="sv-num whitespace-nowrap text-right"><%= money(realized.total_cost) %></td>
+          </tr>
           <tr class="font-semibold text-ink-950">
-            <th scope="row" class="py-1.5">Margem</th>
-            <td class="sv-num text-right"><%= predicted.margin ? "#{money(predicted.margin)} (#{predicted.margin_percent || '—'}%)" : "—" %></td>
-            <td class="sv-num text-right"><% if realized.margin.negative? %><%= icon(:alert, size: 12, css: "mr-1 inline-block align-[-1px] text-rose-600", label: "Margem negativa") %><% end %><%= money(realized.margin) %><% if realized.margin_percent %> (<%= realized.margin_percent %>%)<% end %></td>
+            <th scope="row" class="py-1.5 align-top">Margem</th>
+            <%# Percentages and the "parcial" note go on a line of their own, so the money never wraps or crowds. %>
+            <td class="sv-num whitespace-nowrap text-right align-top">
+              <% if predicted.margin %>
+                <%= money(predicted.margin) %> <span class="block text-[11px] font-normal text-ink-500"><%= percentage(predicted.margin_percent) %></span>
+              <% else %>
+                —
+              <% end %>
+            </td>
+            <td class="sv-num whitespace-nowrap text-right align-top">
+              <% if billing == :none %>
+                <span title="Sem faturamento: a margem realizada aparece quando a ordem for faturada.">—</span> <span class="block text-[11px] font-normal text-ink-500">sem faturamento</span>
+              <% else %>
+                <% if realized.margin.negative? %><%= icon(:alert, size: 12, css: "mr-1 inline-block align-[-1px] text-rose-600", label: "Margem negativa") %><% end %><%= money(realized.margin) %>
+                <span class="block text-[11px] font-normal text-ink-500"><%= [(percentage(realized.margin_percent) if realized.margin_percent), ("parcial" if billing == :partial)].compact.join(" · ") %></span>
+              <% end %>
+            </td>
           </tr>
         </tbody>
       </table>
+    </div>
+    <%# Breakdown of the realized costs (predicted costs come from the items as a whole, not by kind). %>
+    <div>
+      <h3 id="custos-realizados" class="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-500">Custos realizados</h3>
+      <dl class="grid grid-cols-3 gap-3 text-xs" aria-labelledby="custos-realizados">
+        <div><dt class="text-ink-500">Material</dt><dd class="sv-num whitespace-nowrap text-ink-950"><%= money(realized.material_cost) %></dd></div>
+        <div><dt class="text-ink-500">Mão de obra</dt><dd class="sv-num whitespace-nowrap text-ink-950"><%= money(realized.labor_cost) %></dd></div>
+        <div><dt class="text-ink-500">Despesas</dt><dd class="sv-num whitespace-nowrap text-ink-950"><%= money(realized.expenses) %></dd></div>
+      </dl>
     </div>
   <% end %>
 
@@ -57,7 +85,7 @@
       <% else %>
         <ul class="space-y-1" role="list">
           <% @expenses.each do |expense| %>
-            <li class="flex justify-between gap-2"><span class="text-ink-700"><%= expense.category_label %> · <%= expense.description %></span><span class="sv-num text-ink-950"><%= money(expense.amount) %></span></li>
+            <li class="flex justify-between gap-2"><span class="text-ink-700"><%= expense.category_label %> · <%= expense.description %></span><span class="sv-num shrink-0 whitespace-nowrap text-ink-950"><%= money(expense.amount) %></span></li>
           <% end %>
         </ul>
       <% end %>

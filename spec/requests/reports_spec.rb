@@ -51,6 +51,27 @@ RSpec.describe "Reports" do
     expect(response.body).not_to include("Consumo de materiais", ">Financeiro<")
   end
 
+  it "shows deadline percentages in the pt-BR format and exports them as plain numbers" do
+    zone = ActiveSupport::TimeZone[organization.time_zone]
+    configure_sla(organization)
+    on_time = travel_to(zone.parse("2026-11-17 09:00")) { open_work_order(scenario, title: "No prazo") }
+    late = travel_to(zone.parse("2026-11-17 09:00")) { open_work_order(scenario, title: "Atrasada") }
+    travel_to(zone.parse("2026-11-17 10:00")) { move(scenario, on_time, "in_progress") }
+    travel_to(zone.parse("2026-11-17 16:00")) { move(scenario, late, "in_progress") }
+    sign_in_as(scenario[:coordinator])
+
+    period = { de: "2026-11-01", ate: "2026-11-30" }
+    get reports_path(relatorio: "prazos", **period)
+
+    page = response.parsed_body
+    figures = page.css("section[aria-label='Indicadores do período'] > div").map { |cell| cell.text.squish }
+    expect(figures).to include("Percentual cumprido 50,0%")
+    expect(page.css("table.sv-table tbody td").map { |cell| cell.text.squish }).to include("50,0%")
+
+    get export_report_path(relatorio: "prazos", **period)
+    expect(response.body.force_encoding("UTF-8").lines.second.chomp).to end_with(";2;1;1;50.0")
+  end
+
   it "only aggregates the organization's own data" do
     other = build_work_order_scenario
     open_work_order(other, title: "Ordem de outra organização")

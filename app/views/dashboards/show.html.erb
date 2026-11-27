@@ -6,6 +6,8 @@
 <%# Capa: the only large ruby surface of the desktop app. No status or danger figures inside it. %>
 <% finance = @today.finance %>
 <% operational = can?(:schedule_view) || can?(:work_orders_execute) %>
+<%# Members who only execute work orders follow their own agenda in the field area. %>
+<% agenda_target = current_membership.field_only? ? field_root_path : agenda_index_path %>
 <% cells = if operational
              [["Visitas hoje", cover.visits_done, cover.visits_total],
               ["Em campo agora", cover.in_field, nil],
@@ -37,7 +39,7 @@
           <%= link_to new_work_order_path, class: "sv-btn-on-brand" do %><%= icon(:plus, size: 16) %> Nova ordem de serviço<% end %>
         <% end %>
         <% if can?(:schedule_view) %>
-          <%= link_to agenda_index_path, class: "sv-btn-ghost-on-brand" do %><%= icon(:calendar, size: 16) %> Abrir agenda<% end %>
+          <%= link_to agenda_target, class: "sv-btn-ghost-on-brand" do %><%= icon(:calendar, size: 16) %> Abrir agenda<% end %>
         <% elsif finance %>
           <%= link_to receivables_path, class: "sv-btn-on-brand" do %><%= icon(:finance, size: 16) %> Abrir financeiro<% end %>
         <% end %>
@@ -96,9 +98,12 @@
   </div>
 <% end %>
 
+<%# Visit figures only for members who can see the schedule; finance follows the next due dates instead. %>
+<% show_visits = can?(:schedule_view) %>
+<% receivables = @today.upcoming_receivables unless show_visits %>
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
   <% attention = @today.attention %>
-  <section class="sv-card min-w-0 lg:col-span-7" aria-labelledby="atencao-titulo">
+  <section class="sv-card min-w-0 <%= show_visits || receivables ? 'lg:col-span-7' : 'lg:col-span-12' %>" aria-labelledby="atencao-titulo">
     <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
       <h2 id="atencao-titulo" class="flex items-center gap-2 text-[15px] font-semibold text-ink-950">
         <span class="sv-facet" aria-hidden="true"></span> Precisa de atenção
@@ -116,7 +121,9 @@
             <% end %>
             <span class="sv-num w-6 text-right text-[15px] font-semibold text-ink-950"><%= item.count %></span>
             <span class="min-w-0 flex-1 truncate text-[13px] text-ink-800"><%= item.label %></span>
-            <%= link_to public_send(item.route, **item.params), class: "sv-btn-ghost sv-btn-sm", aria: { label: "Resolver: #{item.label}" } do %><span class="max-sm:sr-only">Resolver</span><%= icon(:chevron_right, size: 14) %><% end %>
+            <%# Members who may only look at the filtered list are offered "Ver", not "Resolver". %>
+            <% action = item.actionable ? "Resolver" : "Ver" %>
+            <%= link_to public_send(item.route, **item.params), class: "sv-btn-ghost sv-btn-sm", aria: { label: "#{action}: #{item.label}" } do %><span class="max-sm:sr-only"><%= action %></span><%= icon(:chevron_right, size: 14) %><% end %>
           </li>
         <% end %>
       </ul>
@@ -128,29 +135,58 @@
     <% end %>
   </section>
 
-  <section class="sv-card min-w-0 lg:col-span-5" aria-labelledby="proximas-titulo">
-    <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
-      <h2 id="proximas-titulo" class="text-[15px] font-semibold text-ink-950">Próximas visitas</h2>
-      <% if can?(:schedule_view) %><%= link_to agenda_index_path, class: "sv-btn-ghost sv-btn-sm" do %>Ver agenda<%= icon(:chevron_right, size: 14) %><% end %><% end %>
-    </header>
-    <% visits = @today.upcoming_visits %>
-    <% if visits.any? %>
-      <ul class="divide-y divide-ink-150" role="list">
-        <% visits.each do |visit| %>
-          <li class="flex items-center gap-3 px-5 py-3">
-            <span class="sv-num w-12 shrink-0 font-mono text-xs text-ink-600"><%= l(visit.scheduled_start, format: "%H:%M") %><br><span class="text-ink-500"><%= l(visit.scheduled_start, format: "%d/%m") %></span></span>
-            <span class="min-w-0 flex-1">
-              <%= link_to visit.work_order.customer.name, work_order_path(visit.work_order), class: "block truncate text-[13px] font-medium text-ink-950 hover:underline hover:decoration-ink-300 hover:underline-offset-4" %>
-              <span class="block truncate text-xs text-ink-500"><%= visit.work_order.number %> · <%= visit.work_order.service_location.city %></span>
-            </span>
-            <%= badge(visit.status_label, tone: visit.status_tone) %>
-          </li>
-        <% end %>
-      </ul>
-    <% else %>
-      <p class="px-5 py-6 text-[13px] text-ink-600">Nenhuma visita agendada a partir de agora.</p>
-    <% end %>
-  </section>
+  <% if show_visits %>
+    <section class="sv-card min-w-0 lg:col-span-5" aria-labelledby="proximas-titulo">
+      <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
+        <h2 id="proximas-titulo" class="text-[15px] font-semibold text-ink-950">Próximas visitas</h2>
+        <%= link_to agenda_target, class: "sv-btn-ghost sv-btn-sm" do %>Ver agenda<%= icon(:chevron_right, size: 14) %><% end %>
+      </header>
+      <% visits = @today.upcoming_visits %>
+      <% if visits.any? %>
+        <ul class="divide-y divide-ink-150" role="list">
+          <% visits.each do |visit| %>
+            <li class="flex items-center gap-3 px-5 py-3">
+              <span class="sv-num w-12 shrink-0 font-mono text-xs text-ink-600"><%= l(visit.scheduled_start, format: "%H:%M") %><br><span class="text-ink-500"><%= l(visit.scheduled_start, format: "%d/%m") %></span></span>
+              <span class="min-w-0 flex-1">
+                <%= link_to visit.work_order.customer.name, work_order_path(visit.work_order), class: "block truncate text-[13px] font-medium text-ink-950 hover:underline hover:decoration-ink-300 hover:underline-offset-4" %>
+                <span class="block truncate text-xs text-ink-500"><%= visit.work_order.number %> · <%= visit.work_order.service_location.city %></span>
+              </span>
+              <%= badge(visit.status_label, tone: visit.status_tone) %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="px-5 py-6 text-[13px] text-ink-600">Nenhuma visita agendada a partir de agora.</p>
+      <% end %>
+    </section>
+  <% elsif receivables %>
+    <%# Money stays ink; an overdue account carries the danger badge (icon + text), never colour alone. %>
+    <section class="sv-card min-w-0 lg:col-span-5" aria-labelledby="vencimentos-titulo">
+      <header class="flex h-12 items-center justify-between border-b border-ink-150 px-5">
+        <h2 id="vencimentos-titulo" class="text-[15px] font-semibold text-ink-950">Próximos vencimentos</h2>
+        <%= link_to receivables_path, class: "sv-btn-ghost sv-btn-sm" do %>Ver contas<%= icon(:chevron_right, size: 14) %><% end %>
+      </header>
+      <% if receivables.any? %>
+        <ul class="divide-y divide-ink-150" role="list">
+          <% receivables.each do |receivable| %>
+            <li class="flex items-center gap-3 px-5 py-3">
+              <span class="sv-num w-12 shrink-0 font-mono text-xs text-ink-600"><span class="sr-only">Vence em </span><%= l(receivable.due_on, format: "%d/%m") %><br><span class="text-ink-500"><%= receivable.due_on.year %></span></span>
+              <span class="min-w-0 flex-1">
+                <%= link_to receivable.customer.display_name, receivable_path(receivable), class: "block truncate text-[13px] font-medium text-ink-950 hover:underline hover:decoration-ink-300 hover:underline-offset-4" %>
+                <span class="block truncate font-mono text-xs text-ink-500"><%= receivable.number %></span>
+              </span>
+              <span class="flex shrink-0 flex-col items-end gap-1">
+                <span class="sv-num whitespace-nowrap text-[13px] font-semibold text-ink-950"><%= money(receivable.balance) %></span>
+                <% if receivable.overdue?(Time.zone.today) %><%= badge("Vencida", tone: :danger) %><% end %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="px-5 py-6 text-[13px] text-ink-600">Nenhuma conta em aberto.</p>
+      <% end %>
+    </section>
+  <% end %>
 </div>
 
 <% strip = capture do %>
@@ -161,7 +197,7 @@
   <% if (pending = @overview.pending_invitations_count) %>
     <div class="p-5"><p class="text-xs font-medium text-ink-600">Convites pendentes</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= pending %></p></div>
   <% end %>
-  <% if cover.open_orders %>
+  <% if cover.open_orders && show_visits %>
     <div class="p-5"><p class="text-xs font-medium text-ink-600">Visitas concluídas hoje</p><p class="sv-num mt-2 text-[28px] font-semibold leading-none text-ink-950"><%= cover.visits_done %></p></div>
   <% end %>
 <% end %>

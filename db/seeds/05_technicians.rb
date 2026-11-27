@@ -2,6 +2,8 @@
 
 # Working hours (Mon–Fri 08:00–12:00 and 13:00–18:00), skills and a team for
 # the demonstration technicians.
+require_relative "support/story_clock"
+
 module Seeds
   TECHNICIAN_SKILLS = {
     "diego@clima-norte.test" => ["Refrigeração comercial", "Elétrica"],
@@ -15,7 +17,9 @@ module Seeds
     organization_id = ORGANIZATIONS.fetch(key)[:id]
     Servora::Tenancy.with_organization(organization_id) do
       organization = Organization.find(organization_id)
-      organization.memberships.technicians.includes(:user).find_each { |membership| seed_technician(organization, membership) }
+      organization.memberships.technicians.includes(:user).unscope(:order).find_each do |membership|
+        seed_technician(organization, membership)
+      end
       seed_team(organization) if key == "a"
     end
   end
@@ -37,12 +41,14 @@ module Seeds
   def self.seed_team(organization)
     team = organization.teams.find_or_create_by!(name: "Equipe Refrigeração")
     organization.memberships.technicians.joins(:user)
-      .where(users: { email: %w[diego@clima-norte.test eduarda@clima-norte.test] }).find_each do |membership|
+      .where(users: { email: %w[diego@clima-norte.test eduarda@clima-norte.test] }).unscope(:order).find_each do |membership|
       TeamMember.find_or_create_by!(organization:, team:, membership:)
     end
   end
 end
 
-Seeds.technicians("a")
-Seeds.technicians("b")
+Seeds::StoryClock.at_origin do
+  Seeds.technicians("a")
+  Seeds.technicians("b")
+end
 puts "Técnicos com horários e competências prontos."

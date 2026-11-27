@@ -117,7 +117,14 @@ RSpec.describe Quotes do
 
     it "refuses approving a superseded version after a new version was sent" do
       in_tenant(organization) { as_member(scenario[:author]) { Quotes::NewVersion.new(quote: quote.reload).call } }
-      send_quote(scenario, in_tenant(organization) { quote.reload })
+      # Superseding iterates in batches: an ordered relation there would only log a warning.
+      previous_setting = ActiveRecord.error_on_ignored_order
+      ActiveRecord.error_on_ignored_order = true
+      begin
+        send_quote(scenario, in_tenant(organization) { quote.reload })
+      ensure
+        ActiveRecord.error_on_ignored_order = previous_setting
+      end
 
       expect { decide }.to raise_error(described_class::DecisionRefused, /não é a vigente/)
       expect(in_tenant(organization) { version.reload.status }).to eq("superseded")

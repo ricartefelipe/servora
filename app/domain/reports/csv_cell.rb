@@ -12,7 +12,7 @@ module Reports
     def safe(value)
       case value
       when nil then ""
-      when Money then value.value.to_s("F")
+      when Money, Percent then value.value.to_s("F")
       when BigDecimal then value.to_s("F")
       when Numeric then value.to_s
       when Date, Time then value.iso8601

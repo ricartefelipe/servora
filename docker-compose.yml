@@ -27,6 +27,13 @@ x-app: &app
     ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
     METRICS_TOKEN: ${METRICS_TOKEN:-local-metrics-token}
     LOG_FORMAT: ${LOG_FORMAT:-json}
+    # Demo mode (off unless SERVORA_DEMO=1 in .env); the inbox link points to the local Mailpit.
+    SERVORA_DEMO: ${SERVORA_DEMO:-0}
+    SERVORA_DEMO_INBOX_URL: ${SERVORA_DEMO_INBOX_URL:-http://localhost:${MAILPIT_UI_PORT:-58025}}
+    # Seeds (migrate runs bin/db-prepare --seed): demonstration history on by
+    # default locally; the shared password is shown on the sign-in page in demo mode.
+    SEED_DEMO_ACTIVITY: ${SEED_DEMO_ACTIVITY:-1}
+    SEED_PASSWORD: ${SEED_PASSWORD:-servora-demo-2026}
   volumes:
     - .:/rails
     - storage:/rails/storage
@@ -102,7 +109,12 @@ services:
     environment:
       <<: *app-env
       RAILS_ENV: test
-    command: ["ruby", "bin/test-all"]
+      # Specs switch demo mode and the demonstration history on explicitly where they need them.
+      SERVORA_DEMO: "0"
+      SERVORA_DEMO_INBOX_URL: ""
+      SEED_DEMO_ACTIVITY: "0"
+    # bin/test-all is a bash script (the checkout may not keep the executable bit).
+    command: ["bash", "bin/test-all"]
     depends_on:
       db:
         condition: service_healthy

@@ -121,6 +121,10 @@ class VisitsController < TenantController
   end
 
   def default_start
-    1.day.from_now.change(hour: 9)
+    opening_hours = tenant_relation(BusinessHour).pluck(:weekday, :start_minute, :end_minute)
+      .group_by(&:first).transform_values { |rows| rows.map { |_, start, finish| [start, finish] } }
+    holidays = tenant_relation(Holiday).where(date: Date.current..(Date.current + Scheduling::DefaultStart::HORIZON_DAYS))
+      .pluck(:date)
+    Scheduling::DefaultStart.new(now: Time.current, opening_hours:, holidays:).call
   end
 end

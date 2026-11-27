@@ -89,6 +89,26 @@ RSpec.describe Reports do
 
     summary = in_tenant(organization) { report(Reports::SlaReport).summary }
 
-    expect(summary).to include("Prazos encerrados" => 1, "Cumpridos" => 1, "Percentual cumprido" => "100.0%")
+    expect(summary).to include("Prazos encerrados" => 1, "Cumpridos" => 1,
+      "Percentual cumprido" => Reports::Percent.new(value: BigDecimal("100.0")))
+  end
+
+  it "lists deadlines from the most to the least severe priority" do
+    configure_sla(organization)
+    in_tenant(organization) do
+      %w[urgent normal low].each do |priority|
+        SlaPolicy.create!(organization:, priority:, first_response_minutes: 120, resolution_minutes: 480,
+          business_hours_only: true, warning_percent: 80)
+      end
+    end
+    orders = %w[low urgent normal high].map do |priority|
+      travel_to(at("2026-11-17 09:00")) { open_work_order(scenario, title: priority, priority:) }
+    end
+    orders.each { |order| travel_to(at("2026-11-17 10:00")) { move(scenario, order, "in_progress") } }
+
+    rows = in_tenant(organization) { report(Reports::SlaReport).rows(limit: 10) }
+
+    expect(rows.map { |row| row.first(2) }).to eq([["Primeira resposta", "Urgente"], ["Primeira resposta", "Alta"],
+                                                   ["Primeira resposta", "Normal"], ["Primeira resposta", "Baixa"]])
   end
 end

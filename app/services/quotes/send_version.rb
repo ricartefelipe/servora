@@ -40,7 +40,9 @@ module Quotes
     end
 
     def supersede_previous!(version)
-      @quote.versions.where.not(id: version.id).where(status: %w[sent approved rejected expired]).find_each do |previous|
+      # The association is ordered by version number; batches go by id, so the order is dropped explicitly.
+      @quote.versions.unscope(:order).where.not(id: version.id).where(status: %w[sent approved rejected expired])
+        .find_each do |previous|
         previous.update!(status: Quotes::VersionStates.assert!(previous.status, "superseded"))
       end
     end

@@ -21,7 +21,7 @@
     <h2 class="mb-3 text-[15px] font-semibold text-ink-950">Contato</h2>
     <dl class="space-y-3 text-sm">
       <div class="flex items-center gap-2 text-ink-700"><%= icon(:mail, size: 16, css: "text-ink-500") %><dt class="sr-only">E-mail</dt><dd><%= @customer.email || "—" %></dd></div>
-      <div class="flex items-center gap-2 text-ink-700"><%= icon(:phone, size: 16, css: "text-ink-500") %><dt class="sr-only">Telefone</dt><dd><%= @customer.phone || "—" %></dd></div>
+      <div class="flex items-center gap-2 text-ink-700"><%= icon(:phone, size: 16, css: "text-ink-500") %><dt class="sr-only">Telefone</dt><dd class="sv-num"><%= format_phone(@customer.phone) || "—" %></dd></div>
     </dl>
     <% if @customer.notes.present? %>
       <h2 class="mb-2 mt-5 border-t border-ink-150 pt-4 text-[13px] font-semibold text-ink-950">Observações</h2>
@@ -70,7 +70,7 @@
           <%= avatar(contact.name) %>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-ink-950"><%= contact.name %> <span class="text-sm font-normal text-ink-500"><%= contact.position %></span></p>
-            <p class="text-sm text-ink-600"><%= [contact.email, contact.phone].compact_blank.join(" · ") %></p>
+            <p class="text-sm text-ink-600"><%= [contact.email, format_phone(contact.phone)].compact_blank.join(" · ") %></p>
             <div class="mt-1 flex flex-wrap gap-1.5">
               <% if contact.can_approve? %><%= badge("Aprova orçamentos", tone: :indigo) %><% end %>
               <% if contact.can_follow? %><%= badge("Acompanha serviços", tone: :info) %><% end %>
