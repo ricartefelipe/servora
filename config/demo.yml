@@ -1,0 +1,6 @@
+# Public demonstration settings. Nothing here is secret: the demonstration
+# password is shown on the sign-in page of the public demo, and SEED_PASSWORD
+# overrides it on any instance.
+shared:
+  default_seed_password: servora-demo-2026
+  default_inbox_url: /caixa-de-entrada

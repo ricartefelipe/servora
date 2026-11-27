@@ -17,15 +17,18 @@ module Servora
   #   (Authentication::MfaRequirement), because the demo proxy blocks the MFA
   #   setup pages.
   module Demo
+    SETTINGS = Rails.application.config_for(:demo)
+
     # Password of the seeded demonstration accounts when SEED_PASSWORD is not
-    # set. Seeds::PASSWORD (db/seeds/01_organizations_and_people.rb) takes its
-    # value from .password, so the seeds and the sign-in page always agree.
-    DEFAULT_PASSWORD = "servora-demo-2026"
+    # set (public, see config/demo.yml). Seeds::PASSWORD
+    # (db/seeds/01_organizations_and_people.rb) takes its value from .password,
+    # so the seeds and the sign-in page always agree.
+    DEFAULT_PASSWORD = SETTINGS.fetch(:default_seed_password)
 
     # Read-only Mailpit published by the demo proxy. It is the default only in
     # demo mode; SERVORA_DEMO_INBOX_URL overrides it, and setting it blank
     # removes the inbox link from the sign-in page (instance without Mailpit).
-    DEFAULT_INBOX_URL = "/caixa-de-entrada"
+    DEFAULT_INBOX_URL = SETTINGS.fetch(:default_inbox_url)
 
     # Profiles offered on the sign-in page, in presentation order. Every e-mail
     # is a seeded person of organization A (Seeds::PEOPLE); a spec keeps both
@@ -41,7 +44,7 @@ module Servora
       Account.new(email: "heitor@clima-norte.test", role: "auditor", profile: "Auditor", note: "abre a trilha de auditoria")
     ].freeze
 
-    def self.enabled? = ENV["SERVORA_DEMO"] == "1"
+    def self.enabled? = ENV.fetch("SERVORA_DEMO", "0") == "1"
 
     def self.password = ENV.fetch("SEED_PASSWORD", DEFAULT_PASSWORD)
 
@@ -49,7 +52,7 @@ module Servora
     # demo mode without an explicit address, or with SERVORA_DEMO_INBOX_URL
     # set blank.
     def self.inbox_url
-      return ENV["SERVORA_DEMO_INBOX_URL"].presence if ENV.key?("SERVORA_DEMO_INBOX_URL")
+      return ENV.fetch("SERVORA_DEMO_INBOX_URL", nil).presence if ENV.key?("SERVORA_DEMO_INBOX_URL")
 
       DEFAULT_INBOX_URL if enabled?
     end
