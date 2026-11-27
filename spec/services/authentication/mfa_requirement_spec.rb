@@ -29,4 +29,22 @@ RSpec.describe Authentication::MfaRequirement do
 
     expect(requirement(role: "owner", now: joined_at + 30.days).blocking?).to be(false)
   end
+
+  context "when demo mode is off", demo_mode: false do
+    it "keeps the reminder and the deadline" do
+      expect(requirement(role: "owner", now: joined_at + 1.day)).to be_pending
+      expect(requirement(role: "finance", now: joined_at + 30.days)).to be_blocking
+    end
+  end
+
+  context "when demo mode is on", :demo_mode do
+    it "neither reminds nor blocks privileged members" do
+      %w[owner admin finance].each do |role|
+        early = requirement(role:, now: joined_at + 1.day)
+        late = requirement(role:, now: joined_at + 30.days)
+
+        expect([early.required?, early.pending?, late.blocking?]).to eq([false, false, false]), role
+      end
+    end
+  end
 end

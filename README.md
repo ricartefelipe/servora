@@ -45,6 +45,8 @@ docker compose up --build
 A aplicação fica em `http://localhost:3000`, que abre diretamente o formulário de acesso, e o Mailpit em
 `http://localhost:58025`. O roteiro de
 demonstração com as contas de exemplo está em [`docs/DEMO.md`](docs/DEMO.md).
+Com `SERVORA_DEMO=1` (modo demonstração, desligado por padrão) a tela de acesso lista as contas de exemplo e a
+senha, e a exigência de verificação em duas etapas não se aplica; nunca ative em uma instância com clientes reais.
 
 Testes completos (regras puras, Rails, sistema e metas de cobertura): `bash bin/test-all`.
 Guia completo de ambiente, testes e fluxo de contribuição: [`CONTRIBUTING.md`](CONTRIBUTING.md).

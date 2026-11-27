@@ -1,0 +1,58 @@
+<%# Demo mode only (Servora::Demo): demonstration accounts with their shared password. Without JavaScript the
+    accounts remain readable text; with it, each entry fills the sign-in form. %>
+<section class="sv-card mb-8 p-4"
+         aria-labelledby="demo-access-title"
+         data-controller="demo-login"
+         data-demo-login-password-value="<%= Servora::Demo.password %>"
+         data-demo-login-email-field-value="<%= email_field_id %>"
+         data-demo-login-password-field-value="<%= password_field_id %>">
+  <h2 id="demo-access-title" class="sv-eyebrow text-ink-700">
+    <span class="sv-facet" aria-hidden="true"></span>
+    Ambiente de demonstração
+  </h2>
+
+  <p class="mt-3 text-[13px] text-ink-700">
+    Senha de todas as contas: <code class="sv-kbd select-all text-ink-900"><%= Servora::Demo.password %></code>
+  </p>
+  <p id="demo-access-hint" class="sv-hint">Escolha um perfil para preencher o acesso.</p>
+
+  <ul class="mt-3 divide-y divide-ink-150 rounded-lg ring-1 ring-inset ring-ink-150" role="list">
+    <% Servora::Demo.accounts.each do |account| %>
+      <li>
+        <%= tag.button type: "button",
+              class: "flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3 py-2 text-left transition-colors " \
+                     "hover:bg-ink-25 " \
+                     "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600",
+              aria: { describedby: "demo-access-hint" },
+              data: {
+                action: "demo-login#fill",
+                demo_login_email_param: account.email,
+                demo_login_message_param: "#{account.profile}: e-mail e senha preenchidos. Use o botão Entrar para continuar."
+              } do %>
+          <span class="min-w-0">
+            <span class="block text-[13px] font-medium text-ink-900"><%= account.profile %></span>
+            <% if account.note %>
+              <span class="block text-xs text-ink-500"><%= account.note %></span>
+            <% end %>
+          </span>
+          <%# The e-mail is never cut: it moves below the profile as a whole when the row is narrow. %>
+          <span class="whitespace-nowrap font-mono text-xs text-ink-600"><%= account.email %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+
+  <p class="sr-only" aria-live="polite" data-demo-login-target="status"></p>
+
+  <div class="mt-3 space-y-1 text-xs text-ink-500">
+    <p>Os dados voltam ao estado inicial todos os dias.</p>
+    <% if (inbox_url = Servora::Demo.inbox_url) %>
+      <p>
+        <%= link_to inbox_url, class: "sv-link", target: "_blank", rel: "noopener", data: { turbo: false } do %>
+          Caixa de entrada da demonstração<span class="sr-only"> (abre em nova aba)</span>
+        <% end %>
+        — e-mails como o link de acesso ao portal do cliente chegam aqui.
+      </p>
+    <% end %>
+  </div>
+</section>
